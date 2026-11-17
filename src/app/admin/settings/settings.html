@@ -213,6 +213,31 @@
           </div>
         </div>
       </section>
+
+      <section class="adm-box">
+        <h2>Bong bóng nổi (góc phải màn hình)</h2>
+        <div class="box-body grid">
+          <div class="field full">
+            <label for="fb">Link Facebook / Messenger</label>
+            <input id="fb" type="url" [(ngModel)]="draft.facebookUrl" placeholder="https://m.me/tenfanpage hoặc https://facebook.com/..." />
+          </div>
+          <div class="field full">
+            <label for="tt">Link TikTok</label>
+            <input id="tt" type="url" [(ngModel)]="draft.tiktokUrl" placeholder="https://www.tiktok.com/@tenkenh" />
+            <small class="hint">Để trống link nào thì bong bóng đó bị ẩn.</small>
+          </div>
+          <div class="field full">
+            <label class="check-row"><input type="checkbox" [(ngModel)]="draft.chatEnabled" /> Hiện bong bóng trợ lý AI</label>
+          </div>
+          <div class="field full">
+            <label for="greet">Lời chào của trợ lý AI</label>
+            <textarea id="greet" rows="2" [(ngModel)]="draft.chatGreeting"></textarea>
+            <small class="hint">
+              AI trả lời dựa trên file <code>knowledge/kien-thuc.md</code> trong mã nguồn — sửa file đó để dạy AI thêm.
+            </small>
+          </div>
+        </div>
+      </section>
     }
 
     @case ('bao-mat') {

@@ -6,6 +6,8 @@ import { animate } from 'animejs';
 import { EMPTY_SEO, NewsPost, NewsStatus, newsPath } from '../../models/news';
 import { NewsService } from '../../services/news.service';
 import { analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
+import { downloadBlob } from '../../shared/download';
+import { buildNewsSitemap, buildRobotsTxt } from '../../shared/sitemap';
 import { AdminToastService } from '../toast.service';
 
 @Component({
@@ -15,7 +17,26 @@ import { AdminToastService } from '../toast.service';
     <div class="adm-head">
       <h1>Tin tức</h1>
       <a class="btn primary small" routerLink="/admin/tin-tuc/moi">+ Viết bài mới</a>
+      <button class="btn ghost small" type="button" (click)="sitemapHelp.set(!sitemapHelp())">🗺 Sitemap</button>
     </div>
+
+    @if (sitemapHelp()) {
+      <div class="adm-notice sitemap">
+        <p>
+          <b>sitemap.xml</b> liệt kê {{ indexable() }} bài đã đăng (bỏ bài nháp và bài đặt noindex) để Google tìm thấy bài nhanh hơn.
+        </p>
+        <ol>
+          <li>Tải 2 file bên dưới.</li>
+          <li>Chép cả 2 vào thư mục <code>public/</code> của mã nguồn (ghi đè file cũ), rồi push lên GitHub.</li>
+          <li>Vào Google Search Console → Sitemaps → nhập <code>{{ origin }}/sitemap.xml</code>.</li>
+        </ol>
+        <p class="muted">Mỗi lần đăng hoặc sửa bài, tải lại sitemap.xml và làm lại bước 2.</p>
+        <div class="row">
+          <button class="btn primary small" type="button" (click)="downloadSitemap()">⬇ sitemap.xml</button>
+          <button class="btn ghost small" type="button" (click)="downloadRobots()">⬇ robots.txt</button>
+        </div>
+      </div>
+    }
 
     <nav class="adm-tabs">
       @for (t of tabs(); track t.key) {
@@ -79,6 +100,10 @@ import { AdminToastService } from '../toast.service';
     </div>
   `,
   styles: `
+    .sitemap p { margin: 0 0 6px; }
+    .sitemap ol { margin: 0 0 6px; padding-left: 20px; }
+    .sitemap .muted { color: #646970; font-size: .85rem; }
+    .sitemap .row { display: flex; gap: 8px; flex-wrap: wrap; }
     .seo-score { display: inline-block; min-width: 38px; text-align: center; font-size: 0.8rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; border: 1.5px solid currentColor; }
     .seo-score.ok { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
     .seo-score.warn { color: #8a6d00; }
@@ -91,6 +116,9 @@ export class AdminNewsList {
   private readonly toast = inject(AdminToastService);
 
   readonly path = newsPath;
+  readonly origin = location.origin;
+  readonly sitemapHelp = signal(false);
+  readonly indexable = computed(() => this.service.posts().filter((p) => p.status === 'published' && !p.seo?.noindex).length);
   readonly scoreLevel = scoreLevel;
   readonly seoScore = (n: NewsPost) =>
     analyzeSeo({ ...n, seo: { ...EMPTY_SEO, ...n.seo } }, n.seo?.slug || slugify(n.title)).score;
@@ -113,6 +141,15 @@ export class AdminNewsList {
       .posts()
       .filter((n) => (tab === 'all' || n.status === tab) && (!term || n.title.toLowerCase().includes(term)));
   });
+
+  downloadSitemap(): void {
+    const xml = buildNewsSitemap(this.origin, this.service.posts());
+    downloadBlob(new Blob([xml], { type: 'application/xml' }), 'sitemap.xml');
+  }
+
+  downloadRobots(): void {
+    downloadBlob(new Blob([buildRobotsTxt(this.origin)], { type: 'text/plain' }), 'robots.txt');
+  }
 
   setStatus(n: NewsPost, status: NewsStatus): void {
     this.toast.run(

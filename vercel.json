@@ -4,7 +4,10 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/fumo-showcase/browser",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "functions": {
+    "api/chat.ts": { "includeFiles": "knowledge/**", "maxDuration": 30 }
+  },
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/(.*)\\.(js|css)",

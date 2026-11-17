@@ -4,10 +4,11 @@ import { HeaderComponent } from '../components/header/header';
 import { FooterComponent } from '../components/footer/footer';
 import { ThemeService } from '../services/theme.service';
 import { SkyBackgroundComponent } from '../components/sky-bg/sky-bg';
+import { FloatBubblesComponent } from '../components/float-bubbles/float-bubbles';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
@@ -17,6 +18,7 @@ import { SkyBackgroundComponent } from '../components/sky-bg/sky-bg';
       <router-outlet />
     </main>
     <app-footer />
+    <app-float-bubbles />
   `,
   styles: `
     :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); color: var(--text);

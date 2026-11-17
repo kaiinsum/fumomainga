@@ -56,6 +56,14 @@ export interface SiteSettings {
   contactPhone: string;
   contactEmail: string;
   contactHours: string;
+  // Bong bóng nổi góc phải
+  /** Link trang/Messenger Facebook. Trống → ẩn bong bóng. */
+  facebookUrl: string;
+  /** Link kênh TikTok. Trống → ẩn bong bóng. */
+  tiktokUrl: string;
+  /** Hiện bong bóng trợ lý AI. */
+  chatEnabled: boolean;
+  chatGreeting: string;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -93,4 +101,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   contactPhone: '0900 000 000',
   contactEmail: 'lienhe@fumoshop.vn',
   contactHours: '9:00 – 21:00, Thứ 2 – Chủ nhật',
+
+  facebookUrl: '',
+  tiktokUrl: '',
+  chatEnabled: true,
+  chatGreeting: 'Xin chào! Mình là trợ lý của shop 🧸 Bạn cần tư vấn sản phẩm, giá hay cách đặt hàng không?',
 };
