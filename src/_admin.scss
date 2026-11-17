@@ -1,0 +1,258 @@
+// Style dùng chung cho các trang quản trị (/admin).
+
+.adm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  h1 {
+    font-size: 1.6rem;
+    margin: 0;
+  }
+}
+
+.adm-box {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  > h2,
+  > .box-title {
+    font-size: 1rem;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid #dcdcde;
+  }
+
+  > .box-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+.adm-notice {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: #fff;
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  &.warn {
+    border-left-color: var(--primary-ink);
+  }
+
+  a {
+    color: var(--primary);
+    font-weight: 800;
+  }
+}
+
+.adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+
+  input,
+  select {
+    font: inherit;
+    padding: 7px 12px;
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.adm-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #c3c4c7;
+  margin-bottom: 16px;
+
+  button,
+  a {
+    font: inherit;
+    font-weight: 700;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: none;
+    color: #50575e;
+    cursor: pointer;
+    margin-bottom: -1px;
+
+    &.on {
+      background: #f0f0f1;
+      border-color: #c3c4c7;
+      color: var(--text);
+    }
+  }
+
+  .count {
+    color: #8c8f94;
+    font-weight: 600;
+  }
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 10px;
+  overflow: hidden;
+
+  th,
+  td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f1;
+    vertical-align: middle;
+  }
+
+  th {
+    font-size: 0.85rem;
+    color: #50575e;
+    background: #fafafa;
+  }
+
+  tr:hover td {
+    background: var(--primary-50);
+  }
+
+  .thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .title-cell a {
+    font-weight: 800;
+    color: var(--primary-dark);
+  }
+
+  .row-actions {
+    font-size: 0.8rem;
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+
+    a,
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      cursor: pointer;
+      color: var(--primary-dark);
+    }
+
+    .del {
+      color: var(--primary-ink);
+    }
+  }
+
+  tr:hover .row-actions {
+    opacity: 1;
+  }
+
+  .empty {
+    text-align: center;
+    color: #8c8f94;
+    padding: 32px;
+  }
+}
+
+.adm-table-wrap {
+  overflow-x: auto;
+}
+
+.status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--primary-100);
+  color: var(--primary-ink);
+
+  &.off {
+    background: #f0f0f1;
+    color: #646970;
+  }
+
+  &.draft {
+    background: #f0f0f1;
+    color: #50575e;
+  }
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #c3c4c7;
+
+  &.on {
+    color: var(--primary);
+  }
+}
+
+.adm-edit {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 76px;
+  }
+}
+
+.title-input {
+  width: 100%;
+  font: inherit;
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 10px 14px;
+  border: 1px solid #c3c4c7;
+  border-radius: 10px;
+  background: #fff;
+  outline: none;
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+@media (max-width: 1000px) {
+  .adm-edit {
+    grid-template-columns: 1fr;
+
+    .side {
+      position: static;
+    }
+  }
+}

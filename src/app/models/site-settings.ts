@@ -1,0 +1,93 @@
+export interface AboutValue {
+  icon: string;
+  title: string;
+  text: string;
+}
+
+export interface Milestone {
+  year: string;
+  text: string;
+}
+
+export interface FontOption {
+  name: string;
+  /** Các độ đậm cần tải từ Google Fonts. */
+  weights: number[];
+}
+
+/** Chỉ gồm các font Google có bộ ký tự tiếng Việt đầy đủ. */
+export const FONT_OPTIONS: FontOption[] = [
+  { name: 'Montserrat', weights: [400, 500, 600, 700, 800, 900] },
+  { name: 'Nunito', weights: [400, 600, 700, 800, 900] },
+  { name: 'Be Vietnam Pro', weights: [400, 500, 600, 700, 800, 900] },
+  { name: 'Quicksand', weights: [400, 500, 600, 700] },
+  { name: 'Lexend', weights: [400, 500, 600, 700, 800, 900] },
+  { name: 'Roboto', weights: [400, 500, 700, 900] },
+];
+
+export function googleFontUrl(font: FontOption): string {
+  const family = font.name.replace(/ /g, '+');
+  return `https://fonts.googleapis.com/css2?family=${family}:wght@${font.weights.join(';')}&display=swap`;
+}
+
+export interface SiteSettings {
+  // Chung
+  shopName: string;
+  logoEmoji: string;
+  tagline: string;
+  primaryColor: string;
+  backgroundColor: string;
+  fontFamily: string;
+  footerText: string;
+  // Trang chủ
+  heroBadge: string;
+  /** Bọc từ bằng *dấu sao* để tô màu nổi bật. */
+  heroTitle: string;
+  heroSubtitle: string;
+  // Giới thiệu
+  aboutTitle: string;
+  aboutIntro: string;
+  aboutValues: AboutValue[];
+  aboutMilestones: Milestone[];
+  // Liên hệ
+  contactAddress: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactHours: string;
+}
+
+export const DEFAULT_SETTINGS: SiteSettings = {
+  shopName: 'Fumo Mai Nga',
+  logoEmoji: '🧸',
+  tagline: 'Thế giới thú bông dễ thương',
+  primaryColor: '#60B5FF',
+  /** Sắc rất nhạt của màu chủ đạo — không thêm màu khác. */
+  backgroundColor: '#F5FAFF',
+  fontFamily: 'Montserrat',
+  footerText: 'Nơi trưng bày những bé fumo, móc khóa, figure và phụ kiện dễ thương nhất.',
+
+  heroBadge: '✨ Bộ sưu tập mùa đông 2026',
+  heroTitle: 'Thế giới *Fumo* dễ thương',
+  heroSubtitle:
+    'Nơi trưng bày thú bông fumo, móc khóa, figure và phụ kiện. Khám phá và tìm bé fumo hợp với bạn nhất.',
+
+  aboutTitle: 'Về chúng tôi',
+  aboutIntro:
+    'Chúng tôi là một cửa hàng nhỏ dành cho những người yêu thú bông fumo. Mỗi sản phẩm đều được chọn lựa và chụp ảnh kỹ lưỡng để bạn dễ dàng tham khảo.',
+  aboutValues: [
+    { icon: '🧵', title: 'Chất lượng thủ công', text: 'Mỗi sản phẩm được kiểm tra kỹ đường may và chất liệu.' },
+    { icon: '📸', title: 'Hình ảnh thật', text: 'Hình ảnh được chụp và đăng trực tiếp, đúng với sản phẩm.' },
+    { icon: '💌', title: 'Tận tâm', text: 'Hỗ trợ tư vấn nhanh chóng, gói quà miễn phí.' },
+  ],
+  aboutMilestones: [
+    { year: '2023', text: 'Bắt đầu với vài bé fumo tự may tặng bạn bè.' },
+    { year: '2024', text: 'Mở gian hàng online đầu tiên và có 100 khách hàng.' },
+    { year: '2025', text: 'Ra mắt dòng móc khóa và phụ kiện cho fumo.' },
+    { year: '2026', text: 'Ra mắt website trưng bày sản phẩm.' },
+  ],
+
+  contactAddress: '123 Đường Bông Gòn, Quận 1, TP. Hồ Chí Minh',
+  contactPhone: '0900 000 000',
+  contactEmail: 'lienhe@fumoshop.vn',
+  contactHours: '9:00 – 21:00, Thứ 2 – Chủ nhật',
+};

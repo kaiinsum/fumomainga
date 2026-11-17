@@ -1,0 +1,238 @@
+<div class="adm-head">
+  <h1>{{ editing() ? 'Sửa bài viết' : 'Viết bài mới' }}</h1>
+  @if (editing(); as p) {
+    @if (p.status === 'published') {
+      <a class="btn ghost small" [href]="path(p)" target="_blank" rel="noopener">Xem bài ↗</a>
+    }
+  }
+</div>
+
+@if (id() && !editing()) {
+  <div class="adm-notice warn">
+    Không tìm thấy bài viết. <a routerLink="/admin/tin-tuc/moi">Viết bài mới →</a>
+  </div>
+}
+
+<div class="adm-edit">
+  <div class="main">
+    <input class="title-input" [(ngModel)]="title" placeholder="Thêm tiêu đề" aria-label="Tiêu đề bài viết" />
+    @if (submitted() && title.trim().length < 3) {
+      <span class="error">Tiêu đề tối thiểu 3 ký tự.</span>
+    }
+
+    <section class="adm-box editor">
+      <div class="editor-bar">
+        <div class="modes">
+          <button type="button" [class.on]="mode() === 'write'" (click)="setMode('write')">Soạn thảo</button>
+          <button type="button" [class.on]="mode() === 'preview'" (click)="setMode('preview')">Xem trước</button>
+        </div>
+        @if (mode() === 'write') {
+          <div class="tools">
+            @for (t of tools; track t.label) {
+              <button type="button" [title]="t.title" (mousedown)="$event.preventDefault()" (click)="apply(t, ta)">
+                {{ t.label }}
+              </button>
+            }
+            <label class="tool-file" title="Chèn ảnh">
+              🖼 Ảnh
+              <input type="file" accept="image/*" hidden (change)="insertImage($event, ta)" />
+            </label>
+          </div>
+        }
+      </div>
+      <div class="editor-body">
+        <textarea
+          #ta
+          [hidden]="mode() !== 'write'"
+          [(ngModel)]="content"
+          rows="18"
+          placeholder="Viết nội dung bài... Hỗ trợ: ## tiêu đề, **đậm**, *nghiêng*, - danh sách, [link](url), > trích dẫn"
+        ></textarea>
+        @if (mode() === 'preview') {
+          <article class="prose" [innerHTML]="content | markdown"></article>
+          @if (!content.trim()) {
+            <p class="muted">Chưa có nội dung.</p>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="adm-box">
+      <h2>Tóm tắt</h2>
+      <div class="box-body field">
+        <textarea [(ngModel)]="excerpt" rows="3" placeholder="Đoạn ngắn hiển thị ở danh sách tin (để trống sẽ tự lấy từ nội dung)"></textarea>
+      </div>
+    </section>
+
+    @let r = report();
+    <section class="adm-box seo">
+      <div class="box-title seo-head">
+        <span>🔍 SEO</span>
+        <span [class]="'score ' + scoreLevel(r.score)">{{ r.score }}/100</span>
+      </div>
+
+      <nav class="adm-tabs seo-tabs">
+        <button type="button" [class.on]="seoTab() === 'general'" (click)="seoTab.set('general')">Chung</button>
+        <button type="button" [class.on]="seoTab() === 'advanced'" (click)="seoTab.set('advanced')">Nâng cao</button>
+        <button type="button" [class.on]="seoTab() === 'schema'" (click)="seoTab.set('schema')">Schema</button>
+      </nav>
+
+      <div class="box-body">
+        @switch (seoTab()) {
+          @case ('general') {
+            <div class="serp" aria-label="Xem trước trên Google">
+              <small class="serp-url">{{ origin }} › tin-tuc › {{ r.slug || '...' }}</small>
+              <div class="serp-title">{{ r.title || 'Tiêu đề bài viết' }} — {{ settings().shopName }}</div>
+              <div class="serp-desc">{{ r.description || 'Mô tả sẽ hiển thị ở đây.' }}</div>
+            </div>
+
+            <div class="field">
+              <label for="seo-kw">Từ khoá chính</label>
+              <input id="seo-kw" [(ngModel)]="seo.focusKeyword" placeholder="Ví dụ: fumo mùa đông" maxlength="80" />
+            </div>
+
+            <div class="field">
+              <label for="seo-title">
+                Tiêu đề SEO
+                <span class="counter" [class.over]="r.title.length > limits.title">{{ r.title.length }}/{{ limits.title }}</span>
+              </label>
+              <input id="seo-title" [(ngModel)]="seo.title" [placeholder]="title || 'Để trống = dùng tiêu đề bài'" maxlength="120" />
+              <div class="meter">
+                <i [style.width.%]="(r.title.length / limits.title) * 100" [class.over]="r.title.length > limits.title"></i>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="seo-slug">Đường dẫn (slug)</label>
+              <div class="slug-row">
+                <span class="slug-prefix">/tin-tuc/</span>
+                <input id="seo-slug" [(ngModel)]="seo.slug" (blur)="normalizeSlug()" [placeholder]="autoSlug()" maxlength="80" />
+                <button class="btn ghost small" type="button" (click)="seo.slug = autoSlug()">Tạo từ tiêu đề</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="seo-desc">
+                Mô tả meta
+                <span class="counter" [class.over]="r.description.length > limits.description">
+                  {{ r.description.length }}/{{ limits.description }}
+                </span>
+              </label>
+              <textarea
+                id="seo-desc"
+                [(ngModel)]="seo.description"
+                rows="3"
+                maxlength="300"
+                placeholder="Để trống = dùng tóm tắt. Nên 120–160 ký tự, có từ khoá chính."
+              ></textarea>
+              <div class="meter"><i [style.width.%]="(r.description.length / limits.description) * 100"></i></div>
+            </div>
+
+            <ul class="checks">
+              @for (c of r.checks; track c.text) {
+                <li [class]="c.level">
+                  <span class="dot">{{ c.level === 'ok' ? '✓' : c.level === 'warn' ? '!' : '✕' }}</span>{{ c.text }}
+                </li>
+              }
+            </ul>
+            <p class="hint">{{ r.words }} từ · mật độ từ khoá {{ r.density.toFixed(1) }}%</p>
+          }
+
+          @case ('advanced') {
+            <div class="field">
+              <span class="label">Robots meta</span>
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="seo.noindex" /> <b>noindex</b> — không cho Google hiển thị bài này
+              </label>
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="seo.nofollow" /> <b>nofollow</b> — không theo các liên kết trong bài
+              </label>
+            </div>
+            <div class="field">
+              <label for="seo-canon">URL chuẩn (canonical)</label>
+              <input id="seo-canon" type="url" [(ngModel)]="seo.canonical" [placeholder]="origin + '/tin-tuc/' + (seo.slug || autoSlug())" />
+              <small class="hint">Chỉ điền khi bài này là bản sao của một trang khác.</small>
+            </div>
+            <div class="field">
+              <span class="label">Xem trước khi chia sẻ (Facebook, Zalo, X)</span>
+              <div class="og">
+                @if (cover()) { <img [src]="cover()" alt="" /> }
+                <div>
+                  <small>{{ siteHost }}</small>
+                  <b>{{ r.title || 'Tiêu đề bài viết' }}</b>
+                  <p>{{ r.description }}</p>
+                </div>
+              </div>
+              @if (cover() && !cover().startsWith('http')) {
+                <small class="hint warn">
+                  Ảnh đại diện đang là ảnh tải lên từ máy nên Facebook/Google không đọc được. Dùng link ảnh https:// để ảnh hiện khi chia sẻ.
+                </small>
+              }
+            </div>
+          }
+
+          @case ('schema') {
+            <div class="field">
+              <label for="seo-schema">Loại schema</label>
+              <select id="seo-schema" [(ngModel)]="seo.schemaType">
+                @for (t of schemaTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+              </select>
+              <small class="hint">Khai báo dữ liệu có cấu trúc (JSON-LD), kèm breadcrumb Trang chủ › Tin tức › Bài viết.</small>
+            </div>
+            <pre class="jsonld">{{ schemaPreview() }}</pre>
+          }
+        }
+      </div>
+    </section>
+  </div>
+
+  <aside class="side">
+    <section class="adm-box">
+      <h2>Xuất bản</h2>
+      <div class="box-body">
+        <p class="meta">
+          Trạng thái:
+          <b>{{ editing()?.status === 'published' ? 'Đã đăng' : 'Nháp' }}</b>
+        </p>
+        @if (editing(); as p) {
+          <p class="meta">Cập nhật: <b>{{ p.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</b></p>
+        }
+        <div class="publish-actions">
+          <button class="btn ghost small" type="button" (click)="save('draft')">
+            {{ editing()?.status === 'published' ? 'Chuyển thành nháp' : 'Lưu nháp' }}
+          </button>
+          <button class="btn primary small" type="button" (click)="save('published')">
+            {{ editing()?.status === 'published' ? 'Cập nhật' : 'Đăng bài' }}
+          </button>
+        </div>
+        @if (editing()) {
+          <button class="link-del" type="button" (click)="remove()">Xoá bài viết</button>
+        }
+      </div>
+    </section>
+
+    <section class="adm-box">
+      <h2>Ảnh đại diện</h2>
+      <div class="box-body">
+        @if (cover()) {
+          <img class="cover-preview" [src]="cover()" alt="Ảnh đại diện" />
+          <button class="link-del" type="button" (click)="cover.set('')">Gỡ ảnh đại diện</button>
+        }
+        <label class="btn ghost small">
+          {{ uploading() ? 'Đang xử lý...' : cover() ? 'Đổi ảnh' : 'Tải ảnh lên' }}
+          <input type="file" accept="image/*" hidden (change)="onCover($event)" />
+        </label>
+        <div class="url-row field">
+          <input
+            type="url"
+            placeholder="hoặc link ảnh https://..."
+            [ngModel]="coverUrl()"
+            (ngModelChange)="coverUrl.set($event)"
+            (keydown.enter)="setCoverUrl()"
+          />
+          <button class="btn ghost small" type="button" (click)="setCoverUrl()">OK</button>
+        </div>
+      </div>
+    </section>
+  </aside>
+</div>

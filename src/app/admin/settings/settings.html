@@ -1,0 +1,268 @@
+<div class="adm-head">
+  <h1>Cài đặt</h1>
+</div>
+
+<nav class="adm-tabs">
+  @for (t of tabs; track t.key) {
+    <button type="button" [class.on]="active() === t.key" (click)="select(t.key)">{{ t.label }}</button>
+  }
+</nav>
+
+<div class="panel">
+  @switch (active()) {
+    @case ('chung') {
+      <section class="adm-box">
+        <h2>Thông tin shop</h2>
+        <div class="box-body grid">
+          <div class="field">
+            <label for="shopName">Tên shop</label>
+            <input id="shopName" [(ngModel)]="draft.shopName" />
+          </div>
+          <div class="field">
+            <label for="logo">Logo (emoji)</label>
+            <input id="logo" [(ngModel)]="draft.logoEmoji" maxlength="4" class="emoji-input" />
+          </div>
+          <div class="field full">
+            <label for="tagline">Khẩu hiệu</label>
+            <input id="tagline" [(ngModel)]="draft.tagline" />
+          </div>
+          <div class="field full">
+            <label for="footer">Mô tả ở chân trang</label>
+            <textarea id="footer" rows="2" [(ngModel)]="draft.footerText"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Font chữ</h2>
+        <div class="box-body">
+          <div class="fonts">
+            @for (f of fontOptions; track f.name) {
+              <button
+                type="button"
+                class="font-opt"
+                [class.on]="draft.fontFamily === f.name"
+                [style.font-family]="quote(f.name)"
+                (click)="pickFont(f.name)"
+              >
+                <strong>{{ f.name }}</strong>
+                <span>Aa Ăă Ââ Đđ Êê Ôô Ơơ Ưư</span>
+              </button>
+            }
+          </div>
+          <p class="font-sample" [style.font-family]="quote(draft.fontFamily)">
+            Thú bông Fumo xinh xắn — Ầm ĩ, lặng lẽ, ở đây, sữa chua, tuyệt vời, Đặng Mai Nga. 0123456789
+          </p>
+          <small class="hint">Font đang được xem trước trên trang này; bấm "Lưu thay đổi" để áp dụng cho cả web.</small>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Màu chủ đạo</h2>
+        <div class="box-body">
+          <div class="colors">
+            @for (c of colorPresets; track c) {
+              <button
+                type="button"
+                class="swatch"
+                [style.background]="c"
+                [class.on]="draft.primaryColor.toLowerCase() === c.toLowerCase()"
+                (click)="draft.primaryColor = c"
+                [attr.aria-label]="'Màu ' + c"
+              ></button>
+            }
+            <label class="custom">
+              <input type="color" [(ngModel)]="draft.primaryColor" /> Tuỳ chọn
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Màu nền trang web</h2>
+        <div class="box-body">
+          <div class="colors">
+            @for (c of bgPresets; track c) {
+              <button
+                type="button"
+                class="swatch"
+                [style.background]="c"
+                [class.on]="draft.backgroundColor.toLowerCase() === c.toLowerCase()"
+                (click)="draft.backgroundColor = c"
+                [attr.aria-label]="'Màu nền ' + c"
+              ></button>
+            }
+            <label class="custom">
+              <input type="color" [(ngModel)]="draft.backgroundColor" /> Tuỳ chọn
+            </label>
+          </div>
+          <div
+            class="preview-brand"
+            [style.--primary]="draft.primaryColor"
+            [style.background]="draft.backgroundColor"
+          >
+            <span class="logo">{{ draft.logoEmoji }} {{ draft.shopName }}</span>
+            <span class="pill">Nút mẫu</span>
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('trang-chu') {
+      <section class="adm-box">
+        <h2>Phần đầu trang chủ</h2>
+        <div class="box-body">
+          <div class="field">
+            <label for="badge">Nhãn nhỏ</label>
+            <input id="badge" [(ngModel)]="draft.heroBadge" />
+          </div>
+          <div class="field">
+            <label for="heroTitle">Tiêu đề lớn</label>
+            <input id="heroTitle" [(ngModel)]="draft.heroTitle" />
+            <small class="hint">Bọc từ trong dấu sao để tô màu, ví dụ: <code>Thế giới *Fumo* dễ thương</code></small>
+          </div>
+          <div class="field">
+            <label for="heroSub">Mô tả</label>
+            <textarea id="heroSub" rows="3" [(ngModel)]="draft.heroSubtitle"></textarea>
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('gioi-thieu') {
+      <section class="adm-box">
+        <h2>Nội dung trang Giới thiệu</h2>
+        <div class="box-body">
+          <div class="field">
+            <label for="aboutTitle">Tiêu đề</label>
+            <input id="aboutTitle" [(ngModel)]="draft.aboutTitle" />
+          </div>
+          <div class="field">
+            <label for="aboutIntro">Đoạn giới thiệu</label>
+            <textarea id="aboutIntro" rows="4" [(ngModel)]="draft.aboutIntro"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Giá trị cốt lõi</h2>
+        <div class="box-body">
+          @for (v of draft.aboutValues; track $index; let i = $index) {
+            <div class="item-row">
+              <input class="emoji-input" [(ngModel)]="v.icon" maxlength="4" aria-label="Biểu tượng" />
+              <div class="item-fields">
+                <input [(ngModel)]="v.title" placeholder="Tiêu đề" />
+                <input [(ngModel)]="v.text" placeholder="Mô tả" />
+              </div>
+              <div class="item-actions">
+                <button type="button" (click)="move(draft.aboutValues, i, -1)" title="Lên">↑</button>
+                <button type="button" (click)="move(draft.aboutValues, i, 1)" title="Xuống">↓</button>
+                <button type="button" class="del" (click)="removeAt(draft.aboutValues, i)" title="Xoá">✕</button>
+              </div>
+            </div>
+          }
+          <button class="btn ghost small add" type="button" (click)="addValue()">+ Thêm mục</button>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Hành trình (mốc thời gian)</h2>
+        <div class="box-body">
+          @for (m of draft.aboutMilestones; track $index; let i = $index) {
+            <div class="item-row">
+              <input class="year-input" [(ngModel)]="m.year" aria-label="Năm" />
+              <div class="item-fields">
+                <input [(ngModel)]="m.text" placeholder="Sự kiện" />
+              </div>
+              <div class="item-actions">
+                <button type="button" (click)="move(draft.aboutMilestones, i, -1)" title="Lên">↑</button>
+                <button type="button" (click)="move(draft.aboutMilestones, i, 1)" title="Xuống">↓</button>
+                <button type="button" class="del" (click)="removeAt(draft.aboutMilestones, i)" title="Xoá">✕</button>
+              </div>
+            </div>
+          }
+          <button class="btn ghost small add" type="button" (click)="addMilestone()">+ Thêm mốc</button>
+        </div>
+      </section>
+    }
+
+    @case ('lien-he') {
+      <section class="adm-box">
+        <h2>Thông tin liên hệ</h2>
+        <div class="box-body grid">
+          <div class="field full">
+            <label for="addr">Địa chỉ</label>
+            <input id="addr" [(ngModel)]="draft.contactAddress" />
+          </div>
+          <div class="field">
+            <label for="phone">Điện thoại</label>
+            <input id="phone" [(ngModel)]="draft.contactPhone" />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" [(ngModel)]="draft.contactEmail" />
+          </div>
+          <div class="field full">
+            <label for="hours">Giờ mở cửa</label>
+            <input id="hours" [(ngModel)]="draft.contactHours" />
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('bao-mat') {
+      <section class="adm-box narrow">
+        <h2>Đổi mật khẩu quản trị</h2>
+        <form class="box-body" (ngSubmit)="changePassword()">
+          <div class="field">
+            <label for="old">Mật khẩu hiện tại</label>
+            <input id="old" type="password" name="old" [(ngModel)]="oldPw" autocomplete="current-password" />
+          </div>
+          <div class="field">
+            <label for="new">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+            <input id="new" type="password" name="new" [(ngModel)]="newPw" autocomplete="new-password" />
+          </div>
+          <div class="field">
+            <label for="new2">Nhập lại mật khẩu mới</label>
+            <input id="new2" type="password" name="new2" [(ngModel)]="newPw2" autocomplete="new-password" />
+          </div>
+          <button class="btn primary small" type="submit">Đổi mật khẩu</button>
+          <p class="hint">
+            Lưu ý: website chưa có máy chủ nên mật khẩu chỉ lưu trên trình duyệt này. Đây là lớp khoá cơ bản, không thay
+            thế được bảo mật phía máy chủ.
+          </p>
+        </form>
+      </section>
+    }
+
+    @case ('sao-luu') {
+      <section class="adm-box narrow">
+        <h2>Sao lưu &amp; khôi phục</h2>
+        <div class="box-body">
+          <p class="hint">
+            Toàn bộ dữ liệu (sản phẩm, danh mục, bài viết, cài đặt) được lưu trong trình duyệt. Hãy xuất file sao lưu định kỳ để
+            không bị mất dữ liệu, hoặc để chuyển sang máy khác.
+          </p>
+          <div class="row-btns">
+            <button class="btn primary small" type="button" (click)="exportData()">⬇ Xuất file sao lưu</button>
+            <label class="btn ghost small">
+              ⬆ Nhập từ file
+              <input type="file" accept="application/json,.json" hidden (change)="importData($event)" />
+            </label>
+          </div>
+          <hr />
+          <button class="btn danger small" type="button" (click)="resetDemo()">Khôi phục toàn bộ dữ liệu mẫu</button>
+        </div>
+      </section>
+    }
+  }
+</div>
+
+@if (active() !== 'bao-mat' && active() !== 'sao-luu') {
+  <div class="save-bar">
+    <button class="link" type="button" (click)="resetDefaults()">Về mặc định</button>
+    <span class="spacer"></span>
+    <button class="btn ghost small" type="button" (click)="discard()">Huỷ thay đổi</button>
+    <button class="btn primary small" type="button" (click)="save()">💾 Lưu thay đổi</button>
+  </div>
+}

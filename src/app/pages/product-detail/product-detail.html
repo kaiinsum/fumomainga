@@ -1,0 +1,76 @@
+<div class="container">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/">Trang chủ</a> / <a routerLink="/san-pham">Sản phẩm</a>
+    @if (product(); as p) { / <span>{{ p.name }}</span> }
+  </nav>
+
+  @if (product(); as p) {
+    <article class="detail">
+      <div class="gallery">
+        <div class="main-img card-surface">
+          <img [src]="activeImage()" [alt]="p.name" />
+          @if (p.images.length > 1) {
+            <button class="nav prev" type="button" (click)="step(-1)" aria-label="Ảnh trước">‹</button>
+            <button class="nav next" type="button" (click)="step(1)" aria-label="Ảnh sau">›</button>
+          }
+        </div>
+        @if (p.images.length > 1) {
+          <div class="thumbs">
+            @for (img of p.images; track $index) {
+              <button type="button" [class.on]="$index === activeIndex()" (click)="select($index)">
+                <img [src]="img" [alt]="p.name + ' ' + ($index + 1)" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="info">
+        <span class="chip">{{ p.category }}</span>
+        <h1>{{ p.name }}</h1>
+        <strong class="price">{{ p.price | vnd }}</strong>
+        <p class="desc">{{ p.description }}</p>
+
+        <dl class="specs">
+          <div><dt>Kích thước</dt><dd>{{ p.size }}</dd></div>
+          <div>
+            <dt>Tình trạng</dt>
+            <dd [class.out]="!p.inStock">{{ p.inStock ? 'Còn hàng' : 'Hết hàng' }}</dd>
+          </div>
+          <div><dt>Ngày đăng</dt><dd>{{ p.createdAt | date: 'dd/MM/yyyy' }}</dd></div>
+        </dl>
+
+        @if (p.tags.length) {
+          <div class="tags">
+            @for (t of p.tags; track t) {
+              <a class="chip" routerLink="/san-pham" [queryParams]="{ q: t }">#{{ t }}</a>
+            }
+          </div>
+        }
+
+        <div class="actions">
+          <a class="btn primary" routerLink="/lien-he">💬 Liên hệ đặt hàng</a>
+          <a class="btn ghost" routerLink="/san-pham">← Xem sản phẩm khác</a>
+        </div>
+      </div>
+    </article>
+
+    @if (related().length) {
+      <section class="section">
+        <h2 class="section-title" appAnimateIn>Sản phẩm <span>liên quan</span></h2>
+        <div class="related">
+          @for (r of related(); track r.id; let i = $index) {
+            <app-product-card [product]="r" appAnimateIn [animDelay]="i * 90" />
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <div class="missing card-surface">
+      <span>🔍</span>
+      <h2>Không tìm thấy sản phẩm</h2>
+      <p>Sản phẩm có thể đã bị xoá hoặc đường dẫn không đúng.</p>
+      <a class="btn primary" routerLink="/san-pham">Quay lại danh sách</a>
+    </div>
+  }
+</div>

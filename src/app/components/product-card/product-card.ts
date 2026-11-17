@@ -1,0 +1,206 @@
+import { AfterViewInit, Component, ElementRef, OnDestroy, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AnimatableObject, AnimatableProperty, animate, createAnimatable, spring } from 'animejs';
+import { Product } from '../../models/product';
+import { VndPipe } from '../../shared/vnd.pipe';
+
+/** Độ nghiêng tối đa (độ) và độ lệch ảnh (px) khi rê chuột. */
+const TILT = 9;
+const PARALLAX = 10;
+
+/** Animatable có khai báo sẵn tên thuộc tính (để TypeScript strict kiểm tra được). */
+type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
+
+@Component({
+  selector: 'app-product-card',
+  imports: [RouterLink, VndPipe],
+  template: `
+    @let p = product();
+    <a class="card" [routerLink]="['/san-pham', p.id]">
+      <div class="thumb">
+        <img [src]="p.images[0]" [alt]="p.name" loading="lazy" />
+        @if (!p.inStock) {
+          <span class="badge out">Hết hàng</span>
+        } @else if (p.featured) {
+          <span class="badge">Nổi bật</span>
+        }
+      </div>
+      <div class="info">
+        <span class="cat">{{ p.category }} · Size {{ p.size }}</span>
+        <h3>{{ p.name }}</h3>
+        <div class="bottom">
+          <strong>{{ p.price | vnd }}</strong>
+          <span class="go" aria-hidden="true">→</span>
+        </div>
+      </div>
+      <span class="glare" aria-hidden="true"></span>
+    </a>
+  `,
+  styles: `
+    :host { display: block; perspective: 900px; }
+    .card {
+      position: relative; display: flex; flex-direction: column; height: 100%;
+      background: var(--surface); border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 12%, transparent);
+      transform-style: preserve-3d; will-change: transform;
+      transition: box-shadow .45s ease, border-color .45s ease;
+      outline: none;
+    }
+    .card.lift {
+      border-color: var(--primary-300);
+      box-shadow: 0 22px 44px -8px color-mix(in srgb, var(--primary) 38%, transparent);
+    }
+    .card:focus-visible { box-shadow: 0 0 0 3px var(--primary); }
+
+    .thumb { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--surface-2); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+    .thumb::after {
+      /* Lớp phủ sắc xanh rất nhẹ khi hover */
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(to top, color-mix(in srgb, var(--primary) 22%, transparent), transparent 55%);
+      opacity: 0; transition: opacity .45s ease;
+    }
+    .card.lift .thumb::after { opacity: 1; }
+
+    .badge { position: absolute; top: 12px; left: 12px; z-index: 1; background: var(--primary); color: var(--on-primary);
+      font-size: .75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+    .badge.out { background: var(--surface); color: var(--muted); border: 1.5px solid var(--border); }
+
+    .info { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
+    .cat { font-size: .78rem; color: var(--muted); font-weight: 700; }
+    h3 { font-size: 1.05rem; margin: 4px 0 10px; transition: color .3s ease; }
+    .card.lift h3 { color: var(--primary-dark); }
+    .bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+    strong { color: var(--primary-dark); font-size: 1.1rem; }
+    .go {
+      width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%;
+      background: var(--surface-2); color: var(--primary-dark); font-weight: 900;
+      transition: background .35s ease, color .35s ease;
+    }
+    .card.lift .go { background: var(--primary); color: var(--on-primary); }
+
+    .glare {
+      /* Vệt sáng trắng chạy theo con trỏ */
+      position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0;
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .55), transparent 55%);
+      mix-blend-mode: soft-light;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card, .thumb::after, .go, h3 { transition: none; }
+    }
+  `,
+})
+export class ProductCardComponent implements AfterViewInit, OnDestroy {
+  readonly product = input.required<Product>();
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
+
+  private card!: HTMLElement;
+  private glare!: HTMLElement;
+  private cardAnim?: Anim<'rotateX' | 'rotateY' | 'translateY' | 'scale'>;
+  private imgAnim?: Anim<'translateX' | 'translateY' | 'scale'>;
+  private glareAnim?: Anim<'opacity'>;
+  private readonly cleanup: (() => void)[] = [];
+
+  ngAfterViewInit(): void {
+    this.card = this.host.querySelector('.card')!;
+    this.glare = this.host.querySelector('.glare')!;
+    const img = this.host.querySelector<HTMLElement>('.thumb img')!;
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    // Animatable: mỗi lần gọi setter sẽ chuyển mượt tới giá trị mới, tự huỷ chuyển động cũ -> không giật.
+    this.cardAnim = <typeof this.cardAnim>createAnimatable(this.card, {
+      rotateX: { unit: 'deg', duration: 500 },
+      rotateY: { unit: 'deg', duration: 500 },
+      translateY: { unit: 'px', duration: 600 },
+      scale: 600,
+      ease: 'out(4)',
+    });
+    this.imgAnim = <typeof this.imgAnim>createAnimatable(img, {
+      translateX: { unit: 'px', duration: 700 },
+      translateY: { unit: 'px', duration: 700 },
+      scale: 900,
+      ease: 'out(3)',
+    });
+    this.glareAnim = <typeof this.glareAnim>createAnimatable(this.glare, { opacity: 400, ease: 'out(2)' });
+
+    const on = (type: string, fn: (e: PointerEvent) => void) => {
+      const handler = fn as EventListener;
+      this.card.addEventListener(type, handler);
+      this.cleanup.push(() => this.card.removeEventListener(type, handler));
+    };
+
+    // Lắng nghe trực tiếp (không qua Angular) để không chạy change detection mỗi lần di chuột.
+    on('pointerenter', (e) => e.pointerType === 'mouse' && this.enter());
+    on('pointerleave', (e) => e.pointerType === 'mouse' && this.leave());
+    if (canHover && !reduced) on('pointermove', (e) => this.move(e));
+    this.card.addEventListener('focus', this.focusIn);
+    this.card.addEventListener('blur', this.focusOut);
+    this.cleanup.push(() => {
+      this.card.removeEventListener('focus', this.focusIn);
+      this.card.removeEventListener('blur', this.focusOut);
+    });
+  }
+
+  private readonly focusIn = () => this.enter();
+  private readonly focusOut = () => this.leave();
+
+  private enter(): void {
+    this.card.classList.add('lift');
+    const c = this.cardAnim;
+    c?.translateY(-10);
+    c?.scale(1.02);
+    this.imgAnim?.scale(1.09);
+    this.glareAnim?.opacity(1);
+
+    // Mũi tên & nhãn: nảy nhẹ bằng spring.
+    animate(this.host.querySelector('.go')!, {
+      translateX: [0, 5],
+      rotate: [0, -12, 0],
+      scale: [1, 1.18, 1.08],
+      ease: spring({ bounce: 0.55, duration: 600 }),
+    });
+    const badge = this.host.querySelector('.badge');
+    if (badge) animate(badge, { scale: [1, 1.12, 1], duration: 500, ease: 'out(3)' });
+  }
+
+  private move(e: PointerEvent): void {
+    const r = this.card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5; // -0.5 .. 0.5
+    const y = (e.clientY - r.top) / r.height - 0.5;
+
+    this.cardAnim?.rotateY(x * TILT * 2);
+    this.cardAnim?.rotateX(-y * TILT * 2);
+    // Ảnh lệch ngược chiều chuột -> cảm giác có chiều sâu.
+    this.imgAnim?.translateX(-x * PARALLAX * 2);
+    this.imgAnim?.translateY(-y * PARALLAX * 2);
+    this.glare.style.setProperty('--gx', `${(x + 0.5) * 100}%`);
+    this.glare.style.setProperty('--gy', `${(y + 0.5) * 100}%`);
+  }
+
+  private leave(): void {
+    this.card.classList.remove('lift');
+    // Trở về vị trí cũ với độ nảy mềm.
+    const c = this.cardAnim;
+    c?.rotateX(0, 900, 'outElastic(1, .6)');
+    c?.rotateY(0, 900, 'outElastic(1, .6)');
+    c?.translateY(0);
+    c?.scale(1);
+    const i = this.imgAnim;
+    i?.translateX(0);
+    i?.translateY(0);
+    i?.scale(1);
+    this.glareAnim?.opacity(0);
+    animate(this.host.querySelector('.go')!, { translateX: 0, rotate: 0, scale: 1, duration: 450, ease: 'out(3)' });
+  }
+
+  ngOnDestroy(): void {
+    this.cleanup.forEach((fn) => fn());
+    this.cardAnim?.revert();
+    this.imgAnim?.revert();
+    this.glareAnim?.revert();
+  }
+}

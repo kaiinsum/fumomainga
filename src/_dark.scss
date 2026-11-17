@@ -1,0 +1,278 @@
+// =====================================================================
+// CHẾ ĐỘ TỐI — phong cách "IT / coding"
+// Chỉ dùng màu chủ đạo (--primary), các sắc của nó và màu trung tính.
+// Chỉ áp dụng cho trang công khai (app-public-layout.dark), admin không bị ảnh hưởng.
+// =====================================================================
+
+// Lặp class ".dark" để tăng độ ưu tiên, thắng các style đã đóng gói của component.
+$d: 'app-public-layout.dark.dark';
+
+#{$d} {
+  --ink-0: color-mix(in srgb, var(--primary) 5%, #05080c);
+  --bg: var(--ink-0);
+  --surface: color-mix(in srgb, var(--primary) 9%, #0a0e13);
+  --surface-2: color-mix(in srgb, var(--primary) 14%, #0a0e13);
+  --text: color-mix(in srgb, var(--primary) 10%, #e6edf3);
+  --muted: color-mix(in srgb, var(--primary) 28%, #8b96a1);
+  --border: color-mix(in srgb, var(--primary) 24%, #0a0e13);
+  --primary-50: color-mix(in srgb, var(--primary) 6%, var(--ink-0));
+  --primary-100: color-mix(in srgb, var(--primary) 12%, var(--ink-0));
+  --primary-200: color-mix(in srgb, var(--primary) 22%, var(--ink-0));
+  --primary-300: color-mix(in srgb, var(--primary) 42%, var(--ink-0));
+  /* Trên nền tối, "chữ nhấn" cần sáng hơn màu chủ đạo. */
+  --primary-dark: color-mix(in srgb, var(--primary) 72%, #fff);
+  --error: var(--primary-dark);
+  --footer-bg: color-mix(in srgb, var(--primary) 3%, #030507);
+  --glow: 0 0 22px color-mix(in srgb, var(--primary) 45%, transparent);
+  --shadow: 0 0 0 1px var(--border), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --radius: 10px;
+
+  /* Nền lưới như bản vẽ kỹ thuật / IDE */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--primary) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 7%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+
+  ::selection {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  // ---------- Chữ: tiêu đề, menu, nhãn dùng font monospace ----------
+  h1,
+  h2,
+  h3,
+  h4,
+  .btn,
+  .chip,
+  legend,
+  label,
+  small,
+  .section-sub,
+  .crumbs,
+  .badge,
+  .cat,
+  .pill,
+  .count,
+  select,
+  input,
+  .nav-desktop a,
+  .nav-mobile a,
+  .logo,
+  .footer,
+  .card strong,
+  .price {
+    font-family: var(--font-mono);
+    letter-spacing: -0.01em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 800;
+  }
+
+  // Tiêu đề khu vực dạng thẻ JSX: <Sản phẩm nổi bật />
+  .section-title {
+    &::before {
+      content: '<';
+      color: var(--primary);
+      opacity: 0.7;
+    }
+
+    &::after {
+      content: ' />';
+      color: var(--primary);
+      opacity: 0.7;
+    }
+  }
+
+  // Mô tả dạng chú thích code
+  .section-sub::before {
+    content: '// ';
+    color: var(--primary);
+  }
+
+  // Tiêu đề trang dạng dấu nhắc lệnh
+  .page-head h1::before {
+    content: '> ';
+    color: var(--primary);
+  }
+
+  .page-head p::before {
+    content: '// ';
+    color: var(--primary);
+  }
+
+  // ---------- Header ----------
+  .header {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    color: var(--text);
+
+    &::after {
+      content: '_';
+      color: var(--primary);
+      animation: caret-blink 1.1s steps(1) infinite;
+    }
+  }
+
+  .nav-desktop a {
+    border-radius: 6px;
+
+    &.active {
+      background: transparent;
+      color: var(--primary);
+      box-shadow: inset 0 0 0 1px var(--primary), var(--glow);
+
+      &::before {
+        content: '~/';
+        opacity: 0.6;
+      }
+    }
+  }
+
+  // ---------- Nút & nhãn ----------
+  .btn {
+    border-radius: 8px;
+
+    &.primary {
+      box-shadow: var(--glow);
+
+      &:hover {
+        background: color-mix(in srgb, var(--primary) 82%, #fff);
+      }
+
+      &::before {
+        content: '$';
+        opacity: 0.6;
+      }
+    }
+
+    &.ghost {
+      background: transparent;
+    }
+  }
+
+  .chip {
+    background: transparent;
+    border-radius: 6px;
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+    color: var(--primary);
+  }
+
+  .card-surface {
+    border-color: var(--border);
+  }
+
+  // ---------- Thẻ sản phẩm ----------
+  app-product-card {
+    .card {
+      border-radius: 10px;
+    }
+
+    .card.lift {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary), 0 0 32px color-mix(in srgb, var(--primary) 35%, transparent),
+        0 22px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .cat::before {
+      content: '> ';
+      color: var(--primary);
+    }
+
+    .badge {
+      border-radius: 4px;
+    }
+
+    .go {
+      border-radius: 6px;
+    }
+  }
+
+  // ---------- Form ----------
+  .field input,
+  .field select,
+  .field textarea {
+    background: var(--surface-2);
+    border-radius: 8px;
+  }
+
+  // ---------- Trang chủ ----------
+  .hero .word.hl {
+    text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 70%, transparent);
+  }
+
+  .stats strong {
+    font-family: var(--font-mono);
+    text-shadow: var(--glow);
+  }
+
+  // ---------- Footer ----------
+  .footer {
+    border-top: 1px solid var(--border);
+
+    .copy::before {
+      content: '$ echo "';
+      color: var(--primary);
+    }
+
+    .copy::after {
+      content: '"';
+      color: var(--primary);
+    }
+  }
+
+  // ---------- Bài viết ----------
+  .prose {
+    h2::before {
+      content: '## ';
+      color: var(--primary);
+      font-family: var(--font-mono);
+    }
+
+    h3::before {
+      content: '### ';
+      color: var(--primary);
+      font-family: var(--font-mono);
+    }
+
+    blockquote {
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+    }
+  }
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+// Lớp "quét" màu khi chuyển chế độ (anime.js phóng to vòng tròn này từ nút bấm)
+.theme-wipe {
+  position: fixed;
+  z-index: 9999;
+  border-radius: 50%;
+  pointer-events: none;
+
+  &.to-dark {
+    background: color-mix(in srgb, var(--primary) 5%, #05080c);
+  }
+
+  &.to-light {
+    background: var(--bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #{$d} .logo::after {
+    animation: none;
+  }
+}

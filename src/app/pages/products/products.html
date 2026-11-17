@@ -1,0 +1,121 @@
+<section class="page-head">
+  <div class="container">
+    <h1>Tất cả <span>sản phẩm</span></h1>
+    <p>Tìm và lọc sản phẩm theo danh mục, giá, kích thước và thẻ.</p>
+  </div>
+</section>
+
+<div class="container layout">
+  <button class="btn ghost filter-toggle" type="button" (click)="toggleFilters()">
+    ⚙️ Bộ lọc @if (activeCount()) { ({{ activeCount() }}) }
+  </button>
+
+  <aside class="filters card-surface" [class.open]="filtersOpen()">
+    <div class="filters-head">
+      <h3>Bộ lọc</h3>
+      @if (activeCount()) {
+        <button class="link" type="button" (click)="reset()">Xoá lọc</button>
+      }
+    </div>
+
+    <div class="field">
+      <label for="search">Tìm kiếm</label>
+      <input
+        id="search"
+        type="search"
+        placeholder="Tên, mô tả, thẻ..."
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event); visible.set(8)"
+      />
+    </div>
+
+    <fieldset>
+      <legend>Danh mục</legend>
+      @for (c of categories(); track c) {
+        <label class="check">
+          <input type="checkbox" [checked]="selectedCats().has(c)" (change)="toggle(selectedCats, c)" />
+          <span>{{ c }}</span>
+        </label>
+      }
+    </fieldset>
+
+    <fieldset>
+      <legend>Giá tối đa: <b>{{ effectivePriceMax() | vnd }}</b></legend>
+      <input
+        type="range"
+        min="0"
+        [max]="maxPrice()"
+        step="10000"
+        [value]="effectivePriceMax()"
+        (input)="setPrice(+$any($event.target).value)"
+      />
+    </fieldset>
+
+    <fieldset>
+      <legend>Kích thước</legend>
+      <div class="pills">
+        @for (s of sizes; track s) {
+          <button type="button" class="pill" [class.on]="selectedSizes().has(s)" (click)="toggle(selectedSizes, s)">
+            {{ s }}
+          </button>
+        }
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Thẻ</legend>
+      <div class="pills">
+        @for (t of allTags(); track t) {
+          <button type="button" class="pill" [class.on]="selectedTags().has(t)" (click)="toggle(selectedTags, t)">
+            #{{ t }}
+          </button>
+        }
+      </div>
+    </fieldset>
+
+    <label class="check">
+      <input type="checkbox" [checked]="inStockOnly()" (change)="inStockOnly.set(!inStockOnly())" />
+      <span>Chỉ hiện còn hàng</span>
+    </label>
+  </aside>
+
+  <section class="content">
+    <div class="toolbar">
+      <span class="count"><b>{{ filtered().length }}</b> sản phẩm</span>
+      <div class="tools">
+        <select [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sắp xếp">
+          @for (o of sortOptions; track o.value) {
+            <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+        <div class="view-switch">
+          <button type="button" [class.on]="view() === 'grid'" (click)="view.set('grid')" aria-label="Dạng lưới">▦</button>
+          <button type="button" [class.on]="view() === 'list'" (click)="view.set('list')" aria-label="Dạng danh sách">☰</button>
+        </div>
+      </div>
+    </div>
+
+    @if (shown().length) {
+      <div class="results" [class.list]="view() === 'list'">
+        @for (p of shown(); track p.id) {
+          <app-product-card [product]="p" />
+        }
+      </div>
+      @if (shown().length < filtered().length) {
+        <div class="more">
+          <button class="btn ghost" type="button" (click)="loadMore()">
+            Tải thêm ({{ filtered().length - shown().length }})
+          </button>
+        </div>
+      }
+    } @else {
+      <div class="empty card-surface">
+        <span>🥺</span>
+        <p>Không tìm thấy sản phẩm phù hợp.</p>
+        <div class="empty-actions">
+          <button class="btn ghost" type="button" (click)="reset()">Xoá bộ lọc</button>
+        </div>
+      </div>
+    }
+  </section>
+</div>

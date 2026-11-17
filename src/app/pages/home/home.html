@@ -1,0 +1,111 @@
+<section class="hero">
+  <span class="bubble b1"></span>
+  <span class="bubble b2"></span>
+  <span class="bubble b3"></span>
+  <span class="bubble b4"></span>
+
+  <div class="container hero-inner">
+    <div class="hero-text">
+      @if (settings().heroBadge) {
+        <span class="chip">{{ settings().heroBadge }}</span>
+      }
+      <h1>
+        @for (w of titleWords(); track $index) {
+          <span class="word" [class.hl]="w.hl">{{ w.text }}</span>
+        }
+      </h1>
+      <p class="lead">{{ settings().heroSubtitle }}</p>
+      <div class="actions">
+        <a routerLink="/san-pham" class="btn primary">Xem sản phẩm</a>
+        <a routerLink="/lien-he" class="btn ghost">Liên hệ đặt hàng</a>
+      </div>
+    </div>
+
+    <div class="mascot">
+      @if (isDark()) {
+        <app-terminal [lines]="terminalLines()" title="fumo@mai-nga: ~" />
+      } @else {
+        <div class="mascot-circle">
+          <span class="mascot-emoji">{{ settings().logoEmoji }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="section-title" appAnimateIn>Danh mục <span>sản phẩm</span></h2>
+    <p class="section-sub" appAnimateIn [animDelay]="100">Chọn một danh mục để xem nhanh các sản phẩm liên quan.</p>
+    <div class="cats">
+      @for (c of categories(); track c.name; let i = $index) {
+        <a
+          class="cat card-surface"
+          routerLink="/san-pham"
+          [queryParams]="{ danhMuc: c.name }"
+          appAnimateIn="zoom"
+          [animDelay]="i * 90"
+          (mouseenter)="bounce($event)"
+        >
+          <span class="icon">{{ c.icon }}</span>
+          <strong>{{ c.name }}</strong>
+          <small>{{ c.count }} sản phẩm</small>
+        </a>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section featured">
+  <div class="container">
+    <h2 class="section-title" appAnimateIn>Sản phẩm <span>nổi bật</span></h2>
+    <p class="section-sub" appAnimateIn [animDelay]="100">Những bé được yêu thích nhất tuần này.</p>
+    @if (featured().length) {
+      <div class="grid">
+        @for (p of featured(); track p.id; let i = $index) {
+          <app-product-card [product]="p" appAnimateIn [animDelay]="i * 100" />
+        }
+      </div>
+    } @else {
+      <p class="section-sub">Sản phẩm nổi bật sẽ sớm được cập nhật.</p>
+    }
+    <div class="center" appAnimateIn>
+      <a routerLink="/san-pham" class="btn ghost">Xem tất cả →</a>
+    </div>
+  </div>
+</section>
+
+@if (latestNews().length) {
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title" appAnimateIn>Tin <span>mới nhất</span></h2>
+      <p class="section-sub" appAnimateIn [animDelay]="100">Cập nhật sản phẩm mới, sự kiện và mẹo hay.</p>
+      <div class="news">
+        @for (n of latestNews(); track n.id; let i = $index) {
+          <a class="news-card card-surface" [routerLink]="path(n)" appAnimateIn [animDelay]="i * 100">
+            @if (n.cover) { <img [src]="n.cover" [alt]="n.title" loading="lazy" /> }
+            <div class="news-body">
+              <small>{{ n.createdAt | date: 'dd/MM/yyyy' }}</small>
+              <h3>{{ n.title }}</h3>
+              <p>{{ n.excerpt }}</p>
+            </div>
+          </a>
+        }
+      </div>
+      <div class="center" appAnimateIn>
+        <a routerLink="/tin-tuc" class="btn ghost">Xem tất cả tin →</a>
+      </div>
+    </div>
+  </section>
+}
+
+<section class="section">
+  <div class="container stats card-surface">
+    @for (s of stats; track s.label) {
+      <div class="stat">
+        <strong>{{ s.value() }}{{ s.label === 'Khách hàng vui vẻ' ? '+' : '' }}</strong>
+        <span>{{ s.label }}</span>
+      </div>
+    }
+  </div>
+</section>

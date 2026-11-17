@@ -1,0 +1,53 @@
+<div class="adm-shell" [class.side-open]="sidebarOpen()">
+  <header class="topbar">
+    <button class="burger" type="button" (click)="toggleSidebar()" aria-label="Mở menu quản trị">☰</button>
+    <a routerLink="/admin" class="brand">{{ settings().logoEmoji }} {{ settings().shopName }} <small>Quản trị</small></a>
+    <div class="top-actions">
+      <a href="/" target="_blank" rel="noopener" class="top-link">🌐 Xem trang web</a>
+      <button type="button" class="top-link" (click)="logout()">⏻ Đăng xuất</button>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <ul class="side-menu">
+      @for (m of menu; track m.path) {
+        <li [class.open]="isActive(m.path) && !m.exact">
+          <a [routerLink]="m.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!m.exact }">
+            <span class="ic">{{ m.icon }}</span> {{ m.label }}
+          </a>
+          @if (m.children && isActive(m.path)) {
+            <ul class="sub">
+              @for (c of m.children; track c.path) {
+                <li>
+                  <a [routerLink]="c.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!c.exact }">
+                    {{ c.label }}
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      }
+    </ul>
+  </aside>
+  <div class="backdrop" (click)="sidebarOpen.set(false)"></div>
+
+  <main class="content">
+    @if (usingDefaultPassword()) {
+      <div class="adm-notice warn">
+        ⚠️ Bạn đang dùng mật khẩu mặc định. <a routerLink="/admin/cai-dat" [queryParams]="{ tab: 'bao-mat' }">Đổi mật khẩu ngay</a>.
+      </div>
+    }
+    <div class="adm-page">
+      <router-outlet />
+    </div>
+  </main>
+</div>
+
+<div class="toasts" aria-live="polite">
+  @for (t of toast.toasts(); track t.id) {
+    <div class="toast" [class.err]="t.kind === 'err'" (click)="toast.dismiss(t.id)">
+      {{ t.kind === 'ok' ? '✅' : '⚠️' }} {{ t.text }}
+    </div>
+  }
+</div>
