@@ -174,3 +174,61 @@
   color: var(--on-primary);
   box-shadow: 0 0 0 2px var(--surface);
 }
+
+// ---------- Mục nổi bật (Mini game) ----------
+.nav-desktop a.hot,
+.nav-mobile a.hot {
+  position: relative;
+  color: #fff;
+  background: linear-gradient(120deg, #ff5fa2, #b06bff, #4dabff, #ff5fa2);
+  background-size: 300% 100%;
+  box-shadow: 0 4px 16px color-mix(in srgb, #b06bff 45%, transparent);
+  animation: hot-flow 4s linear infinite;
+
+  &:hover,
+  &.active {
+    color: #fff;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #b06bff 30%, transparent), 0 6px 20px color-mix(in srgb, #ff5fa2 50%, transparent);
+  }
+}
+
+.hot-badge {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: #ff2d55;
+  box-shadow: 0 0 0 2px var(--surface);
+  animation: hot-pulse 1.4s ease-in-out infinite;
+}
+
+.nav-mobile a.hot .hot-badge {
+  position: static;
+  margin-left: 8px;
+  box-shadow: none;
+}
+
+@keyframes hot-flow {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+@keyframes hot-pulse {
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-desktop a.hot,
+  .nav-mobile a.hot,
+  .hot-badge {
+    animation: none;
+  }
+}

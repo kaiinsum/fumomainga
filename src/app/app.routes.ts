@@ -49,6 +49,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/order-lookup/order-lookup').then((m) => m.OrderLookupPage),
       },
       {
+        path: 'mini-game',
+        title: 'Mini game: Đại chiến Mọt Vải',
+        loadComponent: () => import('./pages/minigame/minigame').then((m) => m.MiniGamePage),
+      },
+      {
         path: 'gioi-thieu',
         title: 'Giới thiệu',
         loadComponent: () => import('./pages/about/about').then((m) => m.AboutPage),

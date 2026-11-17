@@ -1,18 +1,26 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Customer, EMPTY_CUSTOMER } from '../../models/order';
 import { CartService } from '../../services/cart.service';
-import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 
-/** Đơn vừa tạo, đang hiện popup QR chờ duyệt (giữ qua F5 trong cùng tab). */
+/** Đơn vừa đặt, đang hiện popup QR chờ duyệt (giữ qua F5 trong cùng tab). Không gửi lên máy chủ. */
 interface PendingPayment {
   code: string;
   total: number;
   phone: string;
   email: string;
+  /** Nội dung đơn để khách sao chép gửi shop. */
+  summary: string;
+}
+
+/** Mã đơn FM + 6 ký tự ngẫu nhiên (bỏ ký tự dễ nhầm 0/O, 1/I/L). */
+function newOrderCode(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return 'FM' + Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
 }
 
 const PENDING_KEY = 'fumo.checkout.pending';
@@ -72,8 +80,8 @@ const PENDING_KEY = 'fumo.checkout.pending';
             </div>
             @if (error()) { <p class="err">{{ error() }}</p> }
             <div class="pay-total">Tổng thanh toán <strong>{{ cart.total() | vnd }}</strong></div>
-            <button class="btn primary full" type="submit" [disabled]="busy()">
-              {{ busy() ? 'Đang tạo đơn...' : 'Đặt hàng & chuyển khoản →' }}
+            <button class="btn primary full" type="submit">
+              Đặt hàng & chuyển khoản →
             </button>
             <small class="muted">Phí ship (nếu có) shop sẽ báo khi xác nhận đơn.</small>
           </form>
@@ -85,7 +93,6 @@ const PENDING_KEY = 'fumo.checkout.pending';
           <p class="muted">Chọn vài bé fumo dễ thương rồi quay lại nhé!</p>
           <div class="row center">
             <a class="btn primary" routerLink="/san-pham">Xem sản phẩm</a>
-            <a class="btn ghost" routerLink="/tra-cuu-don-hang">Tra cứu đơn hàng</a>
           </div>
         </div>
       }
@@ -111,22 +118,23 @@ const PENDING_KEY = 'fumo.checkout.pending';
             <strong>{{ d.code }}</strong>
             <button type="button" (click)="copy(d.code)">Sao chép mã</button>
           </div>
+          <div class="send-box">
+            <b>📩 Gửi thông tin đơn cho shop</b>
+            <small>Chuyển khoản xong, bấm sao chép rồi gửi kèm ảnh chụp giao dịch cho shop để được duyệt đơn.</small>
+            <button class="btn primary full" type="button" (click)="copy(d.summary, 'Đã sao chép thông tin đơn')">📋 Sao chép thông tin đơn</button>
+            @if (s().facebookUrl || zaloUrl()) {
+              <div class="row center">
+                @if (s().facebookUrl) { <a class="btn ghost small" [href]="s().facebookUrl" target="_blank" rel="noopener">Gửi qua Facebook</a> }
+                @if (zaloUrl()) { <a class="btn ghost small" [href]="zaloUrl()" target="_blank" rel="noopener">Gửi qua Zalo</a> }
+              </div>
+            }
+          </div>
           <p class="muted small">
             Sau khi nhận được tiền, shop sẽ duyệt đơn và thông báo cho bạn qua
             {{ d.email ? 'email ' + d.email + ' hoặc ' : '' }}số điện thoại {{ d.phone }}.
-            Lưu lại mã đơn để tra cứu bằng mã đơn + số điện thoại.
           </p>
 
-          @if (error()) { <p class="err">{{ error() }}</p> }
-          @if (claimed()) {
-            <p class="ok">✓ Đã báo shop — vui lòng chờ duyệt nhé!</p>
-          } @else {
-            <button class="btn primary full" type="button" [disabled]="busy()" (click)="confirmPaid()">
-              {{ busy() ? 'Đang gửi...' : '✅ Tôi đã chuyển khoản' }}
-            </button>
-          }
           <div class="row center">
-            <a class="btn ghost" routerLink="/tra-cuu-don-hang" [queryParams]="{ ma: d.code }" (click)="finish()">Tra cứu đơn hàng</a>
             <a class="btn ghost" routerLink="/san-pham" (click)="finish()">Tiếp tục mua sắm</a>
           </div>
         </div>
@@ -176,7 +184,8 @@ const PENDING_KEY = 'fumo.checkout.pending';
     .qr { width: min(260px, 70vw); height: auto; margin: 0 auto; border-radius: 14px; background: #fff; box-shadow: var(--shadow); }
     .bank-line { display: flex; flex-direction: column; gap: 2px; font-size: .9rem; }
     .bank-line b { font-size: 1.05rem; letter-spacing: .03em; }
-    .ok { margin: 0; font-weight: 800; color: var(--primary-dark); }
+    .send-box { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--surface-2); }
+    .send-box small { color: var(--muted); }
     .modal h2 { margin: 0; }
     .modal p { margin: 0; }
     .code-box { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 2px dashed var(--primary-300); }
@@ -196,62 +205,51 @@ const PENDING_KEY = 'fumo.checkout.pending';
 })
 export class CartPage {
   readonly cart = inject(CartService);
-  private readonly api = inject(OrderApiService);
   readonly s = inject(SettingsService).settings;
 
   customer: Customer = { ...EMPTY_CUSTOMER };
-  readonly busy = signal(false);
   readonly error = signal('');
   readonly toast = signal('');
   readonly pending = signal<PendingPayment | null>(this.readPending());
-  /** Khách đã bấm "Tôi đã chuyển khoản" cho đơn đang hiện. */
-  readonly claimed = signal(false);
+  /** Link Zalo theo số điện thoại liên hệ của shop. */
+  readonly zaloUrl = computed(() => {
+    const digits = this.s().contactPhone.replace(/\D/g, '');
+    return digits.length >= 9 ? `https://zalo.me/${digits}` : '';
+  });
 
-  async submit(): Promise<void> {
+  submit(): void {
     this.error.set('');
     const c = this.customer;
     if (c.name.trim().length < 2) return this.error.set('Vui lòng nhập họ tên.');
     if ((c.phone.match(/\d/g) ?? []).length < 9) return this.error.set('Vui lòng nhập số điện thoại hợp lệ.');
     if (c.address.trim().length < 5) return this.error.set('Vui lòng nhập địa chỉ nhận hàng.');
-    this.busy.set(true);
-    try {
-      const res = await this.api.create(c, this.cart.orderItems());
-      const pending: PendingPayment = { code: res.code, total: res.total, phone: c.phone.trim(), email: c.email.trim() };
-      this.cart.clear();
-      this.claimed.set(false);
-      this.setPending(pending);
-    } catch (e) {
-      this.error.set(e instanceof Error ? e.message : 'Không tạo được đơn hàng.');
-    } finally {
-      this.busy.set(false);
-    }
+    const code = newOrderCode();
+    const total = this.cart.total();
+    const vnd = (n: number) => n.toLocaleString('vi-VN') + 'đ';
+    const summary = [
+      `ĐƠN HÀNG ${code} — ${this.s().shopName}`,
+      ...this.cart.items().map((l) => `• ${l.product.name} × ${l.qty} = ${vnd(l.product.price * l.qty)}`),
+      `Tổng: ${vnd(total)}`,
+      `Người nhận: ${c.name.trim()}`,
+      `SĐT: ${c.phone.trim()}`,
+      ...(c.email.trim() ? [`Email: ${c.email.trim()}`] : []),
+      `Địa chỉ: ${c.address.trim()}`,
+      ...(c.note.trim() ? [`Ghi chú: ${c.note.trim()}`] : []),
+    ].join('\n');
+    this.cart.clear();
+    this.setPending({ code, total, phone: c.phone.trim(), email: c.email.trim(), summary });
   }
 
-  async confirmPaid(): Promise<void> {
-    const p = this.pending();
-    if (!p) return;
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      await this.api.confirmPaid(p.code, p.phone);
-      this.claimed.set(true);
-    } catch (e) {
-      this.error.set(e instanceof Error ? e.message : 'Không gửi được xác nhận.');
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  /** Đóng popup (đơn vẫn được lưu, tra cứu được bằng mã đơn). */
+  /** Đóng popup. */
   finish(): void {
     this.setPending(null);
     this.error.set('');
   }
 
-  async copy(text: string): Promise<void> {
+  async copy(text: string, done = 'Đã sao chép'): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
-      this.flash('Đã sao chép');
+      this.flash(done);
     } catch {
       this.flash('Không sao chép được — hãy chép tay nhé');
     }
@@ -275,7 +273,7 @@ export class CartPage {
   private readPending(): PendingPayment | null {
     try {
       const p = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? 'null');
-      return p && typeof p.code === 'string' ? p : null;
+      return p && typeof p.code === 'string' && typeof p.summary === 'string' ? p : null;
     } catch {
       return null;
     }

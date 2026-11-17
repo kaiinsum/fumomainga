@@ -10,6 +10,8 @@ interface NavItem {
   label: string;
   path: string;
   exact?: boolean;
+  /** Mục được làm nổi bật trên menu. */
+  hot?: boolean;
 }
 
 @Component({
@@ -29,6 +31,7 @@ export class HeaderComponent implements AfterViewInit {
   readonly nav: NavItem[] = [
     { label: 'Trang chủ', path: '/', exact: true },
     { label: 'Sản phẩm', path: '/san-pham' },
+    { label: '🎮 Mini game', path: '/mini-game', hot: true },
     { label: 'Tin tức', path: '/tin-tuc' },
     { label: 'Giới thiệu', path: '/gioi-thieu' },
     { label: 'Liên hệ', path: '/lien-he' },

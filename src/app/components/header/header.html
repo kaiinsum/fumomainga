@@ -11,7 +11,8 @@
           [routerLink]="item.path"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
-        >{{ item.label }}</a>
+          [class.hot]="item.hot"
+        >{{ item.label }}@if (item.hot) {<span class="hot-badge">HOT</span>}</a>
       }
     </nav>
 
@@ -67,7 +68,8 @@
           [routerLink]="item.path"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
-        >{{ item.label }}</a>
+          [class.hot]="item.hot"
+        >{{ item.label }}@if (item.hot) {<span class="hot-badge">HOT</span>}</a>
       }
     </nav>
   }

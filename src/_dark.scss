@@ -124,6 +124,18 @@ $d: 'app-public-layout.dark.dark';
     }
   }
 
+  .nav-desktop a.hot,
+  .nav-mobile a.hot {
+    color: #fff;
+    background: linear-gradient(120deg, var(--primary), #b06bff, var(--primary));
+    background-size: 300% 100%;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 60%, transparent);
+
+    &.active::before {
+      content: none;
+    }
+  }
+
   .nav-desktop a {
     border-radius: 6px;
 
