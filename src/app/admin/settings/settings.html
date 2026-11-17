@@ -215,15 +215,11 @@
       </section>
 
       <section class="adm-box">
-        <h2>Thanh toán chuyển khoản (VietQR)</h2>
+        <h2>Thanh toán chuyển khoản</h2>
         <div class="box-body grid">
           <div class="field">
             <label for="bankName">Ngân hàng</label>
             <input id="bankName" [(ngModel)]="draft.bankName" />
-          </div>
-          <div class="field">
-            <label for="bankBin">Mã BIN ngân hàng (NAPAS)</label>
-            <input id="bankBin" [(ngModel)]="draft.bankBin" inputmode="numeric" maxlength="6" />
           </div>
           <div class="field">
             <label for="bankAccount">Số tài khoản</label>
@@ -235,8 +231,8 @@
           </div>
           <div class="field full">
             <small class="hint">
-              Mã QR ở trang thanh toán được tạo tự động từ thông tin này, có sẵn số tiền và nội dung chuyển khoản là mã đơn.
-              Mã BIN của Timo là <code>963388</code>.
+              Thông tin hiện dưới mã QR trong popup thanh toán. Ảnh mã QR là file <code>public/img/qr-thanh-toan.jpg</code> —
+              muốn đổi QR thì thay file đó trong mã nguồn rồi push.
             </small>
           </div>
         </div>
@@ -261,7 +257,7 @@
             <label for="greet">Lời chào của trợ lý AI</label>
             <textarea id="greet" rows="2" [(ngModel)]="draft.chatGreeting"></textarea>
             <small class="hint">
-              AI trả lời dựa trên file <code>knowledge/kien-thuc.md</code> trong mã nguồn — sửa file đó để dạy AI thêm.
+              Kiến thức và dữ liệu sản phẩm của AI quản lý ở mục <b>Admin → Trợ lý AI</b>.
             </small>
           </div>
         </div>

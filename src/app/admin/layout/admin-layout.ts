@@ -54,6 +54,7 @@ export class AdminLayout implements AfterViewInit {
       ],
     },
     { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang' },
+    { icon: '🤖', label: 'Trợ lý AI', path: '/admin/tro-ly-ai' },
     { icon: '⚙️', label: 'Cài đặt', path: '/admin/cai-dat' },
   ];
 

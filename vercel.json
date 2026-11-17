@@ -5,7 +5,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/fumo-showcase/browser",
   "functions": {
-    "api/chat.ts": { "includeFiles": "knowledge/**", "maxDuration": 30 }
+    "api/chat.ts": { "includeFiles": "knowledge/**", "maxDuration": 30 },
+    "api/ai/knowledge.ts": { "includeFiles": "knowledge/**" }
   },
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "headers": [

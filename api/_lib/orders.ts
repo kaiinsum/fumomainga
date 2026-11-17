@@ -45,6 +45,10 @@ interface Store {
   list(): Promise<Order[]>;
   /** Đếm số lần gọi trong một khoảng thời gian (chống spam). */
   hit(key: string, windowSec: number): Promise<number>;
+  /** Lưu / đọc dữ liệu tuỳ ý (kiến thức AI, dữ liệu sản phẩm cho AI...). */
+  getJson<T>(key: string): Promise<T | null>;
+  setJson(key: string, value: unknown): Promise<void>;
+  delKey(key: string): Promise<void>;
 }
 
 function redisStore(redis: Redis): Store {
@@ -70,6 +74,13 @@ function redisStore(redis: Redis): Store {
       if (n === 1) await redis.expire(k, windowSec);
       return n;
     },
+    getJson: (key) => redis.get(key),
+    async setJson(key, value) {
+      await redis.set(key, value);
+    },
+    async delKey(key) {
+      await redis.del(key);
+    },
   };
 }
 
@@ -77,6 +88,7 @@ function redisStore(redis: Redis): Store {
 function memoryStore(): Store {
   const orders = new Map<string, Order>();
   const hits = new Map<string, { n: number; until: number }>();
+  const kv = new Map<string, unknown>();
   return {
     get: async (code) => structuredClone(orders.get(code) ?? null),
     put: async (order) => void orders.set(order.code, structuredClone(order)),
@@ -89,6 +101,9 @@ function memoryStore(): Store {
       hits.set(key, next);
       return next.n;
     },
+    getJson: async <T,>(key: string) => structuredClone((kv.get(key) as T | undefined) ?? null),
+    setJson: async (key, value) => void kv.set(key, structuredClone(value)),
+    delKey: async (key) => void kv.delete(key),
   };
 }
 

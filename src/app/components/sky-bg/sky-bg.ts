@@ -92,7 +92,7 @@ const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
   selector: 'app-sky-bg',
   template: `<canvas aria-hidden="true"></canvas>`,
   styles: `
-    :host { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    :host { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
     canvas { width: 100%; height: 100%; display: block; }
   `,
 })

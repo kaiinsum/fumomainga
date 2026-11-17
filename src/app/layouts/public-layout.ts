@@ -21,11 +21,11 @@ import { FloatBubblesComponent } from '../components/float-bubbles/float-bubbles
     <app-float-bubbles />
   `,
   styles: `
-    :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); color: var(--text);
+    /* isolation: tạo lớp xếp chồng riêng để nền động (z-index -1) nằm trên nền trang nhưng dưới mọi nội dung. */
+    :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); color: var(--text); position: relative; isolation: isolate;
       transition: background-color .4s ease, color .4s ease; }
     .main { flex: 1; padding-top: var(--header-h); }
-    /* Nội dung nằm trên lớp nền động. */
-    .main, app-footer { position: relative; z-index: 1; }
+
   `,
 })
 export class PublicLayout implements OnDestroy {

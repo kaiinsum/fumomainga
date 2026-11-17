@@ -1,34 +1,45 @@
 /**
  * Vercel Function: POST /api/chat — trợ lý AI của shop.
- * AI chỉ trả lời dựa trên file knowledge/kien-thuc.md ("file học trước").
+ * AI trả lời dựa trên file kiến thức (.md, admin tải lên ở Admin → Trợ lý AI; mặc định knowledge/kien-thuc.md)
+ * và dữ liệu sản phẩm admin đồng bộ — chỉ trong phạm vi website.
  * Cần biến môi trường ANTHROPIC_API_KEY trên Vercel (Project → Settings → Environment Variables).
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { catalogToPrompt, loadAiContext } from './_lib/ai';
 
 const MODEL = 'claude-opus-5-5';
 const MAX_TURNS = 12; // chỉ gửi 12 tin gần nhất
 const MAX_CHARS = 1000; // mỗi tin của khách tối đa 1000 ký tự
 
-const knowledge = readFileSync(join(process.cwd(), 'knowledge', 'kien-thuc.md'), 'utf8')
-  // Bỏ phần ghi chú HTML dành cho chủ shop.
-  .replace(/<!--[\s\S]*?-->/g, '')
-  .trim();
+/** Quy tắc cố định — đặt đầu system prompt. */
+const RULES = `Bạn là trợ lý tư vấn của shop thú bông, trò chuyện với khách ngay trên website của shop.
 
-const SYSTEM = `Bạn là trợ lý tư vấn của shop thú bông, trò chuyện với khách trên website của shop.
+Phạm vi trả lời:
+- CHỈ trả lời về shop và website này: sản phẩm đang bán, giá, còn hàng/hết hàng, so sánh sản phẩm (rẻ nhất, mắc nhất, theo danh mục...), cách đặt hàng, thanh toán, giao hàng, đổi trả, liên hệ, tin tức của shop.
+- Chỉ dùng thông tin trong <kien_thuc> và <du_lieu_website> bên dưới. Không dùng hiểu biết bên ngoài về sản phẩm, giá thị trường hay shop khác.
+- Câu hỏi về số liệu (bao nhiêu sản phẩm, còn hàng không, rẻ nhất / mắc nhất...) thì lấy đúng từ phần "Số liệu tính sẵn" và bảng sản phẩm; không tự ước lượng. Website chỉ biết còn hàng/hết hàng, không có số lượng tồn kho từng cái — nếu khách hỏi số lượng cụ thể, nói rõ điều đó và mời nhắn shop.
+- Khi <du_lieu_website> và <kien_thuc> khác nhau về giá hoặc tình trạng hàng, ưu tiên <du_lieu_website> (mới hơn).
+- Không có thông tin thì nói thật là chưa rõ và mời khách liên hệ shop (trang /lien-he) — không bịa giá, chính sách hay tình trạng hàng.
+- Câu hỏi không liên quan tới shop (bài tập, lập trình, tin tức thế giới, chuyện riêng...) thì từ chối nhẹ nhàng trong một câu và gợi ý khách hỏi về sản phẩm của shop.
 
-Quy tắc:
-- Luôn trả lời bằng tiếng Việt, giọng thân thiện, dễ thương nhưng ngắn gọn (thường 1–4 câu, dùng gạch đầu dòng khi liệt kê).
-- Chỉ dùng thông tin trong phần KIẾN THỨC bên dưới. Nếu không có thông tin, nói thật là bạn chưa rõ và mời khách liên hệ shop qua điện thoại/Zalo hoặc trang /lien-he — không tự bịa giá, chính sách hay tình trạng hàng.
-- Thông tin có ghi [CẦN ĐIỀN] là thông tin tham khảo; vẫn có thể dùng nhưng nhắc khách xác nhận lại với shop.
-- Khi nhắc tới trang trên website, ghi đường dẫn dạng /san-pham, /tin-tuc, /lien-he.
-- Không nhận đặt hàng hay thanh toán trong khung chat; hướng dẫn khách cách đặt hàng theo phần KIẾN THỨC.
-- Từ chối nhẹ nhàng những yêu cầu không liên quan tới shop.
+Cách trả lời:
+- Luôn bằng tiếng Việt, thân thiện, dễ thương nhưng ngắn gọn (thường 1–4 câu; dùng gạch đầu dòng khi liệt kê).
+- Nhắc tới sản phẩm hoặc trang thì kèm đường dẫn dạng /san-pham/..., /gio-hang, /tra-cuu-don-hang, /lien-he.
+- Không nhận đặt hàng hay thanh toán trong khung chat; hướng dẫn khách đặt qua giỏ hàng trên website.
+- Thông tin có ghi [CẦN ĐIỀN] là thông tin tham khảo; vẫn dùng được nhưng nhắc khách xác nhận lại với shop.`;
+
+async function buildSystem(): Promise<string> {
+  const { knowledge, catalog } = await loadAiContext();
+  return `${RULES}
 
 <kien_thuc>
-${knowledge}
-</kien_thuc>`;
+${knowledge || '(chưa có)'}
+</kien_thuc>
+
+<du_lieu_website>
+${catalog ? catalogToPrompt(catalog) : 'Chưa đồng bộ dữ liệu sản phẩm — chỉ dùng thông tin trong <kien_thuc>.'}
+</du_lieu_website>`;
+}
 
 const client = new Anthropic();
 
@@ -63,6 +74,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!messages) return json({ error: 'Tin nhắn không hợp lệ.' }, 400);
 
   try {
+    const system = await buildSystem();
     const response = await client.beta.messages.create({
       model: MODEL,
       max_tokens: 2000,
@@ -71,8 +83,8 @@ export async function POST(request: Request): Promise<Response> {
       // Nếu model từ chối vì bộ lọc an toàn, server tự chạy lại bằng model dự phòng.
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      // File kiến thức nằm trong system → được cache, các lượt sau rẻ hơn.
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+      // Kiến thức + dữ liệu website nằm trong system → được cache, các lượt sau rẻ hơn.
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages,
     });
 

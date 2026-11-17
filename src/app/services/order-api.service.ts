@@ -3,7 +3,7 @@ import { Customer, Order, OrderItem, OrderStatus, PublicOrder } from '../models/
 
 const ADMIN_KEY = 'fumo.admin.apiKey';
 
-/** Gọi các API đơn hàng trên máy chủ (Vercel Functions trong thư mục /api/orders). */
+/** Gọi các API trên máy chủ (Vercel Functions trong thư mục /api) — đơn hàng và dùng chung mã quản trị. */
 @Injectable({ providedIn: 'root' })
 export class OrderApiService {
   /** Mã quản trị (ADMIN_API_KEY) admin nhập một lần, nhớ trên máy admin. */
@@ -49,7 +49,8 @@ export class OrderApiService {
     return this.call('DELETE', `/api/orders/${encodeURIComponent(code)}`, undefined, true);
   }
 
-  private async call<T>(method: string, url: string, body?: unknown, admin = false): Promise<T> {
+  /** Gọi API của site; admin = true thì gửi kèm mã quản trị. Dùng chung cho các API admin khác. */
+  async call<T>(method: string, url: string, body?: unknown, admin = false): Promise<T> {
     let res: Response;
     try {
       res = await fetch(url, {

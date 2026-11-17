@@ -43,7 +43,7 @@ Giá và tình trạng có thể thay đổi — luôn mời khách xem trang /s
 
 1. Vào trang sản phẩm, chọn số lượng rồi bấm **Thêm vào giỏ** hoặc **Mua ngay**.
 2. Vào **Giỏ hàng** (/gio-hang), điền họ tên, số điện thoại, địa chỉ nhận hàng (email và ghi chú không bắt buộc) rồi bấm **Đặt hàng & chuyển khoản**.
-3. Quét mã QR hiện ra bằng app ngân hàng — mã đã có sẵn số tiền và nội dung chuyển khoản là **mã đơn hàng** (dạng FMxxxxxx). Chuyển xong bấm **Tôi đã chuyển khoản**.
+3. Popup hiện mã QR tài khoản của shop, số tiền cần chuyển và **mã đơn hàng** (dạng FMxxxxxx). Khách quét QR bằng app ngân hàng, tự nhập số tiền rồi chuyển; chuyển xong có thể bấm **Tôi đã chuyển khoản** để báo shop.
 4. Shop kiểm tra giao dịch, duyệt đơn và báo cho khách qua email hoặc số điện thoại.
 5. Khách tra cứu trạng thái đơn bất cứ lúc nào ở trang **Tra cứu đơn hàng** (/tra-cuu-don-hang) bằng mã đơn + số điện thoại đã đặt.
 

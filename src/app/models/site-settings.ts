@@ -64,9 +64,7 @@ export interface SiteSettings {
   /** Hiện bong bóng trợ lý AI. */
   chatEnabled: boolean;
   chatGreeting: string;
-  // Thanh toán chuyển khoản (VietQR)
-  /** Mã BIN ngân hàng theo NAPAS (Timo: 963388). */
-  bankBin: string;
+  // Thanh toán chuyển khoản (ảnh QR: public/img/qr-thanh-toan.jpg)
   bankAccount: string;
   bankAccountName: string;
   bankName: string;
@@ -113,7 +111,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   chatEnabled: true,
   chatGreeting: 'Xin chào! Mình là trợ lý của shop 🧸 Bạn cần tư vấn sản phẩm, giá hay cách đặt hàng không?',
 
-  bankBin: '963388',
   bankAccount: '9021083115251',
   bankAccountName: 'MAI NGA',
   bankName: 'Timo Digital Bank by BVBank',
