@@ -105,9 +105,36 @@ export function kvContacts(store: Store): ContactStore {
   };
 }
 
+/** Bảng contacts chưa được tạo trên Supabase (chưa chạy lại supabase/schema.sql). */
+const missingTable = (e: unknown) => e instanceof Error && /Could not find the table|does not exist|PGRST205/i.test(e.message);
+
 export function getContacts(): ContactStore {
   const s = getStore();
-  return s.contacts ?? kvContacts(s);
+  if (!s.contacts) return kvContacts(s);
+  // Có Supabase nhưng thiếu bảng contacts → lưu tạm vào app_kv để không mất lời nhắn nào.
+  const table = s.contacts;
+  const kv = kvContacts(s);
+  const viaTable = <A extends unknown[], R>(fn: (...a: A) => Promise<R>, fallback: (...a: A) => Promise<R>) =>
+    async (...args: A): Promise<R> => {
+      try {
+        return await fn(...args);
+      } catch (e) {
+        if (!missingTable(e)) throw e;
+        console.warn('Bảng contacts chưa có trên Supabase — lưu tạm vào app_kv. Hãy chạy lại supabase/schema.sql.');
+        return fallback(...args);
+      }
+    };
+  return {
+    add: viaTable(table.add, kv.add),
+    // Danh sách: gộp cả lời nhắn trong bảng (nếu có) và lời nhắn lưu tạm.
+    list: async () => {
+      const [a, b] = await Promise.all([viaTable(table.list, async () => [] as Contact[])(), kv.list()]);
+      return [...a, ...b.map((c) => ({ ...c, id: -c.id }))].sort((x, y) => y.createdAt - x.createdAt);
+    },
+    // id âm = lời nhắn lưu tạm trong app_kv.
+    update: (id, patch) => (id < 0 ? kv.update(-id, patch).then((c) => c && { ...c, id: -c.id }) : viaTable(table.update, kv.update)(id, patch)),
+    remove: (id) => (id < 0 ? kv.remove(-id) : viaTable(table.remove, kv.remove)(id)),
+  };
 }
 
 function redisStore(redis: Redis): Store {

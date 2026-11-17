@@ -26,6 +26,7 @@ import { SettingsService } from '../../services/settings.service';
           <a routerLink="/gioi-thieu">Giới thiệu</a>
           <a routerLink="/lien-he">Liên hệ</a>
           <a routerLink="/gio-hang">Giỏ hàng</a>
+          <a routerLink="/tra-cuu-don-hang">📦 Tra cứu đơn hàng</a>
           <a routerLink="/mini-game">🎮 Mini game</a>
           @if (s.contactPhone) { <p class="contact">📞 {{ s.contactPhone }}</p> }
         </div>

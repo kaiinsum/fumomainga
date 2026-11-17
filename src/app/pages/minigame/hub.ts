@@ -46,6 +46,10 @@ interface GameCard {
       <div class="fw-layer" (click)="skipIntro()" title="Bấm để bỏ qua">
         <canvas #fw aria-hidden="true"></canvas>
         <span class="fw-title">🎆 Mini game 🎆</span>
+        <!-- Hai cánh màn sân khấu kéo sang hai bên -->
+        <span class="curtain left" aria-hidden="true"></span>
+        <span class="curtain right" aria-hidden="true"></span>
+        <span class="valance" aria-hidden="true"></span>
         <button class="fw-skip" type="button" (click)="skipIntro()">Bỏ qua ›</button>
       </div>
     }
@@ -102,8 +106,21 @@ interface GameCard {
     .fw-layer { position: fixed; inset: 0; z-index: 90; cursor: pointer; background: radial-gradient(circle at 50% 60%, rgba(30,10,50,.55), rgba(5,3,15,.88));
       display: grid; place-items: center; animation: fw-in .35s ease both; }
     .fw-layer canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .fw-title { position: relative; font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 900; color: #fff; text-shadow: 0 0 24px #ff7ac6, 0 0 48px #b06bff; animation: fw-pop 1s cubic-bezier(.2,1.5,.4,1) both; }
-    .fw-skip { position: absolute; right: 18px; bottom: 18px; font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.6); background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
+    .fw-title { position: relative; z-index: 1; font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 900; color: #fff; text-shadow: 0 0 24px #ff7ac6, 0 0 48px #b06bff; animation: fw-pop 1s cubic-bezier(.2,1.5,.4,1) 1.2s both; }
+    .curtain { position: absolute; top: 0; bottom: 0; width: 51%; z-index: 2; pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.35), transparent 8%, transparent 92%, rgba(0,0,0,.35)),
+        repeating-linear-gradient(90deg, #7d0f1f 0 18px, #a3172b 18px 34px, #c42a3e 34px 42px, #a3172b 42px 58px, #7d0f1f 58px 72px);
+      box-shadow: inset 0 -30px 40px rgba(0,0,0,.35); }
+    .curtain.left { left: 0; border-right: 6px solid #e8b83a; animation: open-left 1.5s cubic-bezier(.7,0,.2,1) .35s both; transform-origin: left center; }
+    .curtain.right { right: 0; border-left: 6px solid #e8b83a; animation: open-right 1.5s cubic-bezier(.7,0,.2,1) .35s both; transform-origin: right center; }
+    .valance { position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 3; pointer-events: none;
+      background: radial-gradient(circle at 30px -10px, #a3172b 34px, transparent 35px) 0 0 / 60px 54px repeat-x, linear-gradient(#7d0f1f, #a3172b);
+      border-bottom: 4px solid #e8b83a; box-shadow: 0 6px 16px rgba(0,0,0,.4); animation: lift 1s ease 1.6s both; }
+    @keyframes open-left { from { transform: translateX(0) scaleX(1); } to { transform: translateX(-96%) scaleX(.6); } }
+    @keyframes open-right { from { transform: translateX(0) scaleX(1); } to { transform: translateX(96%) scaleX(.6); } }
+    @keyframes lift { to { transform: translateY(-100%); } }
+    .fw-skip { z-index: 4; position: absolute; right: 18px; bottom: 18px; font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.6); background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
     @keyframes fw-in { from { opacity: 0; } }
     @keyframes fw-pop { from { opacity: 0; transform: scale(.4); } }
     .track {
@@ -209,7 +226,8 @@ export class MiniGameHubPage implements AfterViewInit {
   ngAfterViewInit(): void {
     const canvas = this.fw()?.nativeElement;
     if (!canvas) return;
-    this.stopFw = startFireworks(canvas, 2200, () => this.intro.set(false));
+    // Màn mở ra trong ~1.8s đầu, pháo hoa bắn phía sau rồi tiếp tục sau khi màn mở.
+    this.stopFw = startFireworks(canvas, 3000, () => this.intro.set(false));
   }
 
   skipIntro(): void {

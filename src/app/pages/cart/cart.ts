@@ -3,7 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Customer, EMPTY_CUSTOMER } from '../../models/order';
 import { CartService } from '../../services/cart.service';
-import { OrderApiService } from '../../services/order-api.service';
+import { ApiError, OrderApiService } from '../../services/order-api.service';
+import { OrderOutboxService } from '../../services/order-outbox.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { emailError, emailSuggestion, isValidVnPhone, normalizePhone, phoneError } from '../../shared/validators';
@@ -16,6 +17,8 @@ interface PendingPayment {
   email: string;
   /** Nội dung đơn để khách sao chép gửi shop. */
   summary: string;
+  /** Đã lưu lên máy chủ chưa (false = đang nằm trong hộp thư chờ gửi lại). */
+  saved?: boolean;
 }
 
 /** Mã đơn FM + 6 ký tự ngẫu nhiên (bỏ ký tự dễ nhầm 0/O, 1/I/L). */
@@ -95,8 +98,8 @@ const PENDING_KEY = 'fumo.checkout.pending';
             </div>
             @if (error()) { <p class="err">{{ error() }}</p> }
             <div class="pay-total">Tổng thanh toán <strong>{{ cart.total() | vnd }}</strong></div>
-            <button class="btn primary full" type="submit">
-              Đặt hàng & chuyển khoản →
+            <button class="btn primary full" type="submit" [disabled]="saving()">
+              {{ saving() ? '⏳ Đang gửi đơn...' : 'Đặt hàng & chuyển khoản →' }}
             </button>
             <small class="muted">Phí ship (nếu có) shop sẽ báo khi xác nhận đơn.</small>
           </form>
@@ -108,6 +111,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
           <p class="muted">Chọn vài bé fumo dễ thương rồi quay lại nhé!</p>
           <div class="row center">
             <a class="btn primary" routerLink="/san-pham">Xem sản phẩm</a>
+            <a class="btn ghost" routerLink="/tra-cuu-don-hang">📦 Tra cứu đơn hàng</a>
           </div>
         </div>
       }
@@ -119,6 +123,14 @@ const PENDING_KEY = 'fumo.checkout.pending';
         <div class="modal card-surface" role="dialog" aria-modal="true" aria-labelledby="done-title">
           <button class="close" type="button" (click)="finish()" aria-label="Đóng">✕</button>
           <h2 id="done-title">⏳ Đơn hàng đang chờ duyệt</h2>
+          @if (d.saved !== false || !outbox.has(d.code)) {
+            <p class="save-ok">✅ Shop đã nhận được đơn của bạn.</p>
+          } @else {
+            <p class="save-warn">
+              ⚠️ Mạng yếu nên chưa gửi được đơn lên hệ thống — web sẽ tự gửi lại khi có mạng.
+              <button type="button" class="retry" [disabled]="retrying()" (click)="retry()">{{ retrying() ? 'Đang gửi...' : 'Gửi lại ngay' }}</button>
+            </p>
+          }
           <p>Vui lòng chuyển khoản <b class="amount">{{ d.total | vnd }}</b> vào tài khoản bên dưới.</p>
 
           <img class="qr" src="img/qr-thanh-toan.jpg" alt="Mã QR chuyển khoản {{ s().bankAccountName }}" width="720" height="714" />
@@ -150,6 +162,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
           </p>
 
           <div class="row center">
+            <a class="btn ghost" routerLink="/tra-cuu-don-hang" [queryParams]="{ ma: d.code }" (click)="finish()">📦 Theo dõi đơn hàng</a>
             <a class="btn ghost" routerLink="/san-pham" (click)="finish()">Tiếp tục mua sắm</a>
           </div>
         </div>
@@ -203,6 +216,9 @@ const PENDING_KEY = 'fumo.checkout.pending';
     .qr { width: min(260px, 70vw); height: auto; margin: 0 auto; border-radius: 14px; background: #fff; box-shadow: var(--shadow); }
     .bank-line { display: flex; flex-direction: column; gap: 2px; font-size: .9rem; }
     .bank-line b { font-size: 1.05rem; letter-spacing: .03em; }
+    .save-ok { margin: 0; font-weight: 800; color: #2a9d62; }
+    .save-warn { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff4e0; color: #8a5a00; font-size: .88rem; font-weight: 700; }
+    .retry { margin-left: 6px; font: inherit; font-size: .8rem; padding: 3px 12px; border-radius: 999px; border: 1.5px solid currentColor; background: #fff; color: inherit; cursor: pointer; }
     .send-box { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--surface-2); }
     .send-box small { color: var(--muted); }
     .modal h2 { margin: 0; }
@@ -226,6 +242,16 @@ export class CartPage {
   readonly cart = inject(CartService);
   readonly s = inject(SettingsService).settings;
   private readonly api = inject(OrderApiService);
+  readonly outbox = inject(OrderOutboxService);
+  readonly saving = signal(false);
+  readonly retrying = signal(false);
+
+  async retry(): Promise<void> {
+    this.retrying.set(true);
+    const done = await this.outbox.flush();
+    this.retrying.set(false);
+    this.flash(done ? 'Đã gửi đơn thành công' : 'Vẫn chưa gửi được — web sẽ tự thử lại');
+  }
 
   customer: Customer = { ...EMPTY_CUSTOMER };
   readonly error = signal('');
@@ -265,7 +291,8 @@ export class CartPage {
     return emailSuggestion(this.customer.email);
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
+    if (this.saving()) return;
     this.error.set('');
     const c = this.customer;
     this.touched.set(new Set(['name', 'phone', 'email', 'address']));
@@ -287,8 +314,6 @@ export class CartPage {
       `Địa chỉ: ${c.address.trim()}`,
       ...(c.note.trim() ? [`Ghi chú: ${c.note.trim()}`] : []),
     ].join('\n');
-    // Gửi đơn ngầm lên máy chủ để hiện trong Admin → Đơn hàng. Lỗi mạng / máy chủ không ảnh hưởng popup QR
-    // (khách vẫn có nút sao chép thông tin đơn để gửi shop).
     const customer: Customer = {
       name: c.name.trim(),
       phone: normalizePhone(c.phone),
@@ -296,9 +321,28 @@ export class CartPage {
       address: c.address.trim(),
       note: c.note.trim(),
     };
-    this.api.create(customer, this.cart.orderItems(), code).catch((e) => console.warn('Không lưu được đơn lên máy chủ:', e));
+    const items = this.cart.orderItems();
+    // Lưu đơn lên máy chủ TRƯỚC khi hiện QR: trên điện thoại khách sẽ chuyển sang app ngân hàng ngay,
+    // nếu gửi ngầm thì trình duyệt có thể cắt ngang và đơn bị mất.
+    this.saving.set(true);
+    let saved = true;
+    try {
+      await this.api.create(customer, items, code);
+    } catch (e) {
+      const status = e instanceof ApiError ? e.status : 0;
+      if (status === 400 || status === 422) {
+        // Dữ liệu bị máy chủ từ chối → báo ngay để khách sửa (không hiện QR cho đơn không hợp lệ).
+        this.error.set(e instanceof Error ? e.message : 'Thông tin đặt hàng chưa hợp lệ.');
+        this.saving.set(false);
+        return;
+      }
+      // Mạng / máy chủ lỗi → vẫn cho khách thanh toán, đơn vào hộp thư chờ và tự gửi lại.
+      saved = false;
+      this.outbox.enqueue({ code, customer, items });
+    }
+    this.saving.set(false);
     this.cart.clear();
-    this.setPending({ code, total, phone: customer.phone, email: customer.email, summary });
+    this.setPending({ code, total, phone: customer.phone, email: customer.email, summary, saved });
   }
 
   /** Đóng popup. */

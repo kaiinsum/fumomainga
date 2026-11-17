@@ -30,8 +30,12 @@ export class OrderApiService {
   }
 
   // ---------- Khách ----------
+  /**
+   * Đặt hàng. keepalive: yêu cầu vẫn chạy tiếp nếu khách chuyển sang app ngân hàng / đóng tab;
+   * quá 15 giây thì báo lỗi để đưa vào hộp thư chờ gửi lại.
+   */
   create(customer: Customer, items: OrderItem[], code?: string): Promise<{ code: string; total: number; createdAt: number }> {
-    return this.call('POST', '/api/orders', { customer, items, code });
+    return this.call('POST', '/api/orders', { customer, items, code }, false, { keepalive: true, timeoutMs: 15000 });
   }
 
   /** Dùng khi admin đăng nhập: nếu chưa có mã quản trị thì thử dùng luôn mật khẩu admin. */
@@ -65,11 +69,15 @@ export class OrderApiService {
   }
 
   /** Gọi API của site; admin = true thì gửi kèm mã quản trị. Dùng chung cho các API admin khác. */
-  async call<T>(method: string, url: string, body?: unknown, admin = false): Promise<T> {
+  async call<T>(method: string, url: string, body?: unknown, admin = false, opts: { keepalive?: boolean; timeoutMs?: number } = {}): Promise<T> {
     let res: Response;
+    const ctrl = new AbortController();
+    const timer = opts.timeoutMs ? setTimeout(() => ctrl.abort(), opts.timeoutMs) : undefined;
     try {
       res = await fetch(url, {
         method,
+        keepalive: opts.keepalive,
+        signal: ctrl.signal,
         headers: {
           ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
           ...(admin ? { 'x-admin-key': this.adminKey() } : {}),
@@ -78,6 +86,8 @@ export class OrderApiService {
       });
     } catch {
       throw new ApiError('Không kết nối được máy chủ. Kiểm tra mạng và thử lại.', 0);
+    } finally {
+      clearTimeout(timer);
     }
     const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
     if (!res.ok || !data) {

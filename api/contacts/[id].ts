@@ -5,7 +5,7 @@ import { HttpError, getContacts, handle, json, readJson, requireAdmin } from '..
 
 const idOf = (req: Request) => {
   const id = Number(new URL(req.url).pathname.split('/').pop());
-  if (!Number.isInteger(id) || id <= 0) throw new HttpError(400, 'Mã lời nhắn không hợp lệ.');
+  if (!Number.isInteger(id) || id === 0) throw new HttpError(400, 'Mã lời nhắn không hợp lệ.');
   return id;
 };
 

@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from '../components/header/header';
 import { FooterComponent } from '../components/footer/footer';
 import { ThemeService } from '../services/theme.service';
+import { OrderOutboxService } from '../services/order-outbox.service';
 import { SkyBackgroundComponent } from '../components/sky-bg/sky-bg';
 import { FloatBubblesComponent } from '../components/float-bubbles/float-bubbles';
 
@@ -32,6 +33,8 @@ export class PublicLayout implements OnDestroy {
   readonly theme = inject(ThemeService);
 
   constructor() {
+    // Gửi lại các đơn chưa lưu được ở lần trước (mạng yếu / khách chuyển app ngân hàng).
+    inject(OrderOutboxService).start();
     // Thanh cuộn, ô nhập mặc định của trình duyệt theo đúng chế độ sáng/tối.
     // Nền body cũng tối để khi cuộn quá mép trang không lộ nền sáng.
     effect(() => {
