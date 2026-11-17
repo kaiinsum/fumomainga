@@ -1,0 +1,7 @@
+git add -A, git commit -m "...", git push
+git status --short && git add vercel.json && git commit -q -m "Add Vercel config
+git add -A -- . ':!note.txt' && git status --short && git commit -q -m "Add teddy bear favicon, admin session expiry, animated background, editable timeline title
+
+git add -A
+git commit -m "Mô tả thay đổi"
+git push
