@@ -28,7 +28,15 @@
       <div class="info">
         <span class="chip">{{ p.category }}</span>
         <h1>{{ p.name }}</h1>
-        <app-price-tag class="price" [product]="p" />
+        <app-price-tag class="price" [product]="variant() ?? p" />
+        @if (variants().length) {
+          <div class="variants" role="radiogroup" aria-label="Chọn phân loại">
+            <span class="v-label">Phân loại</span>
+            @for (v of variants(); track v.id) {
+              <button type="button" role="radio" [attr.aria-checked]="v.id === variant()?.id" [class.on]="v.id === variant()?.id" (click)="variantId.set(v.id)">{{ v.name }}</button>
+            }
+          </div>
+        }
         <p class="desc">{{ p.description }}</p>
 
         <dl class="specs">

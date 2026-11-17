@@ -2,7 +2,7 @@ import { Component, ElementRef, computed, effect, inject, input, signal, untrack
 import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
-import { ProductInput, discountPercent, onSale } from '../../models/product';
+import { ProductInput, ProductVariant, cheapest, discountPercent, finalPrice, onSale } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
@@ -10,6 +10,34 @@ import { VndPipe } from '../../shared/vnd.pipe';
 import { AdminToastService } from '../toast.service';
 
 const MAX_IMAGES = 6;
+const MAX_VARIANTS = 30;
+
+/** Một dòng biến thể đang sửa: % giảm và giá sau giảm tự tính qua lại. */
+interface VariantDraft {
+  id: string;
+  name: string;
+  price: number | null;
+  pct: number | null;
+  sale: number | null;
+}
+
+const empty = (v: unknown) => v === null || v === undefined || String(v) === '';
+
+/** % → giá sau giảm (làm tròn tới 1.000đ khi giá đủ lớn). null nếu % không hợp lệ. */
+function saleFromPct(price: number, pctRaw: unknown): number | null {
+  if (empty(pctRaw) || Number(pctRaw) <= 0 || !(price > 0)) return null;
+  const pct = Math.min(99, Math.max(1, Math.round(Number(pctRaw))));
+  let sale = price * (1 - pct / 100);
+  sale = price >= 10000 ? Math.round(sale / 1000) * 1000 : Math.round(sale);
+  return Math.min(sale, Math.max(0, price - 1));
+}
+
+/** Giá sau giảm → %. null nếu không tính được. */
+function pctFromSale(price: number, saleRaw: unknown): number | null {
+  if (empty(saleRaw)) return null;
+  const sale = Number(saleRaw);
+  return price > 0 && sale >= 0 && sale < price ? Math.round((1 - sale / price) * 100) : null;
+}
 
 @Component({
   selector: 'app-admin-product-form',
@@ -55,6 +83,18 @@ export class AdminProductForm {
   readonly salePrice = new FormControl<number | null>(null);
   readonly saleError = signal('');
 
+  // ---------- Biến thể ----------
+  readonly variants = signal<VariantDraft[]>([]);
+  readonly maxVariants = MAX_VARIANTS;
+  /** Ô "đặt giá cho mọi biến thể". */
+  readonly bulkPrice = signal<number | null>(null);
+  readonly bulkPct = signal<number | null>(null);
+  /** Giá thấp nhất trong các biến thể (giá hiển thị "Từ ..."). */
+  readonly variantMin = computed(() => {
+    const list = this.variants().filter((v) => !empty(v.price)).map((v) => this.toVariant(v));
+    return list.length ? finalPrice(cheapest({ price: 0, variants: list })) : 0;
+  });
+
   constructor() {
     // Đổi giá gốc khi đang giảm theo % → tính lại giá sau giảm.
     this.form.controls.price.valueChanges.subscribe(() => {
@@ -79,7 +119,17 @@ export class AdminProductForm {
           this.images.set([...p.images]);
           this.salePrice.setValue(onSale(p) ? (p.salePrice as number) : null);
           this.salePercent.setValue(onSale(p) ? discountPercent(p) : null);
+          this.variants.set(
+            (p.variants ?? []).map((v) => ({
+              id: v.id,
+              name: v.name,
+              price: v.price,
+              sale: onSale(v) ? (v.salePrice as number) : null,
+              pct: onSale(v) ? discountPercent(v) : null,
+            })),
+          );
         } else {
+          this.variants.set([]);
           this.salePrice.setValue(null);
           this.salePercent.setValue(null);
           this.form.reset({ category: this.categories()[0] ?? '' });
@@ -163,7 +213,13 @@ export class AdminProductForm {
       return;
     }
 
-    if (!this.checkSale()) {
+    const variantErr = this.variantError();
+    if (variantErr) {
+      this.toast.err(variantErr);
+      return;
+    }
+    const variants: ProductVariant[] = this.variants().map((v) => this.toVariant(v));
+    if (!variants.length && !this.checkSale()) {
       this.toast.err(this.saleError());
       return;
     }
@@ -172,8 +228,10 @@ export class AdminProductForm {
       ...v,
       name: v.name.trim(),
       description: v.description.trim(),
-      price: Number(v.price),
-      salePrice: this.validSale(),
+      // Có biến thể → giá sản phẩm = biến thể rẻ nhất (để lọc / sắp xếp / thẻ sản phẩm dùng chung).
+      price: variants.length ? cheapest({ price: 0, variants }).price : Number(v.price),
+      salePrice: variants.length ? (cheapest({ price: 0, variants }).salePrice ?? null) : this.validSale(),
+      variants,
       tags: [...new Set(v.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
       images: this.images(),
     };
@@ -186,6 +244,106 @@ export class AdminProductForm {
       const ok = this.toast.run(() => (createdId = this.service.add(data).id), 'Đã đăng sản phẩm');
       if (ok) this.router.navigate(['/admin/san-pham', createdId]);
     }
+  }
+
+  // ---------- Biến thể ----------
+  addVariant(): void {
+    if (this.variants().length >= MAX_VARIANTS) return this.toast.err(`Tối đa ${MAX_VARIANTS} biến thể.`);
+    // Biến thể đầu tiên lấy sẵn giá + giảm giá hiện tại của sản phẩm.
+    const first = !this.variants().length;
+    const price = first ? Number(this.form.controls.price.value) || null : (this.variants().at(-1)?.price ?? null);
+    const sale = first ? this.validSale() : null;
+    this.variants.update((list) => [
+      ...list,
+      { id: crypto.randomUUID().slice(0, 8), name: '', price, sale, pct: price ? pctFromSale(price, sale) : null },
+    ]);
+    requestAnimationFrame(() => (this.host.querySelector('.var-row:last-child .v-name') as HTMLInputElement | null)?.focus());
+  }
+
+  removeVariant(i: number): void {
+    this.variants.update((list) => list.filter((_, j) => j !== i));
+  }
+
+  moveVariant(i: number, dir: -1 | 1): void {
+    this.variants.update((list) => {
+      const next = [...list];
+      const j = i + dir;
+      if (j < 0 || j >= next.length) return list;
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
+  /** Sửa 1 ô của 1 biến thể; % và giá giảm tự đồng bộ. */
+  setVariant(i: number, field: 'name' | 'price' | 'pct' | 'sale', value: string): void {
+    this.variants.update((list) =>
+      list.map((v, j) => {
+        if (j !== i) return v;
+        const d = { ...v };
+        if (field === 'name') d.name = value;
+        else {
+          const n = value === '' ? null : Number(value);
+          if (field === 'price') {
+            d.price = n;
+            if (d.pct) d.sale = saleFromPct(n ?? 0, d.pct);
+          } else if (field === 'pct') {
+            d.pct = n;
+            d.sale = saleFromPct(d.price ?? 0, n);
+          } else {
+            d.sale = n;
+            d.pct = pctFromSale(d.price ?? 0, n);
+          }
+        }
+        return d;
+      }),
+    );
+  }
+
+  /** Nút "Áp dụng cho mọi biến thể": đặt cùng giá và/hoặc cùng % giảm. */
+  applyBulk(): void {
+    const price = this.bulkPrice();
+    const pct = this.bulkPct();
+    if (empty(price) && empty(pct)) return this.toast.err('Nhập giá chung và/hoặc % giảm chung trước.');
+    if (!empty(price) && Number(price) < 0) return this.toast.err('Giá không được âm.');
+    this.variants.update((list) =>
+      list.map((v) => {
+        const d = { ...v };
+        if (!empty(price)) d.price = Math.round(Number(price));
+        if (!empty(pct)) d.pct = Number(pct) > 0 ? Number(pct) : null;
+        d.sale = d.pct ? saleFromPct(d.price ?? 0, d.pct) : empty(price) ? d.sale : null;
+        if (!d.pct) d.sale = d.sale !== null && d.price !== null && d.sale < d.price ? d.sale : null;
+        return d;
+      }),
+    );
+    this.toast.ok(`Đã đặt giá cho ${this.variants().length} biến thể`);
+  }
+
+  /** Lỗi của 1 dòng biến thể (hiện ngay dưới dòng). */
+  rowError(v: VariantDraft): string {
+    if (empty(v.price)) return 'Chưa nhập giá.';
+    if (Number(v.price) < 0) return 'Giá không được âm.';
+    if (!empty(v.sale) && (Number(v.sale) < 0 || Number(v.sale) >= Number(v.price))) return 'Giá sau giảm phải nhỏ hơn giá.';
+    return '';
+  }
+
+  private variantError(): string {
+    const list = this.variants();
+    const names = new Set<string>();
+    for (const [i, v] of list.entries()) {
+      const name = v.name.trim();
+      if (!name) return `Biến thể #${i + 1} chưa có tên.`;
+      if (names.has(name.toLowerCase())) return `Tên biến thể "${name}" bị trùng.`;
+      names.add(name.toLowerCase());
+      const err = this.rowError(v);
+      if (err) return `Biến thể "${name}": ${err}`;
+    }
+    return '';
+  }
+
+  private toVariant(v: VariantDraft): ProductVariant {
+    const price = Math.round(Number(v.price) || 0);
+    const sale = empty(v.sale) ? null : Math.round(Number(v.sale));
+    return { id: v.id, name: v.name.trim().slice(0, 60), price, salePrice: sale !== null && sale >= 0 && sale < price ? sale : null };
   }
 
   // ---------- Giảm giá ----------

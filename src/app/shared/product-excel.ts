@@ -1,5 +1,5 @@
 import type { Cell, CellValue, Workbook, Worksheet } from 'exceljs';
-import { Product, ProductInput, onSale } from '../models/product';
+import { Product, ProductInput, ProductVariant, cheapest, onSale } from '../models/product';
 
 /**
  * Nhập / xuất thông tin sản phẩm bằng Excel theo mẫu cố định.
@@ -12,7 +12,7 @@ const SHEET_LISTS = 'DanhSach';
 const YES = 'Có';
 const NO = 'Không';
 
-type Key = 'id' | 'name' | 'category' | 'price' | 'salePrice' | 'description' | 'tags' | 'inStock' | 'featured' | 'imageCount';
+type Key = 'id' | 'name' | 'category' | 'price' | 'salePrice' | 'variants' | 'description' | 'tags' | 'inStock' | 'featured' | 'imageCount';
 
 interface Column {
   key: Key;
@@ -30,6 +30,12 @@ export const COLUMNS: Column[] = [
   { key: 'category', header: 'Danh mục', width: 18, required: true, note: 'Chọn trong danh sách (phải có sẵn ở trang Danh mục).' },
   { key: 'price', header: 'Giá (VNĐ)', width: 14, required: true, note: 'Số nguyên ≥ 0, ví dụ 690000.' },
   { key: 'salePrice', header: 'Giá sau giảm (VNĐ)', width: 16, note: 'Để trống nếu KHÔNG giảm giá. Phải nhỏ hơn Giá.' },
+  {
+    key: 'variants',
+    header: 'Biến thể',
+    width: 40,
+    note: 'Mỗi biến thể dạng  Tên: giá  hoặc  Tên: giá/giá sau giảm , cách nhau bằng dấu ; — ví dụ: 10cm: 390000; 20cm: 590000/520000. Có biến thể thì Giá của sản phẩm = biến thể rẻ nhất. Để trống = giữ nguyên biến thể đang có.',
+  },
   { key: 'description', header: 'Mô tả', width: 60, required: true, note: 'Tối thiểu 10 ký tự.' },
   { key: 'tags', header: 'Thẻ', width: 26, note: 'Phân cách bằng dấu phẩy, ví dụ: dễ thương, pastel.' },
   { key: 'inStock', header: 'Còn hàng', width: 11, note: `${YES} / ${NO}. Để trống = ${YES}.` },
@@ -72,6 +78,7 @@ const FIELD_LABELS: Record<keyof Omit<ProductInput, 'images'>, string> = {
   category: 'Danh mục',
   price: 'Giá',
   salePrice: 'Giá giảm',
+  variants: 'Biến thể',
   description: 'Mô tả',
   tags: 'Thẻ',
   inStock: 'Còn hàng',
@@ -127,6 +134,15 @@ export function planImport(raw: RawRow[], products: Product[], categoryNames: st
     if (saleRaw && salePrice === null) errors.push('Giá sau giảm không hợp lệ');
     else if (salePrice !== null && price !== null && salePrice >= price) errors.push('Giá sau giảm phải nhỏ hơn Giá');
 
+    // Biến thể: trống = giữ nguyên biến thể hiện có.
+    const varRaw = (r.variants ?? '').trim();
+    let variants: ProductVariant[] | undefined;
+    if (varRaw) {
+      const parsed = parseVariants(varRaw, existing?.variants ?? []);
+      errors.push(...parsed.errors);
+      variants = parsed.variants;
+    }
+
     const description = (r.description ?? '').trim();
     if (description.length < 10) errors.push('Mô tả tối thiểu 10 ký tự');
 
@@ -142,14 +158,26 @@ export function planImport(raw: RawRow[], products: Product[], categoryNames: st
       continue;
     }
 
-    const data = { name, category: category!, price: price!, salePrice, description, tags, inStock: inStock!, featured: featured! };
+    const base = variants?.length ? cheapest({ price: 0, variants }) : { price: price!, salePrice };
+    const data: Omit<ProductInput, 'images'> = {
+      name,
+      category: category!,
+      price: base.price,
+      salePrice: base.salePrice ?? null,
+      ...(variants ? { variants } : {}),
+      description,
+      tags,
+      inStock: inStock!,
+      featured: featured!,
+    };
     if (!existing) {
       rows.push({ line: r.line, kind: 'new', name, errors, changes: [], data });
       continue;
     }
 
     const changes = (Object.keys(FIELD_LABELS) as (keyof typeof FIELD_LABELS)[])
-      .filter((k) => JSON.stringify(existing[k] ?? null) !== JSON.stringify(data[k] ?? null))
+      .filter((k) => k !== 'variants' || data.variants !== undefined)
+      .filter((k) => JSON.stringify(cmp(k, existing[k])) !== JSON.stringify(cmp(k, data[k])))
       .map((k) => FIELD_LABELS[k]);
     rows.push({ line: r.line, kind: changes.length ? 'update' : 'same', name, id, errors, changes, data });
   }
@@ -157,6 +185,37 @@ export function planImport(raw: RawRow[], products: Product[], categoryNames: st
   const counts = { new: 0, update: 0, same: 0, error: 0 };
   for (const r of rows) counts[r.kind]++;
   return { rows, counts };
+}
+
+/** So sánh biến thể theo nội dung (bỏ qua id). */
+function cmp(k: string, v: unknown): unknown {
+  if (k === 'variants') return ((v as ProductVariant[] | undefined) ?? []).map((x) => [x.name, x.price, onSale(x) ? x.salePrice : null]);
+  return v ?? null;
+}
+
+/** "10cm: 390000; 20cm: 590000/520000" → danh sách biến thể (giữ id cũ nếu trùng tên). */
+export function parseVariants(text: string, old: ProductVariant[]): { variants: ProductVariant[]; errors: string[] } {
+  const errors: string[] = [];
+  const variants: ProductVariant[] = [];
+  const names = new Set<string>();
+  for (const part of text.split(/[;\n]/).map((s) => s.trim()).filter(Boolean)) {
+    const at = part.lastIndexOf(':');
+    const name = (at > 0 ? part.slice(0, at) : '').trim().slice(0, 60);
+    const [p, s] = (at > 0 ? part.slice(at + 1) : '').split('/');
+    const price = parsePrice(p);
+    const sale = s && s.trim() ? parsePrice(s) : null;
+    if (!name || price === null) {
+      errors.push(`Biến thể "${part}" sai dạng (Tên: giá)`);
+      continue;
+    }
+    if (s && s.trim() && (sale === null || sale >= price)) errors.push(`Biến thể "${name}": giá sau giảm phải nhỏ hơn giá`);
+    if (names.has(name.toLowerCase())) errors.push(`Biến thể "${name}" bị trùng tên`);
+    names.add(name.toLowerCase());
+    const prev = old.find((o) => o.name.trim().toLowerCase() === name.toLowerCase());
+    variants.push({ id: prev?.id ?? Math.random().toString(36).slice(2, 10), name, price, salePrice: sale });
+  }
+  if (variants.length > 30) errors.push('Tối đa 30 biến thể');
+  return { variants, errors };
 }
 
 // ===================== Đọc / ghi file Excel =====================
@@ -196,6 +255,7 @@ export async function buildProductsWorkbook(products: Product[], categoryNames: 
       category: p.category,
       price: p.price,
       salePrice: onSale(p) ? p.salePrice : null,
+      variants: (p.variants ?? []).map((v) => `${v.name}: ${v.price}${onSale(v) ? `/${v.salePrice}` : ''}`).join('; '),
       description: p.description,
       tags: p.tags.join(', '),
       inStock: p.inStock ? YES : NO,

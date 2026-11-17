@@ -24,6 +24,11 @@ export const SEED_PRODUCTS: Product[] = [
   },
   {
     id: 'seed-3', name: 'Fumo Mini Chanh', category: 'Fumo Plush', price: 390000,
+    variants: [
+      { id: 'v-10cm', name: 'Mini 10cm', price: 390000 },
+      { id: 'v-20cm', name: 'Vừa 20cm', price: 590000, salePrice: 520000 },
+      { id: 'v-moc', name: 'Móc khóa', price: 450000 },
+    ],
     description: 'Bản mini 10cm nhỏ xinh, dễ mang theo bên mình.',
     images: imgs('Mini Chanh', 55), tags: ['mini', 'dễ thương'],
     inStock: true, featured: false, createdAt: now - 5 * day,

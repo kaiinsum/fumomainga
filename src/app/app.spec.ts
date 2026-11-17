@@ -4,7 +4,7 @@ import { SEED_PRODUCTS } from './services/seed-data';
 import { NewsService } from './services/news.service';
 import { renderMarkdown } from './shared/markdown';
 import { CategoryService } from './services/category.service';
-import { planImport } from './shared/product-excel';
+import { planImport, parseVariants } from './shared/product-excel';
 
 describe('renderMarkdown', () => {
   it('escapes raw HTML', () => {
@@ -138,5 +138,18 @@ describe('planImport (Excel)', () => {
     svc.applyImport([{ id: p.id, patch: { price: 1, images: [] } }], []);
     expect(svc.getById(p.id)!.price).toBe(1);
     expect(svc.getById(p.id)!.images).toEqual(imgs);
+  });
+});
+
+describe('parseVariants (Excel)', () => {
+  it('parses "Tên: giá/giá giảm" and keeps old ids by name', () => {
+    const r = parseVariants('10cm: 390.000; 20cm: 590000/520000', [{ id: 'old', name: '20CM', price: 1 }]);
+    expect(r.errors).toEqual([]);
+    expect(r.variants.map((v) => [v.name, v.price, v.salePrice])).toEqual([['10cm', 390000, null], ['20cm', 590000, 520000]]);
+    expect(r.variants[1].id).toBe('old');
+  });
+
+  it('rejects bad rows', () => {
+    expect(parseVariants('abc; x: 100/200; x: 5', []).errors.length).toBe(3);
   });
 });

@@ -68,6 +68,58 @@
       </div>
     </section>
 
+    <section class="adm-box variants-box">
+      <h2>Biến thể <small class="hint">(phân loại: kích cỡ, màu... — bỏ trống nếu sản phẩm chỉ có 1 loại)</small></h2>
+      <div class="box-body">
+        @if (variants().length) {
+          <div class="bulk">
+            <span class="bulk-title">Đặt giá cho mọi biến thể</span>
+            <label class="bulk-in">
+              <input type="number" min="0" step="1000" placeholder="Giá chung" [value]="bulkPrice() ?? ''"
+                (input)="bulkPrice.set($any($event.target).value === '' ? null : +$any($event.target).value)" aria-label="Giá chung cho mọi biến thể" />
+              <span>đ</span>
+            </label>
+            <label class="bulk-in small">
+              <input type="number" min="0" max="99" step="1" placeholder="% giảm" [value]="bulkPct() ?? ''"
+                (input)="bulkPct.set($any($event.target).value === '' ? null : +$any($event.target).value)" aria-label="Phần trăm giảm cho mọi biến thể" />
+              <span>%</span>
+            </label>
+            <button type="button" class="btn primary small" (click)="applyBulk()">Áp dụng cho mọi biến thể</button>
+            <small class="hint">Để trống ô nào thì giữ nguyên ô đó · nhập 0% để bỏ giảm giá.</small>
+          </div>
+
+          <div class="var-head" aria-hidden="true">
+            <span>Tên biến thể</span><span>Giá (đ)</span><span>% giảm</span><span>Giá sau giảm (đ)</span><span></span>
+          </div>
+          @for (v of variants(); track v.id; let i = $index; let first = $first; let last = $last) {
+            <div class="var-row" [class.bad]="rowError(v) || !v.name.trim()">
+              <input class="v-name" type="text" maxlength="60" placeholder="VD: 20cm, Màu hồng..." [value]="v.name"
+                (input)="setVariant(i, 'name', $any($event.target).value)" [attr.aria-label]="'Tên biến thể ' + (i + 1)" />
+              <input type="number" min="0" step="1000" [value]="v.price ?? ''" (input)="setVariant(i, 'price', $any($event.target).value)"
+                [attr.aria-label]="'Giá biến thể ' + (i + 1)" />
+              <input type="number" min="0" max="99" step="1" placeholder="0" [value]="v.pct ?? ''" (input)="setVariant(i, 'pct', $any($event.target).value)"
+                [attr.aria-label]="'Phần trăm giảm biến thể ' + (i + 1)" />
+              <input type="number" min="0" step="1000" placeholder="—" [value]="v.sale ?? ''" (input)="setVariant(i, 'sale', $any($event.target).value)"
+                [attr.aria-label]="'Giá sau giảm biến thể ' + (i + 1)" />
+              <div class="v-acts">
+                <button type="button" class="mini" title="Lên" [disabled]="first" (click)="moveVariant(i, -1)">↑</button>
+                <button type="button" class="mini" title="Xuống" [disabled]="last" (click)="moveVariant(i, 1)">↓</button>
+                <button type="button" class="mini del" title="Xoá biến thể" (click)="removeVariant(i)">✕</button>
+              </div>
+              @if (rowError(v); as err) {
+                <span class="error v-err">{{ err }}</span>
+              } @else if (v.sale !== null && v.price) {
+                <small class="hint v-err">Khách thấy: <s>{{ v.price | vnd }}</s> → <b>{{ v.sale | vnd }}</b> (-{{ v.pct }}%)</small>
+              }
+            </div>
+          }
+        } @else {
+          <p class="hint">Sản phẩm chưa có biến thể — dùng giá ở ô <b>Thông tin</b> bên phải.</p>
+        }
+        <button type="button" class="btn ghost small add-var" [disabled]="variants().length >= maxVariants" (click)="addVariant()">+ Thêm biến thể</button>
+      </div>
+    </section>
+
     <section class="adm-box">
       <h2>Mô tả sản phẩm</h2>
       <div class="box-body field">
@@ -118,6 +170,7 @@
             }
           </select>
         </div>
+        @if (!variants().length) {
         <div class="field">
           <label for="price">Giá (VNĐ)</label>
           <input id="price" type="number" min="0" step="1000" formControlName="price" />
@@ -151,6 +204,12 @@
             </small>
           }
         </div>
+        } @else {
+          <div class="field">
+            <label>Giá</label>
+            <p class="var-note">Giá lấy theo <b>{{ variants().length }} biến thể</b> — khách thấy giá <b>từ {{ variantMin() | vnd }}</b>.</p>
+          </div>
+        }
         <div class="field">
           <label for="tags">Thẻ (phân cách bằng dấu phẩy)</label>
           <input id="tags" formControlName="tags" placeholder="dễ thương, pastel" />

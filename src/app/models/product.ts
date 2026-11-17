@@ -1,3 +1,12 @@
+/** Biến thể (ví dụ: 10cm / 20cm, màu...). Mỗi biến thể có giá và giá giảm riêng. */
+export interface ProductVariant {
+  id: string;
+  name: string;
+  price: number;
+  /** Giá sau giảm, null = không giảm. */
+  salePrice?: number | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -8,6 +17,8 @@ export interface Product {
   tags: string[];
   /** Giá sau giảm (VNĐ). null / không có = không giảm giá. Phải nhỏ hơn price. */
   salePrice?: number | null;
+  /** Có biến thể → price/salePrice của sản phẩm = biến thể rẻ nhất (tự đồng bộ khi lưu). */
+  variants?: ProductVariant[];
   inStock: boolean;
   featured: boolean;
   createdAt: number;
@@ -38,5 +49,17 @@ export const finalPrice = (p: Pick<Product, 'price' | 'salePrice'>): number => (
 /** % giảm (làm tròn), 0 nếu không giảm. */
 export const discountPercent = (p: Pick<Product, 'price' | 'salePrice'>): number =>
   onSale(p) && p.price > 0 ? Math.round((1 - (p.salePrice as number) / p.price) * 100) : 0;
+
+type Priced = Pick<Product, 'price' | 'salePrice'> & { variants?: ProductVariant[] };
+
+/** Danh sách biến thể hợp lệ (có tên). */
+export const variantsOf = (p: { variants?: ProductVariant[] }): ProductVariant[] => (p.variants ?? []).filter((v) => v && v.name);
+
+/** Biến thể rẻ nhất (theo giá khách trả), hoặc chính sản phẩm nếu không có biến thể. */
+export const cheapest = (p: Priced): Pick<Product, 'price' | 'salePrice'> =>
+  variantsOf(p).reduce<Pick<Product, 'price' | 'salePrice'>>((a, b) => (finalPrice(b) < finalPrice(a) ? b : a), variantsOf(p)[0] ?? p);
+
+/** Các biến thể có giá khác nhau → hiển thị "Từ ...". */
+export const hasPriceRange = (p: Priced): boolean => new Set(variantsOf(p).map((v) => finalPrice(v))).size > 1;
 
 export type SortKey = 'newest' | 'price-asc' | 'price-desc' | 'name';

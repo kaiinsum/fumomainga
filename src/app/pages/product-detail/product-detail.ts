@@ -6,6 +6,7 @@ import { setPageTitle } from '../../core/shop-title.strategy';
 import { SettingsService } from '../../services/settings.service';
 import { animate, createTimeline, stagger } from 'animejs';
 import { ProductService } from '../../services/product.service';
+import { ProductVariant, variantsOf } from '../../models/product';
 import { CartService } from '../../services/cart.service';
 import { flyToCart } from '../../shared/fly-to-cart';
 import { ProductCardComponent } from '../../components/product-card/product-card';
@@ -29,6 +30,10 @@ export class ProductDetailPage {
   private readonly cart = inject(CartService);
   private readonly router = inject(Router);
   readonly qty = signal(1);
+  /** Biến thể đang chọn (null nếu sản phẩm không có biến thể). */
+  readonly variantId = signal<string | null>(null);
+  readonly variants = computed(() => { const p = this.product(); return p ? variantsOf(p) : []; });
+  readonly variant = computed<ProductVariant | undefined>(() => this.variants().find((v) => v.id === this.variantId()) ?? this.variants()[0]);
   readonly added = signal(false);
 
   addToCart(buyNow = false): void {
@@ -36,13 +41,13 @@ export class ProductDetailPage {
     if (!p) return;
     const qty = this.qty();
     if (buyNow) {
-      this.cart.add(p.id, qty);
+      this.cart.add(p.id, qty, this.variant()?.id);
       this.router.navigate(['/gio-hang']);
       return;
     }
     // Ảnh sản phẩm bay vào giỏ trên thanh menu; cộng vào giỏ khi ảnh chạm giỏ.
     this.added.set(true);
-    flyToCart(this.host.querySelector('.main-img img'), this.activeImage() || p.images[0], qty, () => this.cart.add(p.id, qty));
+    flyToCart(this.host.querySelector('.main-img img'), this.activeImage() || p.images[0], qty, () => this.cart.add(p.id, qty, this.variant()?.id));
     setTimeout(() => this.added.set(false), 1800);
   }
 
@@ -66,6 +71,7 @@ export class ProductDetailPage {
         const p = this.product();
         if (p) setPageTitle(this.title, p.name, this.settings().shopName);
         this.activeIndex.set(0);
+        this.variantId.set(this.variants()[0]?.id ?? null);
         requestAnimationFrame(() => this.intro());
       });
     });
