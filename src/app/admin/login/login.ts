@@ -2,7 +2,7 @@ import { AfterViewInit, Component, ElementRef, inject, input, signal } from '@an
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate } from 'animejs';
-import { AuthService, DEFAULT_ADMIN_PASSWORD } from '../../services/auth.service';
+import { AuthService } from '../../services/auth.service';
 import { SettingsService } from '../../services/settings.service';
 
 @Component({
@@ -24,9 +24,6 @@ import { SettingsService } from '../../services/settings.service';
         }
         <button class="btn primary" type="submit" [disabled]="busy()">Đăng nhập</button>
 
-        @if (auth.usingDefaultPassword()) {
-          <p class="hint">Mật khẩu mặc định: <code>{{ defaultPassword }}</code> — hãy đổi trong Cài đặt sau khi đăng nhập.</p>
-        }
       </form>
       <a routerLink="/" class="back">← Quay lại trang web</a>
     </div>
@@ -41,8 +38,6 @@ import { SettingsService } from '../../services/settings.service';
     .sub { margin: -10px 0 4px; color: var(--muted); }
     .field { text-align: left; }
     .error { color: var(--primary-ink); margin: 0; font-weight: 700; }
-    .hint { font-size: .8rem; color: var(--muted); margin: 0; }
-    code { background: #f0f0f1; padding: 1px 6px; border-radius: 4px; }
     .back { color: #50575e; font-size: .9rem; }
     .back:hover { color: var(--primary); }
   `,
@@ -56,7 +51,6 @@ export class AdminLogin implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
-  readonly defaultPassword = DEFAULT_ADMIN_PASSWORD;
   password = '';
   readonly error = signal('');
   readonly busy = signal(false);

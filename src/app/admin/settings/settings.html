@@ -168,6 +168,11 @@
       <section class="adm-box">
         <h2>Hành trình (mốc thời gian)</h2>
         <div class="box-body">
+          <div class="field">
+            <label for="timelineTitle">Tiêu đề phần hành trình</label>
+            <input id="timelineTitle" [(ngModel)]="draft.aboutTimelineTitle" maxlength="80" />
+            <small class="hint">Bọc từ trong dấu sao để tô màu, ví dụ: <code>Hành trình *của chúng tôi*</code>. Để trống sẽ ẩn tiêu đề.</small>
+          </div>
           @for (m of draft.aboutMilestones; track $index; let i = $index) {
             <div class="item-row">
               <input class="year-input" [(ngModel)]="m.year" aria-label="Năm" />

@@ -3,13 +3,15 @@ import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from '../components/header/header';
 import { FooterComponent } from '../components/footer/footer';
 import { ThemeService } from '../services/theme.service';
+import { SkyBackgroundComponent } from '../components/sky-bg/sky-bg';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
+    <app-sky-bg [theme]="theme.theme()" />
     <app-header />
     <main class="main">
       <router-outlet />
@@ -20,6 +22,8 @@ import { ThemeService } from '../services/theme.service';
     :host { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); color: var(--text);
       transition: background-color .4s ease, color .4s ease; }
     .main { flex: 1; padding-top: var(--header-h); }
+    /* Nội dung nằm trên lớp nền động. */
+    .main, app-footer { position: relative; z-index: 1; }
   `,
 })
 export class PublicLayout implements OnDestroy {

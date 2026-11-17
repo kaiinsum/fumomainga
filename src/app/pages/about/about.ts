@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { JSAnimation, animate, stagger } from 'animejs';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
@@ -32,7 +32,13 @@ import { SettingsService } from '../../services/settings.service';
 
     <section class="section timeline-section">
       <div class="container">
-        <h2 class="section-title" appAnimateIn>Hành trình <span>của chúng tôi</span></h2>
+        @if (timelineTitle().length) {
+          <h2 class="section-title" appAnimateIn>
+            @for (p of timelineTitle(); track $index) {
+              @if (p.hl) { <span>{{ p.text }}</span> } @else { {{ p.text }} }
+            }
+          </h2>
+        }
         <ol class="timeline">
           @for (m of s().aboutMilestones; track $index; let i = $index) {
             <li [appAnimateIn]="i % 2 ? 'right' : 'left'">
@@ -86,6 +92,14 @@ export class AboutPage implements AfterViewInit, OnDestroy {
   readonly dots = Array.from({ length: 14 });
 
   readonly s = inject(SettingsService).settings;
+  /** "Hành trình *của chúng tôi*" → phần thường + phần tô màu. */
+  readonly timelineTitle = computed(() =>
+    (this.s().aboutTimelineTitle ?? '')
+      .trim()
+      .split(/\*([^*]+)\*/)
+      .map((text, i) => ({ text, hl: i % 2 === 1 }))
+      .filter((p) => p.text),
+  );
 
   ngAfterViewInit(): void {
     const dots = this.host.querySelectorAll<HTMLElement>('.dots span');

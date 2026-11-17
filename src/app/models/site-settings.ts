@@ -48,6 +48,8 @@ export interface SiteSettings {
   aboutTitle: string;
   aboutIntro: string;
   aboutValues: AboutValue[];
+  /** Tiêu đề phần Hành trình. Bọc từ bằng *dấu sao* để tô màu. */
+  aboutTimelineTitle: string;
   aboutMilestones: Milestone[];
   // Liên hệ
   contactAddress: string;
@@ -79,6 +81,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { icon: '📸', title: 'Hình ảnh thật', text: 'Hình ảnh được chụp và đăng trực tiếp, đúng với sản phẩm.' },
     { icon: '💌', title: 'Tận tâm', text: 'Hỗ trợ tư vấn nhanh chóng, gói quà miễn phí.' },
   ],
+  aboutTimelineTitle: 'Hành trình *của chúng tôi*',
   aboutMilestones: [
     { year: '2023', text: 'Bắt đầu với vài bé fumo tự may tặng bạn bè.' },
     { year: '2024', text: 'Mở gian hàng online đầu tiên và có 100 khách hàng.' },

@@ -4,12 +4,12 @@ import { AuthService } from '../services/auth.service';
 import { AdminLayout } from './layout/admin-layout';
 
 const authGuard: CanActivateFn = (_route, state) => {
-  if (inject(AuthService).loggedIn()) return true;
+  if (inject(AuthService).check()) return true;
   return inject(Router).createUrlTree(['/admin/dang-nhap'], { queryParams: { next: state.url } });
 };
 
 const guestGuard: CanActivateFn = () =>
-  inject(AuthService).loggedIn() ? inject(Router).createUrlTree(['/admin']) : true;
+  inject(AuthService).check() ? inject(Router).createUrlTree(['/admin']) : true;
 
 export const ADMIN_ROUTES: Routes = [
   {

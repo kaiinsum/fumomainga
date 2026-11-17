@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Tai -->
+  <circle cx="14" cy="16" r="11" fill="#9A5B2E"/>
+  <circle cx="50" cy="16" r="11" fill="#9A5B2E"/>
+  <circle cx="14" cy="16" r="5.5" fill="#E9BC8E"/>
+  <circle cx="50" cy="16" r="5.5" fill="#E9BC8E"/>
+  <!-- Đầu -->
+  <circle cx="32" cy="36" r="25" fill="#B4733D"/>
+  <!-- Mõm -->
+  <ellipse cx="32" cy="45" rx="12" ry="9.5" fill="#F2D3AA"/>
+  <!-- Mắt -->
+  <circle cx="22.5" cy="31" r="3.6" fill="#2E1A0E"/>
+  <circle cx="41.5" cy="31" r="3.6" fill="#2E1A0E"/>
+  <circle cx="23.6" cy="29.9" r="1.1" fill="#fff"/>
+  <circle cx="42.6" cy="29.9" r="1.1" fill="#fff"/>
+  <!-- Mũi + miệng -->
+  <ellipse cx="32" cy="40.5" rx="4.6" ry="3.4" fill="#2E1A0E"/>
+  <path d="M32 43.5v3.5M27.5 47.5q4.5 3 9 0" stroke="#2E1A0E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Má hồng -->
+  <ellipse cx="16" cy="40" rx="3.6" ry="2.4" fill="#F2998C" opacity=".7"/>
+  <ellipse cx="48" cy="40" rx="3.6" ry="2.4" fill="#F2998C" opacity=".7"/>
+</svg>
