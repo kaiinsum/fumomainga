@@ -3,12 +3,21 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { startFireworks } from './fireworks';
 
+const HIDE_INTRO_KEY = 'fumo.minigame.hideIntro';
+function readHideIntro(): boolean {
+  try {
+    return localStorage.getItem(HIDE_INTRO_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 interface GameCard {
   path: string | null;
   title: string;
   tag: string;
   desc: string;
-  art: 'shmup' | 'gacha' | 'dle' | 'soon';
+  art: 'shmup' | 'gacha' | 'dle' | 'ninja' | 'soon';
 }
 
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
@@ -40,12 +49,19 @@ interface GameCard {
         </div>
         <button class="arrow right" type="button" (click)="scroll(1)" aria-label="Game sau">›</button>
       </div>
+      @if (!intro()) {
+        <p class="replay"><button type="button" (click)="replayIntro()">🎆 Xem lại màn mở đầu</button></p>
+      }
     </div>
 
     @if (intro()) {
       <div class="fw-layer" (click)="skipIntro()" title="Bấm để bỏ qua">
         <canvas #fw aria-hidden="true"></canvas>
         <span class="fw-title">🎆 Mini game 🎆</span>
+        <label class="fw-hide" (click)="$event.stopPropagation()">
+          <input type="checkbox" [checked]="hideIntro()" (change)="setHideIntro($any($event.target).checked)" />
+          Không hiện lại lần sau
+        </label>
         <!-- Hai cánh màn sân khấu kéo sang hai bên -->
         <span class="curtain left" aria-hidden="true"></span>
         <span class="curtain right" aria-hidden="true"></span>
@@ -61,6 +77,12 @@ interface GameCard {
             <span class="blt b1"></span><span class="blt b2"></span><span class="blt b3"></span><span class="blt b4"></span><span class="blt b5"></span>
             <span class="boss"></span>
             <span class="ship"></span>
+          }
+          @case ('ninja') {
+            <img class="nj n1" src="fumo-ninja/cirno.webp" alt="" />
+            <img class="nj n2" src="fumo-ninja/yukari.webp" alt="" />
+            <img class="nj bomb" src="fumo-ninja/reimu.webp" alt="" />
+            <span class="slash"></span>
           }
           @case ('dle') {
             <span class="dle-grid">
@@ -120,6 +142,13 @@ interface GameCard {
     @keyframes open-left { from { transform: translateX(0) scaleX(1); } to { transform: translateX(-96%) scaleX(.6); } }
     @keyframes open-right { from { transform: translateX(0) scaleX(1); } to { transform: translateX(96%) scaleX(.6); } }
     @keyframes lift { to { transform: translateY(-100%); } }
+    .fw-hide { position: absolute; z-index: 3; top: calc(50% + clamp(2.4rem, 6vw, 3.6rem)); display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px; background: rgba(0,0,0,.35); color: #fff; font-weight: 700; font-size: .9rem; cursor: pointer;
+      animation: fw-pop .8s ease 1.6s both; }
+    .fw-hide input { width: 16px; height: 16px; accent-color: #ff7ac6; cursor: pointer; }
+    .replay { text-align: center; margin: 18px 0 0; }
+    .replay button { font: inherit; font-size: .85rem; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
+    .replay button:hover { color: var(--primary); border-color: var(--primary); }
     .fw-skip { z-index: 4; position: absolute; right: 18px; bottom: 18px; font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.6); background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
     @keyframes fw-in { from { opacity: 0; } }
     @keyframes fw-pop { from { opacity: 0; transform: scale(.4); } }
@@ -187,6 +216,15 @@ interface GameCard {
     .spark { position: absolute; color: #ffd23f; font-size: 1.4rem; animation: twinkle 1.6s ease-in-out infinite paused; }
     .s1 { top: 30px; left: 60px; } .s2 { top: 60px; right: 55px; animation-delay: -.6s; } .s3 { bottom: 40px; left: 80px; animation-delay: -1.1s; }
 
+    .art-ninja { background: linear-gradient(#3b2416, #1f130c); }
+    .nj { position: absolute; width: 92px; height: 92px; object-fit: contain; animation: nj-toss 2.4s ease-in-out infinite paused; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+    .nj.n1 { left: 24px; top: 70px; }
+    .nj.n2 { left: 122px; top: 30px; animation-delay: -.8s; }
+    .nj.bomb { right: 26px; top: 60px; animation-delay: -1.6s; filter: drop-shadow(0 0 10px #ff1744) drop-shadow(0 0 18px #ff1744); }
+    .slash { position: absolute; left: 10%; top: 55%; width: 80%; height: 6px; border-radius: 6px; background: linear-gradient(90deg, transparent, #fff, transparent);
+      transform: rotate(-18deg) scaleX(0); box-shadow: 0 0 14px #bfe8ff; animation: nj-slash 2.4s ease-in-out infinite paused; }
+    @keyframes nj-toss { 0%, 100% { transform: translateY(40px) rotate(-10deg); } 50% { transform: translateY(-10px) rotate(12deg); } }
+    @keyframes nj-slash { 0%, 40% { transform: rotate(-18deg) scaleX(0); opacity: 0; } 50% { transform: rotate(-18deg) scaleX(1); opacity: 1; } 65%, 100% { transform: rotate(-18deg) scaleX(1); opacity: 0; } }
     .art-dle { background: linear-gradient(135deg, #1b2a4a, #3a1c5c); display: grid; place-items: center; }
     .dle-grid { display: grid; grid-template-columns: repeat(4, 34px); gap: 6px; }
     .dle-grid i { width: 34px; height: 34px; border-radius: 7px; animation: tile 2.4s ease-in-out infinite paused; }
@@ -215,8 +253,10 @@ interface GameCard {
 export class MiniGameHubPage implements AfterViewInit {
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
   private readonly fw = viewChild<ElementRef<HTMLCanvasElement>>('fw');
-  /** Đang chiếu pháo hoa mở màn (carousel chưa hiện). */
-  readonly intro = signal(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+  /** Người xem đã chọn "Không hiện lại lần sau" (lưu trên máy người xem). */
+  readonly hideIntro = signal(readHideIntro());
+  /** Đang chiếu màn mở + pháo hoa (carousel chưa hiện). */
+  readonly intro = signal(!this.hideIntro() && !matchMedia('(prefers-reduced-motion: reduce)').matches);
   private stopFw?: () => void;
 
   constructor() {
@@ -224,6 +264,10 @@ export class MiniGameHubPage implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (this.intro()) this.playIntro();
+  }
+
+  private playIntro(): void {
     const canvas = this.fw()?.nativeElement;
     if (!canvas) return;
     // Màn mở ra trong ~1.8s đầu, pháo hoa bắn phía sau rồi tiếp tục sau khi màn mở.
@@ -233,6 +277,22 @@ export class MiniGameHubPage implements AfterViewInit {
   skipIntro(): void {
     this.stopFw?.();
     this.intro.set(false);
+  }
+
+  setHideIntro(hide: boolean): void {
+    this.hideIntro.set(hide);
+    try {
+      if (hide) localStorage.setItem(HIDE_INTRO_KEY, '1');
+      else localStorage.removeItem(HIDE_INTRO_KEY);
+    } catch {
+      /* bỏ qua */
+    }
+  }
+
+  /** Xem lại màn mở đầu (cũng là chỗ bật lại nếu đã chọn "không hiện lại"). */
+  replayIntro(): void {
+    this.intro.set(true);
+    requestAnimationFrame(() => this.playIntro());
   }
 
   readonly games: GameCard[] = [
@@ -249,6 +309,13 @@ export class MiniGameHubPage implements AfterViewInit {
       tag: '🔎 Đố vui · Mỗi ngày',
       desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật mới!',
       art: 'dle',
+    },
+    {
+      path: '/mini-game/fumo-ninja',
+      title: 'Fumo Ninja',
+      tag: '🗡️ Chém fumo · Mới',
+      desc: 'Vuốt để chém các bé fumo bay lên. Cẩn thận Reimu viền neon đỏ — chém trúng là thua!',
+      art: 'ninja',
     },
     {
       path: '/mini-game/dai-chien-mot-vai',
