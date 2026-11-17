@@ -6,7 +6,7 @@ import { animate, stagger } from 'animejs';
 import { Product } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
-import { VndPipe } from '../../shared/vnd.pipe';
+import { PriceTagComponent } from '../../shared/price-tag';
 import { AdminToastService } from '../toast.service';
 
 type Tab = 'all' | 'in' | 'out' | 'featured';
@@ -14,7 +14,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
 
 @Component({
   selector: 'app-admin-products-list',
-  imports: [FormsModule, RouterLink, DatePipe, VndPipe],
+  imports: [FormsModule, RouterLink, DatePipe, PriceTagComponent],
   template: `
     <div class="adm-head">
       <h1>Sản phẩm</h1>
@@ -82,7 +82,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
                 </div>
               </td>
               <td>{{ p.category }}</td>
-              <td>{{ p.price | vnd }}</td>
+              <td><app-price-tag [product]="p" /></td>
               <td>
                 <button type="button" class="status-btn" (click)="toggleStock(p)" title="Bấm để đổi">
                   <span class="status" [class.off]="!p.inStock">{{ p.inStock ? 'Còn hàng' : 'Hết hàng' }}</span>

@@ -21,7 +21,8 @@ export interface CatalogProduct {
   name: string;
   category: string;
   price: number;
-  size: string;
+  /** Giá sau giảm, null nếu không giảm. */
+  salePrice: number | null;
   inStock: boolean;
   featured: boolean;
   tags: string[];
@@ -65,7 +66,10 @@ export function parseCatalog(body: Record<string, unknown>): CatalogSnapshot {
         name: str(p['name'], 120),
         category: str(p['category'], 60),
         price: Number.isFinite(price) && price >= 0 ? price : 0,
-        size: str(p['size'], 10),
+        salePrice: (() => {
+          const s = Math.round(Number(p['salePrice']));
+          return p['salePrice'] !== null && p['salePrice'] !== undefined && Number.isFinite(s) && s >= 0 && s < price ? s : null;
+        })(),
         inStock: p['inStock'] === true,
         featured: p['featured'] === true,
         tags: Array.isArray(p['tags']) ? p['tags'].map((t) => str(t, 30)).filter(Boolean).slice(0, 10) : [],
@@ -117,11 +121,11 @@ export function catalogToPrompt(c: CatalogSnapshot): string {
   ];
 
   const table = [
-    '| Sản phẩm | Danh mục | Giá | Size | Tình trạng | Nổi bật | Thẻ | Đường dẫn | Mô tả |',
+    '| Sản phẩm | Danh mục | Giá | Giảm giá | Tình trạng | Nổi bật | Thẻ | Đường dẫn | Mô tả |',
     '|---|---|---|---|---|---|---|---|---|',
     ...byPrice.map(
       (p) =>
-        `| ${p.name} | ${p.category} | ${vnd(p.price)} | ${p.size} | ${p.inStock ? 'Còn hàng' : 'Hết hàng'} | ${p.featured ? 'Có' : ''} | ${p.tags.join(', ')} | /san-pham/${p.id} | ${p.description.replace(/\|/g, '/').replace(/\s+/g, ' ')} |`,
+        `| ${p.name} | ${p.category} | ${vnd(p.salePrice ?? p.price)} | ${p.salePrice !== null ? `đang giảm ${Math.round((1 - p.salePrice / p.price) * 100)}% (giá gốc ${vnd(p.price)})` : ''} | ${p.inStock ? 'Còn hàng' : 'Hết hàng'} | ${p.featured ? 'Có' : ''} | ${p.tags.join(', ')} | /san-pham/${p.id} | ${p.description.replace(/\|/g, '/').replace(/\s+/g, ' ')} |`,
     ),
   ];
 

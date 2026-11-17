@@ -127,15 +127,29 @@
             <small class="hint">{{ form.controls.price.value | vnd }}</small>
           }
         </div>
-        <div class="field">
-          <label>Kích thước</label>
-          <div class="seg">
-            @for (s of sizes; track s) {
-              <label [class.on]="form.controls.size.value === s">
-                <input type="radio" formControlName="size" [value]="s" hidden />{{ s }}
-              </label>
+        <div class="field sale">
+          <label>Giảm giá <small class="hint">(nhập % hoặc giá sau giảm — ô kia tự tính)</small></label>
+          <div class="sale-row">
+            <div class="sale-input">
+              <input type="number" min="0" max="99" step="1" placeholder="0" [formControl]="salePercent" (input)="onPercentInput()" aria-label="Phần trăm giảm" />
+              <span>%</span>
+            </div>
+            <span class="eq">⇄</span>
+            <div class="sale-input wide">
+              <input type="number" min="0" step="1000" placeholder="Giá sau giảm" [formControl]="salePrice" (input)="onSalePriceInput()" aria-label="Giá sau giảm" />
+              <span>đ</span>
+            </div>
+            @if (salePrice.value !== null) {
+              <button type="button" class="link-del" (click)="clearSale()">Bỏ giảm giá</button>
             }
           </div>
+          @if (saleError()) {
+            <span class="error">{{ saleError() }}</span>
+          } @else if (salePrice.value !== null && form.controls.price.value) {
+            <small class="hint">
+              Khách thấy: <s>{{ form.controls.price.value | vnd }}</s> → <b>{{ salePrice.value | vnd }}</b> (-{{ salePercent.value }}%)
+            </small>
+          }
         </div>
         <div class="field">
           <label for="tags">Thẻ (phân cách bằng dấu phẩy)</label>

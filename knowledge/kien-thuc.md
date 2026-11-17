@@ -25,19 +25,19 @@
 
 ## Sản phẩm và giá (tham khảo)
 
-| Sản phẩm | Loại | Giá | Kích thước | Tình trạng |
-|---|---|---|---|---|
-| Fumo Hồng Đào | Fumo Plush | 690.000đ | M (~20cm) | Còn hàng |
-| Fumo Bạc Hà | Fumo Plush | 720.000đ | M (~20cm) | Còn hàng |
-| Fumo Mini Chanh | Fumo Plush | 390.000đ | S (~10cm) | Còn hàng |
-| Fumo Khổng Lồ Lavender | Fumo Plush | 1.490.000đ | L (~45cm) | Hết hàng |
-| Móc khóa Fumo Cam | Móc khóa | 149.000đ | S | Còn hàng |
-| Móc khóa Fumo Biển | Móc khóa | 159.000đ | S | Còn hàng |
-| Figure Fumo Ngồi Ghế | Figure (PVC sơn tay) | 890.000đ | M | Còn hàng |
-| Túi đựng Fumo trong suốt (túi ita) | Phụ kiện | 259.000đ | L | Còn hàng |
-| Bộ quần áo Fumo mùa đông (áo len + khăn) | Phụ kiện | 199.000đ | cho fumo 20cm | Hết hàng |
+| Sản phẩm | Loại | Giá | Tình trạng |
+|---|---|---|---|
+| Fumo Hồng Đào | Fumo Plush | 690.000đ | Còn hàng |
+| Fumo Bạc Hà | Fumo Plush | 720.000đ | Còn hàng |
+| Fumo Mini Chanh | Fumo Plush | 390.000đ | Còn hàng |
+| Fumo Khổng Lồ Lavender | Fumo Plush | 1.490.000đ | Hết hàng |
+| Móc khóa Fumo Cam | Móc khóa | 149.000đ | Còn hàng |
+| Móc khóa Fumo Biển | Móc khóa | 159.000đ | Còn hàng |
+| Figure Fumo Ngồi Ghế | Figure (PVC sơn tay) | 890.000đ | Còn hàng |
+| Túi đựng Fumo trong suốt (túi ita) | Phụ kiện | 259.000đ | Còn hàng |
+| Bộ quần áo Fumo mùa đông (áo len + khăn) | Phụ kiện | 199.000đ | Hết hàng |
 
-Giá và tình trạng có thể thay đổi — luôn mời khách xem trang /san-pham hoặc nhắn shop để xác nhận.
+Giá, giảm giá và tình trạng thực tế lấy theo danh sách sản phẩm đồng bộ từ admin (ưu tiên hơn bảng này). Giá và tình trạng có thể thay đổi — luôn mời khách xem trang /san-pham hoặc nhắn shop để xác nhận.
 
 ## Cách đặt hàng
 

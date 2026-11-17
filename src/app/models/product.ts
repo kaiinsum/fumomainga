@@ -1,5 +1,3 @@
-export type ProductSize = 'S' | 'M' | 'L';
-
 export interface Product {
   id: string;
   name: string;
@@ -8,7 +6,8 @@ export interface Product {
   description: string;
   images: string[];
   tags: string[];
-  size: ProductSize;
+  /** Giá sau giảm (VNĐ). null / không có = không giảm giá. Phải nhỏ hơn price. */
+  salePrice?: number | null;
   inStock: boolean;
   featured: boolean;
   createdAt: number;
@@ -28,6 +27,16 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Figure', icon: '🗿' },
   { name: 'Phụ kiện', icon: '🎀' },
 ];
-export const SIZES: ProductSize[] = ['S', 'M', 'L'];
+
+/** Sản phẩm đang được giảm giá? */
+export const onSale = (p: Pick<Product, 'price' | 'salePrice'>): boolean =>
+  typeof p.salePrice === 'number' && p.salePrice >= 0 && p.salePrice < p.price;
+
+/** Giá khách phải trả (đã trừ giảm giá). */
+export const finalPrice = (p: Pick<Product, 'price' | 'salePrice'>): number => (onSale(p) ? (p.salePrice as number) : p.price);
+
+/** % giảm (làm tròn), 0 nếu không giảm. */
+export const discountPercent = (p: Pick<Product, 'price' | 'salePrice'>): number =>
+  onSale(p) && p.price > 0 ? Math.round((1 - (p.salePrice as number) / p.price) * 100) : 0;
 
 export type SortKey = 'newest' | 'price-asc' | 'price-desc' | 'name';

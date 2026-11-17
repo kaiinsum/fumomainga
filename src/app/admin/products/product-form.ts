@@ -1,8 +1,8 @@
 import { Component, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
-import { ProductInput, ProductSize, SIZES } from '../../models/product';
+import { ProductInput, discountPercent, onSale } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
@@ -27,7 +27,6 @@ export class AdminProductForm {
   private readonly toast = inject(AdminToastService);
 
   readonly categories = inject(CategoryService).names;
-  readonly sizes = SIZES;
   readonly maxImages = MAX_IMAGES;
 
   readonly images = signal<string[]>([]);
@@ -45,14 +44,23 @@ export class AdminProductForm {
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(80)]],
     category: [this.categories()[0] ?? '', Validators.required],
     price: [0, [Validators.required, Validators.min(0)]],
-    size: ['M' as ProductSize, Validators.required],
     description: ['', [Validators.required, Validators.minLength(10)]],
     tags: [''],
     inStock: [true],
     featured: [false],
   });
 
+  /** Giảm giá: nhập % hoặc giá sau giảm — ô kia tự tính theo. Để trống cả hai = không giảm. */
+  readonly salePercent = new FormControl<number | null>(null);
+  readonly salePrice = new FormControl<number | null>(null);
+  readonly saleError = signal('');
+
   constructor() {
+    // Đổi giá gốc khi đang giảm theo % → tính lại giá sau giảm.
+    this.form.controls.price.valueChanges.subscribe(() => {
+      if (this.salePercent.value) this.onPercentInput();
+      else this.checkSale();
+    });
     // Chỉ chạy khi đổi sản phẩm cần sửa (theo id), không chạy lại mỗi khi dữ liệu thay đổi.
     effect(() => {
       const id = this.id();
@@ -63,14 +71,17 @@ export class AdminProductForm {
             name: p.name,
             category: p.category,
             price: p.price,
-            size: p.size,
             description: p.description,
             tags: p.tags.join(', '),
             inStock: p.inStock,
             featured: p.featured,
           });
           this.images.set([...p.images]);
+          this.salePrice.setValue(onSale(p) ? (p.salePrice as number) : null);
+          this.salePercent.setValue(onSale(p) ? discountPercent(p) : null);
         } else {
+          this.salePrice.setValue(null);
+          this.salePercent.setValue(null);
           this.form.reset({ category: this.categories()[0] ?? '' });
           this.images.set([]);
         }
@@ -152,12 +163,17 @@ export class AdminProductForm {
       return;
     }
 
+    if (!this.checkSale()) {
+      this.toast.err(this.saleError());
+      return;
+    }
     const v = this.form.getRawValue();
     const data: ProductInput = {
       ...v,
       name: v.name.trim(),
       description: v.description.trim(),
       price: Number(v.price),
+      salePrice: this.validSale(),
       tags: [...new Set(v.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
       images: this.images(),
     };
@@ -170,6 +186,57 @@ export class AdminProductForm {
       const ok = this.toast.run(() => (createdId = this.service.add(data).id), 'Đã đăng sản phẩm');
       if (ok) this.router.navigate(['/admin/san-pham', createdId]);
     }
+  }
+
+  // ---------- Giảm giá ----------
+  /** Nhập % → tính giá sau giảm (làm tròn tới 1.000đ khi giá đủ lớn). */
+  onPercentInput(): void {
+    const price = Number(this.form.controls.price.value) || 0;
+    const raw = this.salePercent.value;
+    if (raw === null || raw === undefined || String(raw) === '' || Number(raw) <= 0) {
+      this.salePrice.setValue(null, { emitEvent: false });
+      this.checkSale();
+      return;
+    }
+    const pct = Math.min(99, Math.max(1, Math.round(Number(raw))));
+    let sale = price * (1 - pct / 100);
+    sale = price >= 10000 ? Math.round(sale / 1000) * 1000 : Math.round(sale);
+    this.salePrice.setValue(Math.min(sale, Math.max(0, price - 1)), { emitEvent: false });
+    this.checkSale();
+  }
+
+  /** Nhập giá sau giảm → tính %. */
+  onSalePriceInput(): void {
+    const price = Number(this.form.controls.price.value) || 0;
+    const raw = this.salePrice.value;
+    if (raw === null || raw === undefined || String(raw) === '') {
+      this.salePercent.setValue(null, { emitEvent: false });
+    } else if (price > 0 && Number(raw) < price && Number(raw) >= 0) {
+      this.salePercent.setValue(Math.round((1 - Number(raw) / price) * 100), { emitEvent: false });
+    }
+    this.checkSale();
+  }
+
+  clearSale(): void {
+    this.salePercent.setValue(null);
+    this.salePrice.setValue(null);
+    this.saleError.set('');
+  }
+
+  /** Giá sau giảm hợp lệ (nhỏ hơn giá gốc) hoặc null nếu không giảm. */
+  private validSale(): number | null {
+    const raw = this.salePrice.value;
+    if (raw === null || raw === undefined || String(raw) === '') return null;
+    return Math.round(Number(raw));
+  }
+
+  /** Kiểm tra giá sau giảm; trả về false và ghi lỗi nếu không hợp lệ. */
+  checkSale(): boolean {
+    const sale = this.validSale();
+    const price = Number(this.form.controls.price.value) || 0;
+    const err = sale === null ? '' : sale < 0 ? 'Giá sau giảm không được âm.' : sale >= price ? 'Giá sau giảm phải nhỏ hơn giá gốc.' : '';
+    this.saleError.set(err);
+    return !err;
   }
 
   remove(): void {

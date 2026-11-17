@@ -61,6 +61,8 @@ export interface SiteSettings {
   facebookUrl: string;
   /** Link kênh TikTok. Trống → ẩn bong bóng. */
   tiktokUrl: string;
+  /** Link gian hàng Shopee. Trống → ẩn bong bóng. */
+  shopeeUrl: string;
   /** Hiện bong bóng trợ lý AI. */
   chatEnabled: boolean;
   chatGreeting: string;
@@ -108,6 +110,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 
   facebookUrl: '',
   tiktokUrl: '',
+  shopeeUrl: '',
   chatEnabled: true,
   chatGreeting: 'Xin chào! Mình là trợ lý của shop 🧸 Bạn cần tư vấn sản phẩm, giá hay cách đặt hàng không?',
 

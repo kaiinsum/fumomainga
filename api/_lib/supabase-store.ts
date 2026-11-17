@@ -46,7 +46,7 @@ export interface ProductRow {
   name: string;
   category: string;
   price: number;
-  size: string;
+  salePrice: number | null;
   inStock: boolean;
   featured: boolean;
   tags: string[];
@@ -197,23 +197,22 @@ export function supabaseStore(url: string, serviceKey: string) {
     async syncProducts(products: ProductRow[]): Promise<void> {
       const now = new Date().toISOString();
       if (products.length) {
-        check(
-          await db.from('products').upsert(
-            products.map((p) => ({
-              id: p.id,
-              name: p.name,
-              category: p.category,
-              price: p.price,
-              size: p.size,
-              in_stock: p.inStock,
-              featured: p.featured,
-              tags: p.tags,
-              description: p.description,
-              synced_at: now,
-            })),
-          ),
-          'đồng bộ sản phẩm',
-        );
+        const rows = products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          price: p.price,
+          sale_price: p.salePrice,
+          in_stock: p.inStock,
+          featured: p.featured,
+          tags: p.tags,
+          description: p.description,
+          synced_at: now,
+        }));
+        let res = await db.from('products').upsert(rows);
+        // DB cũ chưa có cột sale_price (chưa chạy lại schema.sql) → vẫn đồng bộ được phần còn lại.
+        if (res.error && /sale_price/.test(res.error.message)) res = await db.from('products').upsert(rows.map(({ sale_price: _s, ...r }) => r));
+        check(res, 'đồng bộ sản phẩm');
       }
       // Sản phẩm không còn trong danh sách thì xoá (những dòng chưa được cập nhật ở lần đồng bộ này).
       check(await db.from('products').delete().lt('synced_at', now), 'dọn sản phẩm đã xoá');

@@ -116,7 +116,14 @@ export class AdminSettings implements OnDestroy {
       this.toast.err('Tên shop không được để trống.');
       return;
     }
-    this.toast.run(() => this.settingsSvc.save(this.draft), 'Đã lưu cài đặt');
+    if (this.toast.run(() => this.settingsSvc.save(this.draft), 'Đã lưu cài đặt')) void this.publish();
+  }
+
+  /** Gửi cài đặt lên máy chủ để mọi khách cùng thấy (link mạng xã hội, liên hệ, màu...). */
+  private async publish(): Promise<void> {
+    const err = await this.settingsSvc.publish(this.settingsSvc.settings());
+    if (err) this.toast.err('Đã lưu trên máy này nhưng chưa gửi được lên web cho khách: ' + err);
+    else this.toast.ok('Đã cập nhật cho mọi khách truy cập');
   }
 
   discard(): void {
@@ -128,7 +135,7 @@ export class AdminSettings implements OnDestroy {
   resetDefaults(): void {
     if (!confirm('Đưa toàn bộ cài đặt về mặc định?')) return;
     this.draft = structuredClone(DEFAULT_SETTINGS);
-    this.toast.run(() => this.settingsSvc.save(this.draft), 'Đã khôi phục cài đặt mặc định');
+    if (this.toast.run(() => this.settingsSvc.save(this.draft), 'Đã khôi phục cài đặt mặc định')) void this.publish();
   }
 
   addValue(): void {

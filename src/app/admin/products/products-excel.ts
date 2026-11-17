@@ -25,7 +25,7 @@ type Filter = 'changed' | 'all' | 'error';
         <h2>1. Tải file Excel</h2>
         <div class="box-body">
           <p class="hint">
-            File gồm toàn bộ {{ products().length }} sản phẩm hiện có, kèm ô chọn sẵn cho Danh mục, Kích thước, Còn hàng, Nổi bật
+            File gồm toàn bộ {{ products().length }} sản phẩm hiện có, kèm ô chọn sẵn cho Danh mục, Còn hàng, Nổi bật
             và sheet hướng dẫn. Không có hình ảnh.
           </p>
           <div class="row-btns">
@@ -111,7 +111,7 @@ type Filter = 'changed' | 'all' | 'error';
                     <td>
                       <b>{{ r.name }}</b>
                       @if (r.data) {
-                        <div class="sub">{{ r.data.category }} · {{ r.data.price | vnd }} · Size {{ r.data.size }}</div>
+                        <div class="sub">{{ r.data.category }} · {{ r.data.price | vnd }}@if (r.data.salePrice !== null && r.data.salePrice !== undefined) { → giảm còn {{ r.data.salePrice | vnd }} }</div>
                       }
                     </td>
                     <td>

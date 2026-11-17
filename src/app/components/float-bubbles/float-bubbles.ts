@@ -66,6 +66,14 @@ const HISTORY_KEY = 'fumo.chat';
     }
 
     <div class="stack">
+      @if (s().shopeeUrl && !open()) {
+        <a class="bubble shopee" [href]="s().shopeeUrl" target="_blank" rel="noopener" title="Shopee" aria-label="Gian hàng Shopee">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M12 2.5a4.25 4.25 0 0 0-4.2 3.75H4.6a.9.9 0 0 0-.9.96l.95 13.1A1.9 1.9 0 0 0 6.55 22h10.9a1.9 1.9 0 0 0 1.9-1.69l.95-13.1a.9.9 0 0 0-.9-.96h-3.2A4.25 4.25 0 0 0 12 2.5Zm0 1.6a2.65 2.65 0 0 1 2.58 2.15H9.42A2.65 2.65 0 0 1 12 4.1Z"/>
+            <path fill="#ee4d2d" d="M12.3 10.2c-1.6 0-2.7.85-2.7 2.05 0 1.3 1.15 1.75 2.35 2.1.95.28 1.45.5 1.45 1.02 0 .5-.55.83-1.35.83-.9 0-1.65-.4-2.2-.95l-.75 1c.65.7 1.7 1.15 2.9 1.15 1.75 0 2.9-.88 2.9-2.15 0-1.4-1.25-1.85-2.45-2.2-.9-.26-1.35-.47-1.35-.93 0-.43.45-.73 1.15-.73.7 0 1.3.3 1.8.72l.7-1c-.65-.55-1.5-.91-2.55-.91Z"/>
+          </svg>
+        </a>
+      }
       @if (s().tiktokUrl && !open()) {
         <a class="bubble tiktok" [href]="s().tiktokUrl" target="_blank" rel="noopener" title="TikTok" aria-label="TikTok">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -110,6 +118,7 @@ const HISTORY_KEY = 'fumo.chat';
     .bubble svg { width: 26px; height: 26px; }
     .tiktok { background: #111; box-shadow: -2px -2px 0 #25f4ee inset, 2px 2px 0 #fe2c55 inset, 0 8px 22px rgba(0,0,0,.2); }
     .facebook { background: #1877f2; }
+    .shopee { background: #ee4d2d; }
     .ai { width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 55%, #b26bff)); }
     .ai:not(.on) { animation: pulse 2.6s ease-in-out infinite; }
     .ai svg { width: 30px; height: 30px; }

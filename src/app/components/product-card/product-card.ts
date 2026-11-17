@@ -1,8 +1,8 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AnimatableObject, AnimatableProperty, animate, createAnimatable, spring } from 'animejs';
-import { Product } from '../../models/product';
-import { VndPipe } from '../../shared/vnd.pipe';
+import { Product, discountPercent, onSale } from '../../models/product';
+import { PriceTagComponent } from '../../shared/price-tag';
 
 /** Độ nghiêng tối đa (độ) và độ lệch ảnh (px) khi rê chuột. */
 const TILT = 9;
@@ -13,7 +13,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
 
 @Component({
   selector: 'app-product-card',
-  imports: [RouterLink, VndPipe],
+  imports: [RouterLink, PriceTagComponent],
   template: `
     @let p = product();
     <a class="card" [routerLink]="['/san-pham', p.id]">
@@ -21,15 +21,17 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
         <img [src]="p.images[0]" [alt]="p.name" loading="lazy" />
         @if (!p.inStock) {
           <span class="badge out">Hết hàng</span>
+        } @else if (onSale(p)) {
+          <span class="badge sale">Giảm {{ discountPercent(p) }}%</span>
         } @else if (p.featured) {
           <span class="badge">Nổi bật</span>
         }
       </div>
       <div class="info">
-        <span class="cat">{{ p.category }} · Size {{ p.size }}</span>
+        <span class="cat">{{ p.category }}</span>
         <h3>{{ p.name }}</h3>
         <div class="bottom">
-          <strong>{{ p.price | vnd }}</strong>
+          <app-price-tag class="pt" [product]="p" [badge]="false" />
           <span class="go" aria-hidden="true">→</span>
         </div>
       </div>
@@ -65,6 +67,8 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
 
     .badge { position: absolute; top: 12px; left: 12px; z-index: 1; background: var(--primary); color: var(--on-primary);
       font-size: .75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+    .badge.sale { background: #e53935; color: #fff; }
+    .pt { font-size: 1.1rem; font-weight: 800; }
     .badge.out { background: var(--surface); color: var(--muted); border: 1.5px solid var(--border); }
 
     .info { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
@@ -93,6 +97,8 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
   `,
 })
 export class ProductCardComponent implements AfterViewInit, OnDestroy {
+  protected readonly onSale = onSale;
+  protected readonly discountPercent = discountPercent;
   readonly product = input.required<Product>();
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 

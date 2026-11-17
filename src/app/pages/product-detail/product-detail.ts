@@ -9,12 +9,12 @@ import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
 import { flyToCart } from '../../shared/fly-to-cart';
 import { ProductCardComponent } from '../../components/product-card/product-card';
-import { VndPipe } from '../../shared/vnd.pipe';
+import { PriceTagComponent } from '../../shared/price-tag';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [DatePipe, RouterLink, ProductCardComponent, VndPipe, AnimateInDirective],
+  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
 })

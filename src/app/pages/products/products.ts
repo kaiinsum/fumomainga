@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { animate, stagger } from 'animejs';
-import { ProductSize, SIZES, SortKey } from '../../models/product';
+import { SortKey, finalPrice } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { ProductCardComponent } from '../../components/product-card/product-card';
@@ -22,7 +22,6 @@ export class ProductsPage {
   private readonly service = inject(ProductService);
 
   readonly categories = inject(CategoryService).names;
-  readonly sizes = SIZES;
   readonly allTags = this.service.allTags;
   readonly maxPrice = computed(() => Math.ceil(this.service.maxPrice() / 10000) * 10000 || 1000000);
 
@@ -36,7 +35,6 @@ export class ProductsPage {
   // ---- Trạng thái bộ lọc ----
   readonly search = signal('');
   readonly selectedCats = signal<Set<string>>(new Set());
-  readonly selectedSizes = signal<Set<ProductSize>>(new Set());
   readonly selectedTags = signal<Set<string>>(new Set());
   readonly priceMax = signal<number | null>(null);
   readonly inStockOnly = signal(false);
@@ -50,7 +48,6 @@ export class ProductsPage {
   readonly filtered = computed(() => {
     const term = this.normalize(this.search().trim());
     const cats = this.selectedCats();
-    const sizes = this.selectedSizes();
     const tags = this.selectedTags();
     const max = this.effectivePriceMax();
     const stock = this.inStockOnly();
@@ -59,16 +56,15 @@ export class ProductsPage {
       (p) =>
         (!term || this.normalize(`${p.name} ${p.description} ${p.tags.join(' ')}`).includes(term)) &&
         (!cats.size || cats.has(p.category)) &&
-        (!sizes.size || sizes.has(p.size)) &&
         (!tags.size || p.tags.some((t) => tags.has(t))) &&
-        p.price <= max &&
+        finalPrice(p) <= max &&
         (!stock || p.inStock),
     );
 
     const sorters: Record<SortKey, (a: (typeof list)[0], b: (typeof list)[0]) => number> = {
       newest: (a, b) => b.createdAt - a.createdAt,
-      'price-asc': (a, b) => a.price - b.price,
-      'price-desc': (a, b) => b.price - a.price,
+      'price-asc': (a, b) => finalPrice(a) - finalPrice(b),
+      'price-desc': (a, b) => finalPrice(b) - finalPrice(a),
       name: (a, b) => a.name.localeCompare(b.name, 'vi'),
     };
     return [...list].sort(sorters[this.sort()]);
@@ -79,7 +75,6 @@ export class ProductsPage {
   readonly activeCount = computed(
     () =>
       this.selectedCats().size +
-      this.selectedSizes().size +
       this.selectedTags().size +
       (this.priceMax() !== null ? 1 : 0) +
       (this.inStockOnly() ? 1 : 0) +
@@ -140,7 +135,6 @@ export class ProductsPage {
   reset(): void {
     this.search.set('');
     this.selectedCats.set(new Set());
-    this.selectedSizes.set(new Set());
     this.selectedTags.set(new Set());
     this.priceMax.set(null);
     this.inStockOnly.set(false);

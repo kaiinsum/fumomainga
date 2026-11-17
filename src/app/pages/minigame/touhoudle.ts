@@ -2,6 +2,8 @@ import { Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ThAvatarComponent } from './th-avatar';
+import { sfx } from '../../shared/sfx';
+import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { CHARACTERS, Character, GAMES, stageOrder } from './touhoudle-data';
 
 type Mark = 'ok' | 'partial' | 'bad';
@@ -54,10 +56,10 @@ interface Saved {
 
 @Component({
   selector: 'app-touhoudle',
-  imports: [FormsModule, RouterLink, ThAvatarComponent],
+  imports: [FormsModule, RouterLink, ThAvatarComponent, SoundToggleComponent],
   template: `
     <div class="container wrap">
-      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a></nav>
+      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
       <header class="head">
         <span class="chip">🔎 Đoán nhân vật</span>
         <h1>Đoán nhân vật <span class="hl">(Touhoudle)</span></h1>
@@ -168,6 +170,7 @@ interface Saved {
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }
+    .crumbs { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
     .crumbs a { color: var(--muted); font-weight: 700; }
     .crumbs a:hover { color: var(--primary); }
     .head { text-align: center; margin: 8px 0 20px; }
@@ -327,6 +330,10 @@ export class TouhoudlePage {
       return;
     }
     this.guesses.update((g) => [...g, c.name]);
+    // Lật 6 ô lần lượt (khớp hiệu ứng lật 160ms/ô), rồi báo đúng / sai.
+    for (let i = 0; i < 6; i++) setTimeout(() => sfx.play('flip'), i * 160);
+    const right = c.name === this.answer().name;
+    setTimeout(() => sfx.play(right ? 'win' : 'wrong'), 6 * 160 + 80);
     this.query.set('');
     this.active.set(0);
     this.open.set(false);

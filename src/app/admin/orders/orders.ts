@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Customer, EMPTY_CUSTOMER, ORDER_STATUSES, ORDER_STATUS_LABEL, Order, OrderItem, OrderStatus } from '../../models/order';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { ProductService } from '../../services/product.service';
+import { Product, finalPrice } from '../../models/product';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AdminToastService } from '../toast.service';
 
@@ -121,7 +122,7 @@ interface Draft {
               <div class="add-row">
                 <select [(ngModel)]="pickProduct" aria-label="Chọn sản phẩm">
                   <option value="">— Thêm sản phẩm có sẵn —</option>
-                  @for (p of products(); track p.id) { <option [value]="p.id">{{ p.name }} ({{ p.price | vnd }})</option> }
+                  @for (p of products(); track p.id) { <option [value]="p.id">{{ p.name }} ({{ unit(p) | vnd }})</option> }
                 </select>
                 <button type="button" class="mini" (click)="addProduct(d)">+ Thêm</button>
                 <button type="button" class="mini" (click)="d.items.push({ id: '', name: '', price: 0, qty: 1 })">+ Dòng trống</button>
@@ -267,6 +268,7 @@ export class AdminOrders {
   private readonly api = inject(OrderApiService);
   private readonly toast = inject(AdminToastService);
   readonly products = inject(ProductService).products;
+  protected readonly unit = (p: Product) => finalPrice(p);
 
   readonly label = ORDER_STATUS_LABEL;
   readonly statuses = ORDER_STATUSES;
@@ -386,7 +388,7 @@ export class AdminOrders {
     if (!p) return;
     const line = d.items.find((i) => i.id === p.id);
     if (line) line.qty++;
-    else d.items.push({ id: p.id, name: p.name, price: p.price, qty: 1 });
+    else d.items.push({ id: p.id, name: p.name, price: finalPrice(p), qty: 1 });
     this.pickProduct = '';
   }
 

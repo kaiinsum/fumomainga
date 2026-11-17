@@ -1,10 +1,12 @@
+import { PriceTagComponent } from '../../shared/price-tag';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { Product } from '../../models/product';
 import { CartService } from '../../services/cart.service';
 import { ProductService } from '../../services/product.service';
-import { VndPipe } from '../../shared/vnd.pipe';
 import { flyToCart } from '../../shared/fly-to-cart';
+import { sfx } from '../../shared/sfx';
 
 type RarityKey = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -37,10 +39,10 @@ const WIN_INDEX = 54;
 
 @Component({
   selector: 'app-gacha',
-  imports: [RouterLink, VndPipe],
+  imports: [RouterLink, SoundToggleComponent, PriceTagComponent],
   template: `
     <div class="container wrap">
-      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a></nav>
+      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
       <header class="head">
         <span class="chip">🎁 Gacha</span>
         <h1>Túi mù <span class="hl">may mắn</span></h1>
@@ -90,7 +92,7 @@ const WIN_INDEX = 54;
               <span class="rarity">{{ r.rarity.label }} · {{ (r.chance * 100).toFixed(1) }}%</span>
               <small class="muted">Hôm nay bạn nên mua</small>
               <h2>{{ r.product.name }}</h2>
-              <strong class="price">{{ r.product.price | vnd }}</strong>
+              <app-price-tag class="price" [product]="r.product" />
               <p class="muted">{{ r.product.description }}</p>
               <div class="row">
                 <button class="btn primary" type="button" (click)="addToCart(r.product)">{{ added() ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ' }}</button>
@@ -129,6 +131,7 @@ const WIN_INDEX = 54;
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }
+    .crumbs { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
     .crumbs a { color: var(--muted); font-weight: 700; }
     .crumbs a:hover { color: var(--primary); }
     .head { text-align: center; margin: 8px 0 24px; }
@@ -238,6 +241,7 @@ export class GachaPage {
     if (!pool.length || this.opening()) return;
     this.opening.set(true);
     this.added.set(false);
+    sfx.play('shake');
     // Rung túi một chút rồi mới mở dải quay.
     setTimeout(() => {
       const winner = this.pick(pool);
@@ -255,6 +259,7 @@ export class GachaPage {
           this.animating.set(true);
           this.offset.set(-(WIN_INDEX * (CELL + GAP) + CELL / 2 - width / 2 + jitter));
           this.pendingWinner = winner;
+          this.tickWhileSpinning(width);
         }),
       );
     }, 700);
@@ -262,11 +267,29 @@ export class GachaPage {
 
   private pendingWinner: PoolItem | null = null;
 
+  /** Tiếng "tách" mỗi khi một ô đi qua vạch giữa (đọc vị trí thật của dải đang chạy). */
+  private tickWhileSpinning(width: number): void {
+    const strip = document.querySelector<HTMLElement>('.reel .strip');
+    let lastIndex = -1;
+    const step = () => {
+      if (!strip || this.result() || !this.strip().length) return;
+      const x = new DOMMatrixReadOnly(getComputedStyle(strip).transform).m41;
+      const idx = Math.floor((width / 2 - x) / (CELL + GAP));
+      if (idx !== lastIndex) {
+        if (lastIndex !== -1) sfx.play('tick');
+        lastIndex = idx;
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
   onStop(): void {
     const w = this.pendingWinner;
     if (!w || this.result()) return;
     this.result.set(w);
     this.history.update((h) => [w, ...h].slice(0, 6));
+    sfx.play(`reveal-${w.rarity.key}`);
   }
 
   reset(): void {

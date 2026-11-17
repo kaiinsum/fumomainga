@@ -1,3 +1,4 @@
+import { finalPrice } from '../models/product';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { loadJson, saveJson } from '../core/storage';
 import { OrderItem } from '../models/order';
@@ -23,7 +24,7 @@ export class CartService {
       .filter((l): l is { product: NonNullable<typeof l.product>; qty: number } => !!l.product),
   );
   readonly count = computed(() => this.items().reduce((s, l) => s + l.qty, 0));
-  readonly total = computed(() => this.items().reduce((s, l) => s + l.product.price * l.qty, 0));
+  readonly total = computed(() => this.items().reduce((s, l) => s + finalPrice(l.product) * l.qty, 0));
 
   add(id: string, qty = 1): void {
     const lines = [...this._lines()];
@@ -48,7 +49,7 @@ export class CartService {
 
   /** Dữ liệu gửi lên máy chủ khi đặt hàng. */
   orderItems(): OrderItem[] {
-    return this.items().map((l) => ({ id: l.product.id, name: l.product.name, price: l.product.price, qty: l.qty }));
+    return this.items().map((l) => ({ id: l.product.id, name: l.product.name, price: finalPrice(l.product), qty: l.qty }));
   }
 
   private commit(next: CartLine[]): void {

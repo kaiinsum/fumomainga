@@ -7,6 +7,8 @@ import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { OrderOutboxService } from '../../services/order-outbox.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
+import { PriceTagComponent } from '../../shared/price-tag';
+import { Product, finalPrice } from '../../models/product';
 import { emailError, emailSuggestion, isValidVnPhone, normalizePhone, phoneError } from '../../shared/validators';
 
 /** Đơn vừa đặt, đang hiện popup QR chờ duyệt (giữ qua F5 trong cùng tab). Không gửi lên máy chủ. */
@@ -32,7 +34,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
 
 @Component({
   selector: 'app-cart',
-  imports: [FormsModule, RouterLink, VndPipe],
+  imports: [FormsModule, RouterLink, VndPipe, PriceTagComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/">Trang chủ</a> / <span>Giỏ hàng</span></nav>
@@ -47,14 +49,14 @@ const PENDING_KEY = 'fumo.checkout.pending';
                 <img [src]="l.product.images[0]" [alt]="l.product.name" />
                 <div class="line-info">
                   <a [routerLink]="['/san-pham', l.product.id]">{{ l.product.name }}</a>
-                  <small>{{ l.product.price | vnd }}{{ l.product.inStock ? '' : ' · Hết hàng — shop sẽ liên hệ' }}</small>
+                  <small><app-price-tag [product]="l.product" />{{ l.product.inStock ? '' : ' · Hết hàng — shop sẽ liên hệ' }}</small>
                 </div>
                 <div class="qty">
                   <button type="button" (click)="cart.setQty(l.product.id, l.qty - 1)" aria-label="Giảm">−</button>
                   <span>{{ l.qty }}</span>
                   <button type="button" (click)="cart.setQty(l.product.id, l.qty + 1)" aria-label="Tăng">+</button>
                 </div>
-                <strong class="sum">{{ l.product.price * l.qty | vnd }}</strong>
+                <strong class="sum">{{ unit(l.product) * l.qty | vnd }}</strong>
                 <button class="del" type="button" (click)="cart.remove(l.product.id)" aria-label="Xoá">✕</button>
               </div>
             }
@@ -239,6 +241,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
   `,
 })
 export class CartPage {
+  protected readonly unit = (p: Product) => finalPrice(p);
   readonly cart = inject(CartService);
   readonly s = inject(SettingsService).settings;
   private readonly api = inject(OrderApiService);
@@ -306,7 +309,7 @@ export class CartPage {
     const vnd = (n: number) => n.toLocaleString('vi-VN') + 'đ';
     const summary = [
       `ĐƠN HÀNG ${code} — ${this.s().shopName}`,
-      ...this.cart.items().map((l) => `• ${l.product.name} × ${l.qty} = ${vnd(l.product.price * l.qty)}`),
+      ...this.cart.items().map((l) => `• ${l.product.name} × ${l.qty} = ${vnd(finalPrice(l.product) * l.qty)}`),
       `Tổng: ${vnd(total)}`,
       `Người nhận: ${c.name.trim()}`,
       `SĐT: ${c.phone.trim()}`,

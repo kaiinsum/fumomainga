@@ -1,13 +1,14 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-engine';
 
 @Component({
   selector: 'app-fumo-ninja',
-  imports: [RouterLink],
+  imports: [RouterLink, SoundToggleComponent],
   template: `
     <div class="container wrap">
-      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a></nav>
+      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
       <header class="head">
         <span class="chip">🗡️ Chém fumo</span>
         <h1>Fumo <span class="hl">Ninja</span></h1>
@@ -50,6 +51,7 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }
+    .crumbs { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
     .crumbs a { color: var(--muted); font-weight: 700; }
     .crumbs a:hover { color: var(--primary); }
     .head { text-align: center; margin: 8px 0 18px; }

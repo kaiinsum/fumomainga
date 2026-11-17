@@ -1,6 +1,7 @@
-import { Injectable, effect, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { STORAGE_KEYS, loadJson, saveJson } from '../core/storage';
 import { DEFAULT_SETTINGS, FONT_OPTIONS, SiteSettings, googleFontUrl } from '../models/site-settings';
+import { OrderApiService } from './order-api.service';
 
 const FONT_LINK_ID = 'site-font';
 
@@ -25,8 +26,10 @@ export class SettingsService {
   );
 
   readonly settings = this._settings.asReadonly();
+  private readonly api = inject(OrderApiService);
 
   constructor() {
+    void this.loadRemote();
     // Áp dụng màu chủ đạo, màu nền và font cho toàn site.
     effect(() => {
       const s = this._settings();
@@ -37,9 +40,39 @@ export class SettingsService {
     });
   }
 
+  /** Lấy cài đặt admin đã lưu trên máy chủ → mọi khách đều thấy giống nhau (link mạng xã hội, liên hệ, màu...). */
+  private async loadRemote(): Promise<void> {
+    try {
+      const res = await fetch('/api/settings');
+      if (!res.ok) return;
+      const data = (await res.json()) as { settings: Partial<SiteSettings> | null };
+      if (!data?.settings) return;
+      const next = migrate({ ...DEFAULT_SETTINGS, ...data.settings });
+      this._settings.set(next);
+      try {
+        saveJson(STORAGE_KEYS.settings, next);
+      } catch {
+        /* bỏ qua */
+      }
+    } catch {
+      /* chưa có máy chủ (chạy thử ở máy) → dùng cài đặt trong trình duyệt */
+    }
+  }
+
+  /** Lưu trên máy này ngay, rồi gửi lên máy chủ cho mọi khách (cần mã quản trị). */
   save(next: SiteSettings): void {
     saveJson(STORAGE_KEYS.settings, next);
     this._settings.set(structuredClone(next));
+  }
+
+  /** Gửi cài đặt lên máy chủ. Trả về thông báo lỗi (nếu có) để trang Cài đặt hiển thị. */
+  async publish(next: SiteSettings): Promise<string> {
+    try {
+      await this.api.call('PUT', '/api/settings', { settings: next }, true);
+      return '';
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Không gửi được lên máy chủ.';
+    }
   }
 
   reset(): void {

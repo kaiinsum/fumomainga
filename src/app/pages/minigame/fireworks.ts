@@ -1,3 +1,5 @@
+import { sfx } from '../../shared/sfx';
+
 /**
  * Pháo hoa toàn màn hình trên canvas: bắn vài quả từ dưới lên, nổ thành chùm tia nhiều màu.
  * Gọi start() → trả về hàm dừng. onDone chạy khi màn pháo hoa kết thúc.
@@ -36,6 +38,7 @@ export function startFireworks(canvas: HTMLCanvasElement, durationMs: number, on
   let stopped = false;
 
   const launch = () => {
+    sfx.play('launch');
     rockets.push({
       x: w * (0.15 + Math.random() * 0.7),
       y: h + 10,
@@ -47,6 +50,7 @@ export function startFireworks(canvas: HTMLCanvasElement, durationMs: number, on
   };
 
   const explode = (r: Rocket) => {
+    sfx.play('boom');
     const n = 70 + Math.floor(Math.random() * 40);
     const power = (2.5 + Math.random() * 2.5) * dpr;
     for (let i = 0; i < n; i++) {

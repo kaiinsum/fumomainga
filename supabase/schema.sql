@@ -66,13 +66,17 @@ create table if not exists public.products (
   name         text not null,
   category     text not null default '',
   price        bigint not null default 0,
-  size         text not null default '',
+  sale_price   bigint,                       -- giá sau giảm, null = không giảm
   in_stock     boolean not null default true,
   featured     boolean not null default false,
   tags         text[] not null default '{}',
   description  text not null default '',
   synced_at    timestamptz not null default now()
 );
+
+-- Nâng cấp DB cũ: thêm cột giá giảm, bỏ cột kích thước.
+alter table public.products add column if not exists sale_price bigint;
+alter table public.products drop column if exists size;
 
 -- ---------- Dữ liệu dạng khoá–giá trị (kiến thức AI, ảnh chụp dữ liệu website...) ----------
 create table if not exists public.app_kv (

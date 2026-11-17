@@ -1,5 +1,5 @@
 import type { Cell, CellValue, Workbook, Worksheet } from 'exceljs';
-import { Product, ProductInput, ProductSize, SIZES } from '../models/product';
+import { Product, ProductInput, onSale } from '../models/product';
 
 /**
  * Nhập / xuất thông tin sản phẩm bằng Excel theo mẫu cố định.
@@ -12,7 +12,7 @@ const SHEET_LISTS = 'DanhSach';
 const YES = 'Có';
 const NO = 'Không';
 
-type Key = 'id' | 'name' | 'category' | 'price' | 'size' | 'description' | 'tags' | 'inStock' | 'featured' | 'imageCount';
+type Key = 'id' | 'name' | 'category' | 'price' | 'salePrice' | 'description' | 'tags' | 'inStock' | 'featured' | 'imageCount';
 
 interface Column {
   key: Key;
@@ -29,7 +29,7 @@ export const COLUMNS: Column[] = [
   { key: 'name', header: 'Tên sản phẩm', width: 32, required: true, note: '3–80 ký tự.' },
   { key: 'category', header: 'Danh mục', width: 18, required: true, note: 'Chọn trong danh sách (phải có sẵn ở trang Danh mục).' },
   { key: 'price', header: 'Giá (VNĐ)', width: 14, required: true, note: 'Số nguyên ≥ 0, ví dụ 690000.' },
-  { key: 'size', header: 'Kích thước', width: 11, required: true, note: 'S, M hoặc L.' },
+  { key: 'salePrice', header: 'Giá sau giảm (VNĐ)', width: 16, note: 'Để trống nếu KHÔNG giảm giá. Phải nhỏ hơn Giá.' },
   { key: 'description', header: 'Mô tả', width: 60, required: true, note: 'Tối thiểu 10 ký tự.' },
   { key: 'tags', header: 'Thẻ', width: 26, note: 'Phân cách bằng dấu phẩy, ví dụ: dễ thương, pastel.' },
   { key: 'inStock', header: 'Còn hàng', width: 11, note: `${YES} / ${NO}. Để trống = ${YES}.` },
@@ -71,7 +71,7 @@ const FIELD_LABELS: Record<keyof Omit<ProductInput, 'images'>, string> = {
   name: 'Tên',
   category: 'Danh mục',
   price: 'Giá',
-  size: 'Kích thước',
+  salePrice: 'Giá giảm',
   description: 'Mô tả',
   tags: 'Thẻ',
   inStock: 'Còn hàng',
@@ -121,8 +121,11 @@ export function planImport(raw: RawRow[], products: Product[], categoryNames: st
     const price = parsePrice(r.price);
     if (price === null) errors.push('Giá không hợp lệ');
 
-    const size = (r.size ?? '').trim().toUpperCase() as ProductSize;
-    if (!SIZES.includes(size)) errors.push('Kích thước phải là S, M hoặc L');
+    // Giá sau giảm: trống = không giảm.
+    const saleRaw = (r.salePrice ?? '').trim();
+    const salePrice = saleRaw ? parsePrice(saleRaw) : null;
+    if (saleRaw && salePrice === null) errors.push('Giá sau giảm không hợp lệ');
+    else if (salePrice !== null && price !== null && salePrice >= price) errors.push('Giá sau giảm phải nhỏ hơn Giá');
 
     const description = (r.description ?? '').trim();
     if (description.length < 10) errors.push('Mô tả tối thiểu 10 ký tự');
@@ -139,14 +142,14 @@ export function planImport(raw: RawRow[], products: Product[], categoryNames: st
       continue;
     }
 
-    const data = { name, category: category!, price: price!, size, description, tags, inStock: inStock!, featured: featured! };
+    const data = { name, category: category!, price: price!, salePrice, description, tags, inStock: inStock!, featured: featured! };
     if (!existing) {
       rows.push({ line: r.line, kind: 'new', name, errors, changes: [], data });
       continue;
     }
 
     const changes = (Object.keys(FIELD_LABELS) as (keyof typeof FIELD_LABELS)[])
-      .filter((k) => JSON.stringify(existing[k]) !== JSON.stringify(data[k]))
+      .filter((k) => JSON.stringify(existing[k] ?? null) !== JSON.stringify(data[k] ?? null))
       .map((k) => FIELD_LABELS[k]);
     rows.push({ line: r.line, kind: changes.length ? 'update' : 'same', name, id, errors, changes, data });
   }
@@ -192,7 +195,7 @@ export async function buildProductsWorkbook(products: Product[], categoryNames: 
       name: p.name,
       category: p.category,
       price: p.price,
-      size: p.size,
+      salePrice: onSale(p) ? p.salePrice : null,
       description: p.description,
       tags: p.tags.join(', '),
       inStock: p.inStock ? YES : NO,
@@ -204,7 +207,6 @@ export async function buildProductsWorkbook(products: Product[], categoryNames: 
   // --- Danh sách cho ô chọn (ẩn) ---
   const lists = wb.addWorksheet(SHEET_LISTS, { state: 'hidden' });
   categoryNames.forEach((name, i) => (lists.getCell(i + 1, 1).value = name));
-  SIZES.forEach((s, i) => (lists.getCell(i + 1, 2).value = s));
   [YES, NO].forEach((s, i) => (lists.getCell(i + 1, 3).value = s));
 
   const col = (key: Key) => COLUMNS.findIndex((c) => c.key === key) + 1;
@@ -221,10 +223,10 @@ export async function buildProductsWorkbook(products: Product[], categoryNames: 
   for (let r = 2; r <= lastRow; r++) {
     const row = ws.getRow(r);
     row.getCell(col('category')).dataValidation = listRule(`$A$1:$A$${Math.max(1, categoryNames.length)}`, 'Danh mục');
-    row.getCell(col('size')).dataValidation = listRule(`$B$1:$B$${SIZES.length}`, 'Kích thước');
     row.getCell(col('inStock')).dataValidation = listRule('$C$1:$C$2', 'Còn hàng');
     row.getCell(col('featured')).dataValidation = listRule('$C$1:$C$2', 'Nổi bật');
     row.getCell(col('price')).numFmt = '#,##0';
+    row.getCell(col('salePrice')).numFmt = '#,##0';
     row.getCell(col('description')).alignment = { wrapText: true, vertical: 'top' };
     const img = row.getCell(col('imageCount'));
     img.font = { color: { argb: 'FF8C8F94' } };

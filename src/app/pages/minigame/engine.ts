@@ -4,6 +4,8 @@
  * Lõi game độc lập với Angular: component chỉ tạo, điều khiển và nhận sự kiện đổi trạng thái.
  */
 
+import { sfx } from '../../shared/sfx';
+
 export const W = 480;
 export const H = 640;
 const STEP = 1000 / 60;
@@ -220,6 +222,7 @@ export class DanmakuGame {
     if (this.state !== 'playing' || this.bombs <= 0 || this.bombFx > 0) return;
     this.bombs--;
     this.bombFx = 70;
+    sfx.play('bomb');
     this.player.invuln = Math.max(this.player.invuln, 120);
     this.shake = 14;
     for (const b of this.bullets) {
@@ -268,6 +271,7 @@ export class DanmakuGame {
 
   private finish(win: boolean): void {
     const newHi = this.score > this.hi;
+    sfx.play(win ? 'win' : 'gameover');
     if (newHi) {
       this.hi = this.score;
       try {
@@ -436,13 +440,15 @@ export class DanmakuGame {
   private hitBoss(dmg: number, fromBomb = false): void {
     const b = this.boss;
     if (!b || b.entering) return;
-    b.hp -= fromBomb ? dmg : dmg;
+    b.hp -= dmg;
     b.flash = 3;
+    if (!fromBomb) sfx.play('hit');
     if (b.hp <= 0) this.nextBossPhase(true);
   }
 
   private nextBossPhase(defeated: boolean): void {
     const b = this.boss!;
+    sfx.play(b.phase + 1 >= this.bossPhases.length ? 'explode' : 'spell');
     if (defeated) this.score += b.missed ? 5000 : 15000;
     this.burst(b.x, b.y, COLORS.yellow, 40, 5);
     this.shake = 12;
@@ -615,6 +621,7 @@ export class DanmakuGame {
     // Tự động bắn; giữ Shift thì đạn tập trung thẳng hơn.
     if (--p.fireCd <= 0) {
       p.fireCd = 5;
+      sfx.play('shot');
       const spread = focus ? 0.04 : 0.13;
       const lines = Math.min(4, Math.floor(p.power));
       this.shots.push({ x: p.x - 6, y: p.y - 14, vx: 0, vy: -11 }, { x: p.x + 6, y: p.y - 14, vx: 0, vy: -11 });
@@ -632,8 +639,9 @@ export class DanmakuGame {
     if (e.dead) return;
     e.hp -= dmg;
     e.flash = 3;
-    if (e.hp > 0) return;
+    if (e.hp > 0) return sfx.play('hit');
     e.dead = true;
+    sfx.play('explode');
     this.score += e.score;
     this.burst(e.x, e.y, e.kind === 'big' ? COLORS.purple : e.kind === 'fluff' ? COLORS.blue : COLORS.pink, e.kind === 'big' ? 30 : 12, e.kind === 'big' ? 4 : 2.5);
     const drops: Item['kind'][] =
@@ -645,6 +653,7 @@ export class DanmakuGame {
   }
 
   private collect(it: Item): void {
+    sfx.play('pickup');
     if (it.kind === 'power') {
       this.player.power = Math.min(4, this.player.power + 0.25);
       this.score += 50;
@@ -655,6 +664,7 @@ export class DanmakuGame {
 
   private playerHit(): void {
     const p = this.player;
+    sfx.play('playerHit');
     this.burst(p.x, p.y, COLORS.white, 40, 5);
     this.shake = 16;
     this.lives--;

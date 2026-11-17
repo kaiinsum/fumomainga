@@ -5,11 +5,11 @@ import { animate, stagger } from 'animejs';
 import { NewsService } from '../../services/news.service';
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
-import { VndPipe } from '../../shared/vnd.pipe';
+import { PriceTagComponent } from '../../shared/price-tag';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, DatePipe, VndPipe],
+  imports: [RouterLink, DatePipe, PriceTagComponent],
   template: `
     <div class="adm-head">
       <h1>Bảng tin</h1>
@@ -45,7 +45,7 @@ import { VndPipe } from '../../shared/vnd.pipe';
             <li>
               <img [src]="p.images[0]" [alt]="p.name" />
               <a [routerLink]="['/admin/san-pham', p.id]">{{ p.name }}</a>
-              <small>{{ p.price | vnd }}</small>
+              <small><app-price-tag [product]="p" [badge]="false" /></small>
             </li>
           } @empty {
             <li class="empty">Chưa có sản phẩm.</li>

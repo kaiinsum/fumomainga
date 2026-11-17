@@ -2,6 +2,8 @@ import { AfterViewInit, Component, DestroyRef, ElementRef, inject, signal, viewC
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { startFireworks } from './fireworks';
+import { sfx } from '../../shared/sfx';
+import { SoundToggleComponent } from '../../shared/sound-toggle';
 
 const HIDE_INTRO_KEY = 'fumo.minigame.hideIntro';
 function readHideIntro(): boolean {
@@ -23,13 +25,14 @@ interface GameCard {
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
 @Component({
   selector: 'app-minigame-hub',
-  imports: [RouterLink, NgTemplateOutlet],
+  imports: [RouterLink, NgTemplateOutlet, SoundToggleComponent],
   template: `
     <div class="container wrap">
       <header class="head">
         <span class="chip">🎮 Mini game</span>
         <h1>Chọn <span class="hl">trò chơi</span></h1>
         <p class="muted">Rê chuột (hoặc chạm) vào một tựa game để xem, bấm để chơi ngay.</p>
+        <app-sound-toggle />
       </header>
 
       <div class="carousel" [class.show]="!intro()">
@@ -270,6 +273,7 @@ export class MiniGameHubPage implements AfterViewInit {
   private playIntro(): void {
     const canvas = this.fw()?.nativeElement;
     if (!canvas) return;
+    sfx.play('curtain');
     // Màn mở ra trong ~1.8s đầu, pháo hoa bắn phía sau rồi tiếp tục sau khi màn mở.
     this.stopFw = startFireworks(canvas, 3000, () => this.intro.set(false));
   }

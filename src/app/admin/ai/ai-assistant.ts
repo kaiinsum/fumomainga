@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { newsPath } from '../../models/news';
+import { onSale } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { NewsService } from '../../services/news.service';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
@@ -127,7 +128,7 @@ const MAX_CHARS = 100_000;
           <h2>2. Dữ liệu website cho AI</h2>
           <div class="box-body">
             <p class="hint">
-              Gửi danh sách sản phẩm (tên, danh mục, giá, size, còn hàng, mô tả), danh mục và tin tức đang đăng lên máy chủ
+              Gửi danh sách sản phẩm (tên, danh mục, giá, giá giảm, còn hàng, mô tả), danh mục và tin tức đang đăng lên máy chủ
               để AI trả lời các câu như "còn hàng không", "cái nào rẻ nhất", "danh mục X có gì".
             </p>
             <dl class="stats">
@@ -303,7 +304,7 @@ export class AdminAiAssistant {
           name: p.name,
           category: p.category,
           price: p.price,
-          size: p.size,
+          salePrice: onSale(p) ? p.salePrice : null,
           inStock: p.inStock,
           featured: p.featured,
           tags: p.tags,

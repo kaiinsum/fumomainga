@@ -60,7 +60,7 @@ describe('ProductService', () => {
       description: 'Mô tả thử nghiệm',
       images: ['data:image/png;base64,AAAA'],
       tags: ['test'],
-      size: 'S',
+      salePrice: 80000,
       inStock: true,
       featured: false,
     });
@@ -105,7 +105,7 @@ describe('planImport (Excel)', () => {
   const cats = ['Fumo Plush', 'Móc khóa', 'Figure', 'Phụ kiện'];
   const p = SEED_PRODUCTS[0];
   const base = {
-    name: p.name, category: p.category, price: String(p.price), size: p.size, description: p.description,
+    name: p.name, category: p.category, price: String(p.price), salePrice: '', description: p.description,
     tags: p.tags.join(', '), inStock: p.inStock ? 'Có' : 'Không', featured: p.featured ? 'Có' : 'Không',
   };
 
@@ -115,9 +115,9 @@ describe('planImport (Excel)', () => {
         { line: 2, id: p.id, ...base },
         { line: 3, id: p.id, ...base },
         { line: 4, id: SEED_PRODUCTS[1].id, ...base, name: 'Tên mới nè', price: '700.000 đ' },
-        { line: 5, ...base, name: 'Sản phẩm mới', category: 'móc khoá', size: 'l' },
+        { line: 5, ...base, name: 'Sản phẩm mới', category: 'móc khoá', salePrice: '50.000' },
         { line: 6, id: 'khong-co', ...base },
-        { line: 7, ...base, category: 'Không tồn tại', size: 'XL', inStock: 'hmm' },
+        { line: 7, ...base, category: 'Không tồn tại', salePrice: '99.999.999', inStock: 'hmm' },
       ],
       SEED_PRODUCTS,
       cats,
@@ -126,7 +126,7 @@ describe('planImport (Excel)', () => {
     expect(plan.rows[2].data?.price).toBe(700000);
     expect(plan.rows[2].changes).toContain('Tên');
     expect(plan.rows[3].data?.category).toBe('Móc khóa');
-    expect(plan.rows[3].data?.size).toBe('L');
+    expect(plan.rows[3].data?.salePrice).toBe(50000);
     expect(plan.rows[5].errors.length).toBe(3);
   });
 

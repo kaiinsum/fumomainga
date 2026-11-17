@@ -1,7 +1,7 @@
 <section class="page-head">
   <div class="container">
     <h1>Tất cả <span>sản phẩm</span></h1>
-    <p>Tìm và lọc sản phẩm theo danh mục, giá, kích thước và thẻ.</p>
+    <p>Tìm và lọc sản phẩm theo danh mục, giá và thẻ.</p>
   </div>
 </section>
 
@@ -49,17 +49,6 @@
         [value]="effectivePriceMax()"
         (input)="setPrice(+$any($event.target).value)"
       />
-    </fieldset>
-
-    <fieldset>
-      <legend>Kích thước</legend>
-      <div class="pills">
-        @for (s of sizes; track s) {
-          <button type="button" class="pill" [class.on]="selectedSizes().has(s)" (click)="toggle(selectedSizes, s)">
-            {{ s }}
-          </button>
-        }
-      </div>
     </fieldset>
 
     <fieldset>

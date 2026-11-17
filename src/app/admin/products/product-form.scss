@@ -200,3 +200,39 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+// ---------- Giảm giá ----------
+.sale-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sale-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  input {
+    width: 80px;
+  }
+
+  &.wide input {
+    width: 150px;
+  }
+
+  span {
+    font-weight: 800;
+    color: #646970;
+  }
+}
+
+.eq {
+  font-size: 1.2rem;
+  color: #8c8f94;
+}
+
+.sale s {
+  color: #8c8f94;
+}

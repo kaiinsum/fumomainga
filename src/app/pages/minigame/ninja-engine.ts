@@ -3,6 +3,8 @@
  * để rơi 3 bé là thua. Càng chơi càng nhiều, càng nhanh.
  */
 
+import { sfx } from '../../shared/sfx';
+
 export const W = 900;
 export const H = 600;
 const STEP = 1000 / 60;
@@ -285,6 +287,7 @@ export class NinjaGame {
   private miss(it: Item): void {
     this.misses++;
     this.popups.push({ x: Math.max(30, Math.min(W - 30, it.x)), y: H - 30, text: '✕', color: '#ff4d6d', life: 0 });
+    sfx.play('miss');
     if (this.misses >= MAX_MISSES) this.gameOver('miss');
   }
 
@@ -310,6 +313,7 @@ export class NinjaGame {
     }
     this.state = 'over';
     this.overAt = 0;
+    if (this.overReason !== 'bomb') sfx.play('gameover');
     this.onState('over', { score: this.score, best: this.best, newBest, reason: this.overReason, sliced: this.sliced });
   }
 
@@ -362,6 +366,7 @@ export class NinjaGame {
     this.swipeHits++;
     this.swipeTimer = 12;
     this.popups.push({ x: it.x, y: it.y - it.r * 0.6, text: `+${pts}${small ? ' nhỏ x2' : ''}`, color: '#fff', life: 0 });
+    sfx.play('slice');
   }
 
   /** Kết thúc một nhát vuốt: chém từ 3 bé trở lên được thưởng combo. */
@@ -370,6 +375,7 @@ export class NinjaGame {
       const bonus = this.swipeHits * 5;
       this.score += bonus;
       this.popups.push({ x: W / 2, y: H * 0.3, text: `COMBO x${this.swipeHits}  +${bonus}`, color: '#ffd23f', life: 0 });
+      sfx.play('combo');
     }
     this.swipeHits = 0;
   }
@@ -381,6 +387,7 @@ export class NinjaGame {
       this.particles.push({ x: it.x, y: it.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0, max: rand(30, 70), color: i % 3 ? '#ff1744' : '#ffd23f', size: rand(3, 9) });
     }
     this.popups.push({ x: it.x, y: it.y, text: 'BÙM! Trúng Reimu', color: '#ff4d6d', life: 0 });
+    sfx.play('bomb');
   }
 
   // ================= Vẽ =================
@@ -568,6 +575,8 @@ export class NinjaGame {
     const prev = this.lastPt;
     this.trail.push({ ...p, t: performance.now() });
     if (prev && Math.hypot(p.x - prev.x, p.y - prev.y) > 3) {
+      // Tiếng "vút" khi vuốt nhanh.
+      if (Math.hypot(p.x - prev.x, p.y - prev.y) > 35) sfx.play('whoosh');
       this.sliceAlong(prev.x, prev.y, p.x, p.y);
       this.lastPt = p;
     }
