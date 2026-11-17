@@ -60,13 +60,19 @@ interface Spark {
   hue: number;
 }
 
-const SPRITES: Omit<Sprite, 'img' | 'box'>[] = [
-  { src: 'bg/cirno.webp', fx: 0.1, fy: 0.42, fh: 0.62, maxH: 560, tilt: -0.06, phase: 0 },
-  { src: 'bg/fumo-yuyuko.webp', fx: 0.88, fy: 0.68, fh: 0.38, maxH: 340, tilt: 0.07, phase: 2.1 },
-];
-const SPRITE_ALPHA = 0.2;
-/** Màu sao: vàng, hồng, xanh trời, tím lavender. */
-const SPARK_HUES = [45, 50, 330, 200, 270];
+const SPRITES: Record<Theme, Omit<Sprite, 'img' | 'box'>[]> = {
+  light: [
+    { src: 'bg/cirno.webp', fx: 0.1, fy: 0.42, fh: 0.62, maxH: 560, tilt: -0.06, phase: 0 },
+    { src: 'bg/fumo-cirno.webp', fx: 0.88, fy: 0.66, fh: 0.42, maxH: 380, tilt: 0.07, phase: 2.1 },
+  ],
+  dark: [
+    { src: 'bg/reimu-1.webp', fx: 0.1, fy: 0.46, fh: 0.72, maxH: 620, tilt: -0.04, phase: 0 },
+    { src: 'bg/reimu-2.webp', fx: 0.89, fy: 0.6, fh: 0.66, maxH: 560, tilt: 0.05, phase: 2.1 },
+  ],
+};
+const SPRITE_ALPHA: Record<Theme, number> = { light: 0.2, dark: 0.16 };
+/** Màu sao — sáng: vàng, hồng, xanh trời, tím; tối: đỏ neon, hồng, vàng, cam. */
+const SPARK_HUES: Record<Theme, number[]> = { light: [45, 50, 330, 200, 270], dark: [350, 355, 340, 45, 15] };
 const MAX_SPARKS = 180;
 
 /** Bảng màu pastel cho bong bóng (hue HSL). */
@@ -107,8 +113,14 @@ export class SkyBackgroundComponent {
   private bubbles: Bubble[] = [];
   private stars: Star[] = [];
   private constellations: Constellation[] = [];
-  private sprites: Sprite[] = SPRITES.map((s) => ({ ...s }));
-  private spritesLoaded = false;
+  private readonly spriteSets: Record<Theme, Sprite[]> = {
+    light: SPRITES.light.map((s) => ({ ...s })),
+    dark: SPRITES.dark.map((s) => ({ ...s })),
+  };
+  private readonly spritesLoaded = new Set<Theme>();
+  private get sprites(): Sprite[] {
+    return this.spriteSets[this.theme()];
+  }
   private sparks: Spark[] = [];
   /** Số sao còn "nợ" phải tỏa ra, tăng theo quãng đường cuộn. */
   private emitBudget = 0;
@@ -202,9 +214,12 @@ export class SkyBackgroundComponent {
   // ---------- Dựng cảnh ----------
   private build(): void {
     this.primary = this.readPrimary();
+    // Lớp .dark của layout có thể chưa gắn xong ở khung hình này → đọc lại màu chủ đạo ở khung sau.
+    requestAnimationFrame(() => (this.primary = this.readPrimary()));
+    this.sparks = [];
+    this.loadSprites();
     const area = (this.w * this.h) / (1280 * 800);
     if (this.theme() === 'light') {
-      this.loadSprites();
       const n = Math.round(Math.max(10, Math.min(34, 24 * area)));
       this.bubbles = Array.from({ length: n }, () => this.newBubble(rand(0, this.h + 100)));
     } else {
@@ -226,9 +241,10 @@ export class SkyBackgroundComponent {
 
   /** Tải ảnh trang trí một lần; làm mờ sẵn vào canvas phụ để vẽ mỗi khung hình cho nhẹ. */
   private loadSprites(): void {
-    if (this.spritesLoaded) return;
-    this.spritesLoaded = true;
-    for (const sp of this.sprites) {
+    const theme = this.theme();
+    if (this.spritesLoaded.has(theme)) return;
+    this.spritesLoaded.add(theme);
+    for (const sp of this.spriteSets[theme]) {
       const img = new Image();
       img.decoding = 'async';
       img.onload = () => {
@@ -262,7 +278,7 @@ export class SkyBackgroundComponent {
       size: rand(5, 12),
       rot: rand(0, Math.PI),
       vr: rand(-0.12, 0.12),
-      hue: pick(SPARK_HUES),
+      hue: pick(SPARK_HUES[this.theme()]),
     });
   }
 
@@ -313,27 +329,27 @@ export class SkyBackgroundComponent {
         b.phase += 0.012 * dt;
         if (b.y < -b.r * 2) Object.assign(b, this.newBubble(this.h + b.r + rand(0, 80)));
       }
-      this.boost *= Math.pow(0.94, dt);
-      // Sao tỏa ra khi cuộn, bay chậm dần rồi mờ đi.
-      while (this.emitBudget >= 1 && this.sparks.length < MAX_SPARKS) {
-        this.emitSpark();
-        this.emitBudget -= 1;
-      }
-      this.emitBudget = Math.min(this.emitBudget, 40);
-      for (const s of this.sparks) {
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-        s.vx *= Math.pow(0.97, dt);
-        s.vy = s.vy * Math.pow(0.97, dt) - 0.015 * dt;
-        s.rot += s.vr * dt;
-        s.life += dt;
-      }
-      this.sparks = this.sparks.filter((s) => s.life < s.max);
     } else {
       // Trôi rất chậm khi đứng yên, trôi theo hướng lăn chuột.
       this.skyOffset += (0.08 + this.skyVel) * dt;
       this.skyVel *= Math.pow(0.93, dt);
     }
+    // Cả hai chế độ: ảnh tỏa sao khi cuộn, sao bay chậm dần rồi mờ đi.
+    this.boost *= Math.pow(0.94, dt);
+    while (this.emitBudget >= 1 && this.sparks.length < MAX_SPARKS) {
+      this.emitSpark();
+      this.emitBudget -= 1;
+    }
+    this.emitBudget = Math.min(this.emitBudget, 40);
+    for (const s of this.sparks) {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vx *= Math.pow(0.97, dt);
+      s.vy = s.vy * Math.pow(0.97, dt) - 0.015 * dt;
+      s.rot += s.vr * dt;
+      s.life += dt;
+    }
+    this.sparks = this.sparks.filter((s) => s.life < s.max);
   }
 
   // ---------- Vẽ ----------
@@ -344,7 +360,11 @@ export class SkyBackgroundComponent {
       this.drawSprites();
       this.drawBubbles();
       this.drawSparks();
-    } else this.drawSky();
+    } else {
+      this.drawSky();
+      this.drawSprites();
+      this.drawSparks();
+    }
   }
 
   private drawSprites(): void {
@@ -361,7 +381,7 @@ export class SkyBackgroundComponent {
       const cy = this.h * sp.fy + bob;
       sp.box = { x: cx - w / 2, y: cy - h / 2, w, h };
       ctx.save();
-      ctx.globalAlpha = SPRITE_ALPHA * (small ? 0.75 : 1);
+      ctx.globalAlpha = SPRITE_ALPHA[this.theme()] * (small ? 0.75 : 1);
       ctx.translate(cx, cy);
       ctx.rotate(sp.tilt + Math.sin(this.time * 0.013 + sp.phase) * 0.025);
       ctx.scale(scale, scale);

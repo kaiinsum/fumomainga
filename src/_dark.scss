@@ -8,6 +8,10 @@
 $d: 'app-public-layout.dark.dark';
 
 #{$d} {
+  /* Chế độ tối luôn dùng đỏ neon làm màu chủ đạo (không theo màu chọn trong Cài đặt). */
+  --primary: #ff2d55;
+  --primary-ink: color-mix(in srgb, var(--primary) 26%, #000);
+  --on-primary: var(--primary-ink);
   --ink-0: color-mix(in srgb, var(--primary) 5%, #05080c);
   --bg: var(--ink-0);
   --surface: color-mix(in srgb, var(--primary) 9%, #0a0e13);

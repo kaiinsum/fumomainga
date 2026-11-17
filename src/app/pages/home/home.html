@@ -23,10 +23,43 @@
 
     <div class="mascot">
       @if (isDark()) {
-        <app-terminal [lines]="terminalLines()" title="fumo@mai-nga: ~" />
+        <!-- Khung neon kiểu màn hình máy tính: viền sáng chạy quanh, bé fumo luân phiên bật ra. -->
+        <div class="neon-card">
+          <div class="neon-inner">
+            <div class="hud">
+              <span><i class="rec"></i>LIVE</span>
+              <span>fumo_{{ mascotNo() }}.png</span>
+            </div>
+            <span class="mascot-pop">
+              <img
+                class="mascot-emoji"
+                [src]="mascot().src"
+                [attr.width]="mascot().w"
+                [attr.height]="mascot().h"
+                alt="Bé fumo mascot"
+                fetchpriority="high"
+              />
+            </span>
+            <div class="hud">
+              <span>{{ settings().shopName }}:~$ ./show --random</span>
+              <span>[{{ mascotNo() }}/{{ mascotCount }}]</span>
+            </div>
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <span class="scan" aria-hidden="true"></span>
+          </div>
+        </div>
       } @else {
         <div class="mascot-circle">
-          <span class="mascot-emoji">{{ settings().logoEmoji }}</span>
+          <span class="mascot-pop">
+            <img
+              class="mascot-emoji"
+              [src]="mascot().src"
+              [attr.width]="mascot().w"
+              [attr.height]="mascot().h"
+              alt="Bé fumo mascot"
+              fetchpriority="high"
+            />
+          </span>
         </div>
       }
     </div>

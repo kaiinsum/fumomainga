@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { ThemeService } from '../../services/theme.service';
-import { TerminalComponent, TerminalLine } from '../../components/terminal/terminal';
 import { RouterLink } from '@angular/router';
 import { JSAnimation, animate, createTimeline, stagger } from 'animejs';
 import { CategoryService } from '../../services/category.service';
@@ -12,9 +11,19 @@ import { DatePipe } from '@angular/common';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 
+/** Các bé fumo luân phiên làm mascot ở phần đầu trang chủ (chế độ sáng). */
+const MASCOTS = [
+  { src: 'img/mascot-1.webp', w: 450, h: 654 },
+  { src: 'img/mascot-2.webp', w: 443, h: 480 },
+  { src: 'img/mascot-3.webp', w: 425, h: 625 },
+  { src: 'img/mascot-4.webp', w: 356, h: 476 },
+];
+/** Mỗi bé ở lại bao lâu trước khi đổi (ms). */
+const MASCOT_INTERVAL = 5000;
+
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, DatePipe, ProductCardComponent, AnimateInDirective, TerminalComponent],
+  imports: [RouterLink, DatePipe, ProductCardComponent, AnimateInDirective],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -45,33 +54,81 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   readonly isDark = computed(() => this.theme.theme() === 'dark');
   private mascotLoop?: JSAnimation;
+  private readonly mascotIndex = signal(0);
+  readonly mascot = computed(() => MASCOTS[this.mascotIndex()]);
+  readonly mascotNo = computed(() => this.mascotIndex() + 1);
+  readonly mascotCount = MASCOTS.length;
+  private mascotTimer?: ReturnType<typeof setInterval>;
+  private swapping = false;
 
-  /** Nội dung terminal ở chế độ tối — lấy từ dữ liệu thật của shop. */
-  readonly terminalLines = computed<TerminalLine[]>(() => {
-    const s = this.settings();
-    const products = this.service.products();
-    const featured = this.service.featured().slice(0, 3).map((p) => p.name);
-    return [
-      { kind: 'cmd', text: 'whoami\n' },
-      { kind: 'out', text: `${s.shopName}\n` },
-      { kind: 'cmd', text: 'fumo --stats\n' },
-      { kind: 'out', text: `products: ${products.length}  categories: ${this.categorySvc.categories().length}  in_stock: ${products.filter((p) => p.inStock).length}\n` },
-      { kind: 'cmd', text: 'cat slogan.txt\n' },
-      { kind: 'out', text: `"${s.tagline}"\n` },
-      ...(featured.length
-        ? [
-            { kind: 'cmd' as const, text: 'ls ./featured\n' },
-            { kind: 'out' as const, text: featured.map((n) => `▸ ${n}`).join('\n') + '\n' },
-          ]
-        : []),
-      { kind: 'cmd', text: '' },
-    ];
-  });
 
   constructor() {
+    // Đổi sáng/tối thì mascot được render lại → chạy lại hiệu ứng lơ lửng.
     effect(() => {
-      if (!this.isDark()) requestAnimationFrame(() => this.startMascotFloat());
-      else this.mascotLoop?.pause();
+      this.isDark();
+      requestAnimationFrame(() => this.startMascotFloat());
+    });
+    // Tải trước cả 4 ảnh để lúc đổi không bị nháy trống.
+    for (const m of MASCOTS) new Image().src = m.src;
+    this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
+  }
+
+  /** "Pop" bé hiện tại biến mất rồi bật ra một bé khác (ngẫu nhiên, không trùng bé đang hiện). */
+  private swapMascot(): void {
+    const el = this.host.querySelector<HTMLElement>('.mascot-pop');
+    if (!el || this.swapping || document.hidden) return;
+    const next = (this.mascotIndex() + 1 + Math.floor(Math.random() * (MASCOTS.length - 1))) % MASCOTS.length;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.mascotIndex.set(next);
+      return;
+    }
+    this.swapping = true;
+    if (this.isDark()) return this.glitchSwap(el, next);
+    animate(el, {
+      scale: [1, 0],
+      rotate: [0, -25],
+      opacity: [1, 0],
+      duration: 280,
+      ease: 'inBack',
+      onComplete: () => {
+        this.mascotIndex.set(next);
+        requestAnimationFrame(() =>
+          animate(el, {
+            scale: [0, 1],
+            rotate: [25, 0],
+            opacity: [0, 1],
+            duration: 650,
+            ease: 'outElastic(1, .6)',
+            onComplete: () => (this.swapping = false),
+          }),
+        );
+      },
+    });
+  }
+
+  /** Kiểu "tin học" cho chế độ tối: giật nhiễu (glitch) rồi tắt, đổi bé, bật lại kèm rung nhẹ. */
+  private glitchSwap(el: HTMLElement, next: number): void {
+    animate(el, {
+      translateX: [0, -10, 8, -5, 0],
+      skewX: [0, 14, -10, 0],
+      scale: [1, 1.04, 0.2],
+      opacity: [1, 0.6, 1, 0],
+      duration: 360,
+      ease: 'linear',
+      onComplete: () => {
+        this.mascotIndex.set(next);
+        requestAnimationFrame(() =>
+          animate(el, {
+            scale: [0.2, 1.08, 1],
+            translateX: [12, -6, 3, 0],
+            skewX: [-12, 6, 0],
+            opacity: [0, 1],
+            duration: 520,
+            ease: 'outExpo',
+            onComplete: () => (this.swapping = false),
+          }),
+        );
+      },
     });
   }
 
@@ -170,6 +227,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.loops.forEach((a) => a.pause());
     this.mascotLoop?.pause();
+    clearInterval(this.mascotTimer);
     this.statsObserver?.disconnect();
   }
 }

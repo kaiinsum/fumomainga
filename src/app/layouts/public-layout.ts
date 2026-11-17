@@ -37,7 +37,7 @@ export class PublicLayout implements OnDestroy {
     effect(() => {
       const dark = this.theme.theme() === 'dark';
       document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-      document.body.style.background = dark ? 'color-mix(in srgb, var(--primary) 5%, #05080c)' : '';
+      document.body.style.background = dark ? 'color-mix(in srgb, #ff2d55 5%, #05080c)' : '';
     });
   }
 
