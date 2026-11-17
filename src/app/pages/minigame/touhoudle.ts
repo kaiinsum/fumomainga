@@ -14,12 +14,37 @@ interface Cell {
 
 interface Row {
   name: string;
+  char: Character;
   cells: Cell[];
 }
 
 type Mode = 'daily' | 'endless';
 
 const STORE_KEY = 'fumo.touhoudle.v1';
+
+/** Tên file ảnh avatar: "Reimu Hakurei" → "reimu-hakurei". */
+export const avatarSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** Màu nền avatar theo màu tóc. */
+const HAIR_CSS: Record<string, string> = {
+  Vàng: '#e9b730',
+  'Xanh dương': '#3f7fd6',
+  'Xanh nhạt': '#79b8e8',
+  'Xanh lá': '#3aa76d',
+  Đen: '#3b3446',
+  Tím: '#8a5cc7',
+  Đỏ: '#d64545',
+  Bạc: '#9aa3b2',
+  Nâu: '#9a6a43',
+  Hồng: '#e77fb0',
+  Trắng: '#c7ccd6',
+  Cam: '#ec8a3a',
+  Xám: '#7d838f',
+};
 const HINT_AFTER = 6;
 const norm = (s: string) =>
   s
@@ -67,7 +92,7 @@ interface Saved {
 
       @if (won()) {
         <section class="win card-surface">
-          <span class="big">🎉</span>
+          <span class="ava xl" [style.--hc]="hairCss(answer())"><span class="ini">{{ initials(answer().name) }}</span>@if (!missing().has(answer().name)) {<img [src]="avatar(answer().name)" alt="" (error)="markMissing(answer().name)" />}</span>
           <h2>Chính xác! Đó là <span class="hl">{{ answer().name }}</span></h2>
           <p>Bạn đoán đúng sau <b>{{ rows().length }}</b> lần{{ mode() === 'daily' ? ' · chuỗi thắng: ' + streak() + ' ngày' : '' }}.</p>
           <div class="row">
@@ -82,6 +107,7 @@ interface Saved {
         </section>
       } @else if (gaveUp()) {
         <section class="win card-surface lose">
+          <span class="ava xl" [style.--hc]="hairCss(answer())"><span class="ini">{{ initials(answer().name) }}</span>@if (!missing().has(answer().name)) {<img [src]="avatar(answer().name)" alt="" (error)="markMissing(answer().name)" />}</span>
           <h2>Đáp án là <span class="hl">{{ answer().name }}</span></h2>
           <button class="btn primary" type="button" (click)="newEndless()">🔁 Nhân vật khác</button>
         </section>
@@ -92,9 +118,10 @@ interface Saved {
               #box
               name="q"
               [ngModel]="query()"
-              (ngModelChange)="query.set($event); active.set(0)"
+              (ngModelChange)="query.set($event); active.set(0); open.set(true)"
               (keydown)="onKey($event)"
               (focus)="open.set(true)"
+              (click)="open.set(true)"
               (blur)="closeSoon()"
               placeholder="Gõ tên nhân vật... (VD: Reimu, Cirno)"
               aria-label="Tên nhân vật"
@@ -105,6 +132,7 @@ interface Saved {
               <ul class="suggest" role="listbox">
                 @for (s of suggestions(); track s.name; let i = $index) {
                   <li role="option" [class.on]="i === active()" [attr.aria-selected]="i === active()" (mousedown)="$event.preventDefault(); pick(s)">
+                    <span class="ava" [style.--hc]="hairCss(s)"><span class="ini">{{ initials(s.name) }}</span>@if (!missing().has(s.name)) {<img [src]="avatar(s.name)" alt="" loading="lazy" (error)="markMissing(s.name)" />}</span>
                     <b>{{ s.name }}</b> <small>{{ label(s.game) }}</small>
                   </li>
                 }
@@ -134,7 +162,10 @@ interface Saved {
         </div>
         @for (r of rows(); track r.name; let ri = $index) {
           <div class="tr" role="row">
-            <span class="cell name" role="cell" [class]="'cell name ' + (r.name === answer().name ? 'ok' : 'bad')">{{ r.name }}</span>
+            <span class="cell name" role="cell" [class]="'cell name ' + (r.name === answer().name ? 'ok' : 'bad')">
+              <span class="ava" [style.--hc]="hairCss(r.char)"><span class="ini">{{ initials(r.char.name) }}</span>@if (!missing().has(r.char.name)) {<img [src]="avatar(r.char.name)" alt="" loading="lazy" (error)="markMissing(r.char.name)" />}</span>
+              <span class="nm">{{ r.name }}</span>
+            </span>
             @for (c of r.cells; track $index; let ci = $index) {
               <span class="cell" role="cell" [class]="'cell ' + c.mark" [style.animation-delay.ms]="ri === 0 ? ci * 160 : 0">
                 {{ c.text }}
@@ -175,7 +206,8 @@ interface Saved {
     .combo input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-100); }
     .suggest { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; max-height: 300px; overflow-y: auto;
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
-    .suggest li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+    .suggest li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; cursor: pointer; }
+    .suggest li b { flex: 1; }
     .suggest li small { color: var(--muted); }
     .suggest li.on, .suggest li:hover { background: var(--surface-2); }
     .meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin: 12px 0 0; font-size: .9rem; }
@@ -191,7 +223,15 @@ interface Saved {
     .cell.ok { background: #2fbf71; }
     .cell.partial { background: #e2a72e; }
     .cell.bad { background: #d9534f; }
-    .cell.name { background: var(--surface-2); color: var(--text); border: 2px solid var(--border); }
+    .cell.name { background: var(--surface-2); color: var(--text); border: 2px solid var(--border); display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; }
+    .cell.name .nm { line-height: 1.25; }
+    /* Avatar: ảnh trong public/touhoudle/<tên>.webp; chưa có ảnh thì hiện chữ cái đầu trên nền màu tóc. */
+    .ava { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+      background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--hc) 55%, #fff), var(--hc)); box-shadow: 0 0 0 2px var(--surface), 0 2px 6px rgba(0,0,0,.2); }
+    .ava .ini { font-size: .8rem; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45); letter-spacing: .02em; }
+    .ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .ava.xl { width: 96px; height: 96px; }
+    .ava.xl .ini { font-size: 1.8rem; }
     .cell.name.ok { border-color: #2fbf71; }
     .arrow { position: absolute; right: 6px; bottom: 2px; font-style: normal; font-size: 1.3rem; opacity: .85; }
 
@@ -218,6 +258,25 @@ export class TouhoudlePage {
   readonly headers = ['Nhân vật', 'Giới tính', 'Chủng loài', 'Game đầu tiên', 'Vai trò', 'Nơi ở', 'Màu tóc'];
   readonly hintAfter = HINT_AFTER;
   readonly total = CHARACTERS.length;
+  /** Nhân vật chưa có file ảnh (ảnh lỗi) → hiện avatar chữ cái. */
+  readonly missing = signal(new Set<string>());
+
+  avatar(name: string): string {
+    return `touhoudle/${avatarSlug(name)}.webp`;
+  }
+
+  markMissing(name: string): void {
+    this.missing.update((m) => new Set(m).add(name));
+  }
+
+  initials(name: string): string {
+    const parts = name.split(/\s+/).filter((w) => !['no'].includes(w.toLowerCase()));
+    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
+  }
+
+  hairCss(c: Character): string {
+    return HAIR_CSS[c.hair] ?? '#8a8fa3';
+  }
   readonly mode = signal<Mode>('daily');
   readonly answer = signal<Character>(CHARACTERS[dailyIndex(todayVN())]);
   readonly guesses = signal<string[]>([]);
@@ -233,7 +292,7 @@ export class TouhoudlePage {
     this.guesses()
       .map((n) => CHARACTERS.find((c) => c.name === n))
       .filter((c): c is Character => !!c)
-      .map((g) => ({ name: g.name, cells: this.compare(g, this.answer()) }))
+      .map((g) => ({ name: g.name, char: g, cells: this.compare(g, this.answer()) }))
       .reverse(),
   );
   readonly won = computed(() => this.guesses().includes(this.answer().name));
