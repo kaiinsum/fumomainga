@@ -4,6 +4,7 @@ import { Product } from '../../models/product';
 import { CartService } from '../../services/cart.service';
 import { ProductService } from '../../services/product.service';
 import { VndPipe } from '../../shared/vnd.pipe';
+import { flyToCart } from '../../shared/fly-to-cart';
 
 type RarityKey = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -276,8 +277,9 @@ export class GachaPage {
   }
 
   addToCart(p: Product): void {
-    this.cart.add(p.id, 1);
+    if (this.added()) return;
     this.added.set(true);
+    flyToCart(document.querySelector('.res-img img'), p.images[0], 1, () => this.cart.add(p.id, 1));
   }
 
   private pick(pool: PoolItem[]): PoolItem {

@@ -46,6 +46,20 @@ create table if not exists public.order_items (
 );
 create index if not exists order_items_order_idx on public.order_items (order_code);
 
+-- ---------- Lời nhắn từ trang Liên hệ ----------
+create table if not exists public.contacts (
+  id          bigint generated always as identity primary key,
+  name        text not null,
+  phone       text not null default '',
+  email       text not null default '',
+  message     text not null,
+  status      text not null default 'new' check (status in ('new', 'done')),
+  admin_note  text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists contacts_created_at_idx on public.contacts (created_at desc);
+
 -- ---------- Sản phẩm (đồng bộ từ Admin → Trợ lý AI → "Đồng bộ dữ liệu cho AI") ----------
 create table if not exists public.products (
   id           text primary key,
@@ -103,3 +117,4 @@ alter table public.order_items enable row level security;
 alter table public.products    enable row level security;
 alter table public.app_kv      enable row level security;
 alter table public.rate_limits enable row level security;
+alter table public.contacts    enable row level security;

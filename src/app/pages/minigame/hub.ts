@@ -1,13 +1,14 @@
-import { Component, ElementRef, viewChild } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { startFireworks } from './fireworks';
 
 interface GameCard {
   path: string | null;
   title: string;
   tag: string;
   desc: string;
-  art: 'shmup' | 'gacha' | 'soon';
+  art: 'shmup' | 'gacha' | 'dle' | 'soon';
 }
 
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
@@ -22,7 +23,7 @@ interface GameCard {
         <p class="muted">Rê chuột (hoặc chạm) vào một tựa game để xem, bấm để chơi ngay.</p>
       </header>
 
-      <div class="carousel">
+      <div class="carousel" [class.show]="!intro()">
         <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
         <div class="track" #track>
           @for (g of games; track g.title) {
@@ -41,6 +42,14 @@ interface GameCard {
       </div>
     </div>
 
+    @if (intro()) {
+      <div class="fw-layer" (click)="skipIntro()" title="Bấm để bỏ qua">
+        <canvas #fw aria-hidden="true"></canvas>
+        <span class="fw-title">🎆 Mini game 🎆</span>
+        <button class="fw-skip" type="button" (click)="skipIntro()">Bỏ qua ›</button>
+      </div>
+    }
+
     <ng-template #body let-g>
       <div class="art" [class]="'art art-' + g.art" aria-hidden="true">
         @switch (g.art) {
@@ -48,6 +57,14 @@ interface GameCard {
             <span class="blt b1"></span><span class="blt b2"></span><span class="blt b3"></span><span class="blt b4"></span><span class="blt b5"></span>
             <span class="boss"></span>
             <span class="ship"></span>
+          }
+          @case ('dle') {
+            <span class="dle-grid">
+              <i class="g"></i><i class="y"></i><i class="r"></i><i class="g"></i>
+              <i class="r"></i><i class="g"></i><i class="g"></i><i class="y"></i>
+              <i class="g"></i><i class="g"></i><i class="g"></i><i class="g"></i>
+            </span>
+            <span class="who">?</span>
           }
           @case ('gacha') {
             <span class="ray"></span>
@@ -75,7 +92,20 @@ interface GameCard {
     .hl { color: var(--primary); }
     .muted { color: var(--muted); }
 
-    .carousel { position: relative; }
+    .carousel { position: relative; opacity: 0; transform: translateY(30px) scale(.97); transition: opacity .7s ease, transform .8s cubic-bezier(.2,1.2,.4,1); }
+    .carousel.show { opacity: 1; transform: none; }
+    .carousel.show .card { animation: card-in .7s cubic-bezier(.2,1.3,.4,1) both; }
+    .carousel.show .card:nth-child(2) { animation-delay: .12s; }
+    .carousel.show .card:nth-child(3) { animation-delay: .24s; }
+    .carousel.show .card:nth-child(4) { animation-delay: .36s; }
+    @keyframes card-in { from { opacity: 0; transform: translateY(40px) scale(.85) rotate(-3deg); } }
+    .fw-layer { position: fixed; inset: 0; z-index: 90; cursor: pointer; background: radial-gradient(circle at 50% 60%, rgba(30,10,50,.55), rgba(5,3,15,.88));
+      display: grid; place-items: center; animation: fw-in .35s ease both; }
+    .fw-layer canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .fw-title { position: relative; font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 900; color: #fff; text-shadow: 0 0 24px #ff7ac6, 0 0 48px #b06bff; animation: fw-pop 1s cubic-bezier(.2,1.5,.4,1) both; }
+    .fw-skip { position: absolute; right: 18px; bottom: 18px; font: inherit; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.6); background: rgba(255,255,255,.1); color: #fff; cursor: pointer; }
+    @keyframes fw-in { from { opacity: 0; } }
+    @keyframes fw-pop { from { opacity: 0; transform: scale(.4); } }
     .track {
       display: flex; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
       /* Chừa chỗ cho nút ‹ › hai bên; thẻ đầu tiên nằm sát lề trái, không bị khoảng trống. */
@@ -140,6 +170,14 @@ interface GameCard {
     .spark { position: absolute; color: #ffd23f; font-size: 1.4rem; animation: twinkle 1.6s ease-in-out infinite paused; }
     .s1 { top: 30px; left: 60px; } .s2 { top: 60px; right: 55px; animation-delay: -.6s; } .s3 { bottom: 40px; left: 80px; animation-delay: -1.1s; }
 
+    .art-dle { background: linear-gradient(135deg, #1b2a4a, #3a1c5c); display: grid; place-items: center; }
+    .dle-grid { display: grid; grid-template-columns: repeat(4, 34px); gap: 6px; }
+    .dle-grid i { width: 34px; height: 34px; border-radius: 7px; animation: tile 2.4s ease-in-out infinite paused; }
+    .dle-grid i:nth-child(4n+2) { animation-delay: .15s; } .dle-grid i:nth-child(4n+3) { animation-delay: .3s; } .dle-grid i:nth-child(4n+4) { animation-delay: .45s; }
+    .dle-grid .g { background: #2fbf71; } .dle-grid .y { background: #e2a72e; } .dle-grid .r { background: #d9534f; }
+    .who { position: absolute; right: 26px; bottom: 18px; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 2.2rem; font-weight: 900; color: #fff; background: rgba(255,255,255,.12); border: 2px dashed rgba(255,255,255,.6); }
+    @keyframes tile { 0%, 100% { transform: rotateX(0); } 50% { transform: rotateX(180deg); } }
     .art-soon { background: repeating-linear-gradient(45deg, var(--surface-2) 0 14px, var(--surface) 14px 28px); display: grid; place-items: center; font-size: 3rem; }
 
     /* Chỉ chạy hoạt ảnh khi đang hover / chọn thẻ. */
@@ -157,8 +195,27 @@ interface GameCard {
     @media (prefers-reduced-motion: reduce) { .art * { animation: none !important; } .card { transition: filter .3s, opacity .3s; } }
   `,
 })
-export class MiniGameHubPage {
+export class MiniGameHubPage implements AfterViewInit {
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
+  private readonly fw = viewChild<ElementRef<HTMLCanvasElement>>('fw');
+  /** Đang chiếu pháo hoa mở màn (carousel chưa hiện). */
+  readonly intro = signal(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+  private stopFw?: () => void;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.stopFw?.());
+  }
+
+  ngAfterViewInit(): void {
+    const canvas = this.fw()?.nativeElement;
+    if (!canvas) return;
+    this.stopFw = startFireworks(canvas, 2200, () => this.intro.set(false));
+  }
+
+  skipIntro(): void {
+    this.stopFw?.();
+    this.intro.set(false);
+  }
 
   readonly games: GameCard[] = [
     {
@@ -167,6 +224,13 @@ export class MiniGameHubPage {
       tag: '🎁 Gacha · Mới',
       desc: 'Bóc túi mù xem hôm nay số phận chọn bé thú bông nào cho bạn!',
       art: 'gacha',
+    },
+    {
+      path: '/mini-game/doan-nhan-vat',
+      title: 'Đoán nhân vật (Touhoudle)',
+      tag: '🔎 Đố vui · Mỗi ngày',
+      desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật mới!',
+      art: 'dle',
     },
     {
       path: '/mini-game/dai-chien-mot-vai',

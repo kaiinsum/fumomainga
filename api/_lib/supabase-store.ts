@@ -3,7 +3,31 @@
  * Chỉ chạy trên máy chủ với SERVICE ROLE KEY (bỏ qua RLS); trình duyệt không bao giờ thấy khoá này.
  */
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import type { Order, OrderItem, OrderStatus } from './orders';
+import type { Contact, ContactStore, Order, OrderItem, OrderStatus } from './orders';
+
+interface ContactRow {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: Contact['status'];
+  admin_note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const toContact = (r: ContactRow): Contact => ({
+  id: r.id,
+  name: r.name,
+  phone: r.phone,
+  email: r.email,
+  message: r.message,
+  status: r.status,
+  adminNote: r.admin_note ?? '',
+  createdAt: new Date(r.created_at).getTime(),
+  updatedAt: new Date(r.updated_at).getTime(),
+});
 
 interface OrderRow {
   code: string;
@@ -58,7 +82,41 @@ export function supabaseStore(url: string, serviceKey: string) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  const contacts: ContactStore = {
+    async add(c) {
+      const row = check(
+        await db.from('contacts').insert({ name: c.name, phone: c.phone, email: c.email, message: c.message }).select().single(),
+        'lưu liên hệ',
+      );
+      return toContact(row as ContactRow);
+    },
+    async list() {
+      const rows = check(await db.from('contacts').select('*').order('created_at', { ascending: false }).limit(1000), 'danh sách liên hệ');
+      return (rows as ContactRow[]).map(toContact);
+    },
+    async update(id, patch) {
+      const row = check(
+        await db
+          .from('contacts')
+          .update({
+            ...(patch.status ? { status: patch.status } : {}),
+            ...(patch.adminNote !== undefined ? { admin_note: patch.adminNote } : {}),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .select()
+          .maybeSingle(),
+        'cập nhật liên hệ',
+      );
+      return row ? toContact(row as ContactRow) : null;
+    },
+    async remove(id) {
+      check(await db.from('contacts').delete().eq('id', id), 'xoá liên hệ');
+    },
+  };
+
   return {
+    contacts,
     async get(code: string): Promise<Order | null> {
       const row = check(await db.from('orders').select(ORDER_SELECT).eq('code', code).maybeSingle(), 'đọc đơn');
       return row ? toOrder(row as unknown as OrderRow) : null;

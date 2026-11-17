@@ -59,6 +59,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/minigame/minigame').then((m) => m.MiniGamePage),
       },
       {
+        path: 'mini-game/doan-nhan-vat',
+        title: 'Đoán nhân vật (Touhoudle)',
+        loadComponent: () => import('./pages/minigame/touhoudle').then((m) => m.TouhoudlePage),
+      },
+      {
         path: 'mini-game/tui-mu',
         title: 'Túi mù may mắn',
         loadComponent: () => import('./pages/minigame/gacha').then((m) => m.GachaPage),

@@ -6,6 +6,7 @@ import { CartService } from '../../services/cart.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
+import { emailError, emailSuggestion, isValidVnPhone, normalizePhone, phoneError } from '../../shared/validators';
 
 /** Đơn vừa đặt, đang hiện popup QR chờ duyệt (giữ qua F5 trong cùng tab). Không gửi lên máy chủ. */
 interface PendingPayment {
@@ -61,19 +62,32 @@ const PENDING_KEY = 'fumo.checkout.pending';
             <h2>Thông tin nhận hàng</h2>
             <div class="field">
               <label for="c-name">Họ tên *</label>
-              <input id="c-name" name="name" [(ngModel)]="customer.name" autocomplete="name" maxlength="80" required />
+              <input id="c-name" name="name" [(ngModel)]="customer.name" autocomplete="name" maxlength="80" required
+                (blur)="touch('name')" [class.invalid]="!!fieldError('name')" />
+              @if (fieldError('name')) { <small class="f-err">{{ fieldError('name') }}</small> }
             </div>
             <div class="field">
               <label for="c-phone">Số điện thoại *</label>
-              <input id="c-phone" name="phone" type="tel" [(ngModel)]="customer.phone" autocomplete="tel" maxlength="20" required />
+              <input id="c-phone" name="phone" type="tel" inputmode="tel" [(ngModel)]="customer.phone" autocomplete="tel" maxlength="20" required
+                placeholder="VD: 0912 345 678" (blur)="touch('phone')" [class.invalid]="!!fieldError('phone')" [class.valid]="phoneOk()" />
+              @if (fieldError('phone')) { <small class="f-err">{{ fieldError('phone') }}</small> }
             </div>
             <div class="field">
               <label for="c-email">Email</label>
-              <input id="c-email" name="email" type="email" [(ngModel)]="customer.email" autocomplete="email" maxlength="120" />
+              <input id="c-email" name="email" type="email" inputmode="email" [(ngModel)]="customer.email" autocomplete="email" maxlength="120"
+                placeholder="ten@gmail.com (không bắt buộc)" (blur)="touch('email')" [class.invalid]="!!fieldError('email')" [class.valid]="emailOk()" />
+              @if (fieldError('email')) {
+                <small class="f-err">
+                  {{ fieldError('email') }}
+                  @if (emailFix()) { <button type="button" class="fix" (click)="customer.email = emailFix()">Sửa thành {{ emailFix() }}</button> }
+                </small>
+              }
             </div>
             <div class="field">
               <label for="c-addr">Địa chỉ nhận hàng *</label>
-              <textarea id="c-addr" name="address" rows="2" [(ngModel)]="customer.address" autocomplete="street-address" maxlength="300" required></textarea>
+              <textarea id="c-addr" name="address" rows="2" [(ngModel)]="customer.address" autocomplete="street-address" maxlength="300" required
+                (blur)="touch('address')" [class.invalid]="!!fieldError('address')"></textarea>
+              @if (fieldError('address')) { <small class="f-err">{{ fieldError('address') }}</small> }
             </div>
             <div class="field">
               <label for="c-note">Ghi chú</label>
@@ -152,6 +166,10 @@ const PENDING_KEY = 'fumo.checkout.pending';
     .muted { color: var(--muted); }
     .small { font-size: .85rem; }
     .err { color: var(--error, #b32d2e); font-weight: 700; margin: 0; }
+    .f-err { color: var(--error, #b32d2e); font-weight: 700; font-size: .8rem; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .fix { font: inherit; font-size: .75rem; padding: 2px 10px; border-radius: 999px; border: 1.5px solid currentColor; background: none; color: var(--primary-dark); cursor: pointer; }
+    .checkout .field input.invalid, .checkout .field textarea.invalid { border-color: var(--error, #b32d2e); }
+    .checkout .field input.valid { border-color: color-mix(in srgb, #2fbf71 70%, var(--border)); }
     .row { display: flex; gap: 10px; flex-wrap: wrap; }
     .row.center { justify-content: center; }
     .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; }
@@ -219,12 +237,43 @@ export class CartPage {
     return digits.length >= 9 ? `https://zalo.me/${digits}` : '';
   });
 
+  /** Ô đã rời khỏi ít nhất một lần (mới báo lỗi, tránh báo khi đang gõ dở). */
+  readonly touched = signal(new Set<string>());
+
+  touch(field: string): void {
+    this.touched.update((t) => new Set(t).add(field));
+  }
+
+  fieldError(field: 'name' | 'phone' | 'email' | 'address'): string {
+    if (!this.touched().has(field)) return '';
+    const c = this.customer;
+    if (field === 'name') return c.name.trim().length < 2 ? 'Vui lòng nhập họ tên.' : '';
+    if (field === 'phone') return phoneError(c.phone);
+    if (field === 'email') return emailError(c.email);
+    return c.address.trim().length < 10 ? 'Vui lòng nhập địa chỉ đầy đủ (số nhà, đường, quận/huyện, tỉnh).' : '';
+  }
+
+  phoneOk(): boolean {
+    return isValidVnPhone(this.customer.phone);
+  }
+
+  emailOk(): boolean {
+    return !!this.customer.email.trim() && !emailError(this.customer.email);
+  }
+
+  emailFix(): string {
+    return emailSuggestion(this.customer.email);
+  }
+
   submit(): void {
     this.error.set('');
     const c = this.customer;
-    if (c.name.trim().length < 2) return this.error.set('Vui lòng nhập họ tên.');
-    if ((c.phone.match(/\d/g) ?? []).length < 9) return this.error.set('Vui lòng nhập số điện thoại hợp lệ.');
-    if (c.address.trim().length < 5) return this.error.set('Vui lòng nhập địa chỉ nhận hàng.');
+    this.touched.set(new Set(['name', 'phone', 'email', 'address']));
+    const first = (['name', 'phone', 'email', 'address'] as const).map((f) => this.fieldError(f)).find(Boolean);
+    if (first) {
+      this.error.set('Vui lòng kiểm tra lại: ' + first);
+      return;
+    }
     const code = newOrderCode();
     const total = this.cart.total();
     const vnd = (n: number) => n.toLocaleString('vi-VN') + 'đ';
@@ -242,8 +291,8 @@ export class CartPage {
     // (khách vẫn có nút sao chép thông tin đơn để gửi shop).
     const customer: Customer = {
       name: c.name.trim(),
-      phone: c.phone.trim(),
-      email: c.email.trim(),
+      phone: normalizePhone(c.phone),
+      email: c.email.trim().toLowerCase(),
       address: c.address.trim(),
       note: c.note.trim(),
     };

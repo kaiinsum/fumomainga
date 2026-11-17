@@ -3,6 +3,8 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { animate } from 'animejs';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 import { SettingsService } from '../../services/settings.service';
+import { OrderApiService } from '../../services/order-api.service';
+import { emailSuggestion, emailValidator, normalizePhone, vnPhoneValidator } from '../../shared/validators';
 
 @Component({
   selector: 'app-contact',
@@ -31,7 +33,7 @@ import { SettingsService } from '../../services/settings.service';
             <div class="done">
               <span class="heart">💖</span>
               <h3>Cảm ơn bạn!</h3>
-              <p>Lời nhắn đã được ghi nhận (bản demo — chưa gửi đi thật).</p>
+              <p>Shop đã nhận được lời nhắn và sẽ liên hệ lại với bạn qua số điện thoại / email sớm nhất.</p>
               <button class="btn ghost" type="button" (click)="sent.set(false)">Gửi lời nhắn khác</button>
             </div>
           } @else {
@@ -43,10 +45,22 @@ import { SettingsService } from '../../services/settings.service';
               }
             </div>
             <div class="field">
+              <label for="c-phone">Số điện thoại *</label>
+              <input id="c-phone" type="tel" inputmode="tel" formControlName="phone" placeholder="VD: 0912 345 678" autocomplete="tel" />
+              @if (form.controls.phone.touched && form.controls.phone.errors; as e) {
+                <span class="error">{{ e['phone'] || 'Vui lòng nhập số điện thoại.' }}</span>
+              }
+            </div>
+            <div class="field">
               <label for="c-email">Email</label>
-              <input id="c-email" type="email" formControlName="email" />
-              @if (form.controls.email.invalid && form.controls.email.touched) {
-                <span class="error">Email không hợp lệ.</span>
+              <input id="c-email" type="email" inputmode="email" formControlName="email" placeholder="ten@gmail.com (không bắt buộc)" autocomplete="email" />
+              @if (form.controls.email.touched && form.controls.email.errors; as e) {
+                <span class="error">
+                  {{ e['email'] }}
+                  @if (emailFix(); as fix) {
+                    <button type="button" class="fix" (click)="form.controls.email.setValue(fix)">Sửa thành {{ fix }}</button>
+                  }
+                </span>
               }
             </div>
             <div class="field">
@@ -56,7 +70,8 @@ import { SettingsService } from '../../services/settings.service';
                 <span class="error">Lời nhắn tối thiểu 10 ký tự.</span>
               }
             </div>
-            <button class="btn primary" type="submit">Gửi lời nhắn</button>
+            @if (error()) { <span class="error">{{ error() }}</span> }
+            <button class="btn primary" type="submit" [disabled]="busy()">{{ busy() ? 'Đang gửi...' : 'Gửi lời nhắn' }}</button>
           }
         </form>
       </div>
@@ -74,26 +89,52 @@ import { SettingsService } from '../../services/settings.service';
     .done { text-align: center; padding: 24px 0; }
     .heart { display: inline-block; font-size: 3.4rem; }
     .done p { color: var(--muted); }
+    .fix { font: inherit; font-size: .75rem; margin-left: 6px; padding: 2px 10px; border-radius: 999px; border: 1.5px solid currentColor; background: none; color: var(--primary-dark); cursor: pointer; }
     @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
   `,
 })
 export class ContactPage {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   readonly sent = signal(false);
+  readonly busy = signal(false);
+  readonly error = signal('');
+  private readonly api = inject(OrderApiService);
   readonly s = inject(SettingsService).settings;
   readonly tel = computed(() => 'tel:' + this.s().contactPhone.replace(/[^\d+]/g, ''));
 
   readonly form = inject(NonNullableFormBuilder).group({
     name: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required, vnPhoneValidator]],
+    email: ['', [emailValidator]],
     message: ['', [Validators.required, Validators.minLength(10)]],
   });
 
-  send(): void {
+  emailFix(): string {
+    return emailSuggestion(this.form.controls.email.value);
+  }
+
+  async send(): Promise<void> {
+    this.error.set('');
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       animate(this.host.querySelector('.form')!, { translateX: [0, -10, 8, -6, 4, 0], duration: 450, ease: 'inOutSine' });
       return;
+    }
+    const v = this.form.getRawValue();
+    this.busy.set(true);
+    try {
+      // Lưu lời nhắn lên máy chủ (Supabase) để shop xem ở Admin → Liên hệ.
+      await this.api.call('POST', '/api/contacts', {
+        name: v.name.trim(),
+        phone: normalizePhone(v.phone),
+        email: v.email.trim().toLowerCase(),
+        message: v.message.trim(),
+      });
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Không gửi được lời nhắn, vui lòng thử lại hoặc gọi điện cho shop.');
+      return;
+    } finally {
+      this.busy.set(false);
     }
     this.form.reset();
     this.sent.set(true);

@@ -7,6 +7,7 @@ import { SettingsService } from '../../services/settings.service';
 import { animate, createTimeline, stagger } from 'animejs';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
+import { flyToCart } from '../../shared/fly-to-cart';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
@@ -33,12 +34,15 @@ export class ProductDetailPage {
   addToCart(buyNow = false): void {
     const p = this.product();
     if (!p) return;
-    this.cart.add(p.id, this.qty());
+    const qty = this.qty();
     if (buyNow) {
+      this.cart.add(p.id, qty);
       this.router.navigate(['/gio-hang']);
       return;
     }
+    // Ảnh sản phẩm bay vào giỏ trên thanh menu; cộng vào giỏ khi ảnh chạm giỏ.
     this.added.set(true);
+    flyToCart(this.host.querySelector('.main-img img'), this.activeImage() || p.images[0], qty, () => this.cart.add(p.id, qty));
     setTimeout(() => this.added.set(false), 1800);
   }
 

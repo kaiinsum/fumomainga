@@ -55,6 +55,59 @@ interface Store {
   delKey(key: string): Promise<void>;
   /** Ghi bảng sản phẩm (chỉ có ở Supabase). */
   syncProducts?(products: ProductRow[]): Promise<void>;
+  /** Lời nhắn liên hệ (Supabase có bảng riêng; kho khác lưu dạng danh sách JSON). */
+  contacts?: ContactStore;
+}
+
+export interface Contact {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: 'new' | 'done';
+  adminNote: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ContactStore {
+  add(c: Omit<Contact, 'id' | 'status' | 'adminNote' | 'createdAt' | 'updatedAt'>): Promise<Contact>;
+  list(): Promise<Contact[]>;
+  update(id: number, patch: Partial<Pick<Contact, 'status' | 'adminNote'>>): Promise<Contact | null>;
+  remove(id: number): Promise<void>;
+}
+
+/** Lời nhắn lưu thành một danh sách JSON (dùng cho Redis / bộ nhớ tạm khi chạy thử). */
+export function kvContacts(store: Store): ContactStore {
+  const KEY = 'contacts';
+  const all = async () => (await store.getJson<Contact[]>(KEY)) ?? [];
+  return {
+    async add(c) {
+      const list = await all();
+      const now = Date.now();
+      const item: Contact = { ...c, id: (list[0]?.id ?? 0) + 1, status: 'new', adminNote: '', createdAt: now, updatedAt: now };
+      await store.setJson(KEY, [item, ...list].slice(0, 2000));
+      return item;
+    },
+    list: all,
+    async update(id, patch) {
+      const list = await all();
+      const item = list.find((x) => x.id === id);
+      if (!item) return null;
+      Object.assign(item, patch, { updatedAt: Date.now() });
+      await store.setJson(KEY, list);
+      return item;
+    },
+    async remove(id) {
+      await store.setJson(KEY, (await all()).filter((x) => x.id !== id));
+    },
+  };
+}
+
+export function getContacts(): ContactStore {
+  const s = getStore();
+  return s.contacts ?? kvContacts(s);
 }
 
 function redisStore(redis: Redis): Store {
@@ -196,6 +249,16 @@ export function requireAdmin(req: Request): void {
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 export const digits = (s: string) => s.replace(/\D/g, '');
 
+/** Cùng quy tắc với src/app/shared/validators.ts. */
+export function normalizePhone(raw: string): string {
+  let d = raw.replace(/[\s.\-()]/g, '');
+  if (d.startsWith('+84')) d = '0' + d.slice(3);
+  else if (/^84\d{9}$/.test(d)) d = '0' + d.slice(2);
+  return d;
+}
+export const isValidVnPhone = (raw: string) => /^0(?:[35789]\d{8}|2\d{9})$/.test(normalizePhone(raw));
+export const isValidEmail = (v: string) => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v) && !v.includes('..');
+
 export function parseCustomer(v: unknown): Customer {
   const c = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
   const customer: Customer = {
@@ -206,10 +269,10 @@ export function parseCustomer(v: unknown): Customer {
     note: str(c['note'], 500),
   };
   if (customer.name.length < 2) throw new HttpError(400, 'Vui lòng nhập họ tên.');
-  if (!/^\+?[\d\s.-]{9,15}$/.test(customer.phone) || digits(customer.phone).length < 9) {
-    throw new HttpError(400, 'Số điện thoại không hợp lệ.');
-  }
-  if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new HttpError(400, 'Email không hợp lệ.');
+  customer.phone = normalizePhone(customer.phone);
+  if (!isValidVnPhone(customer.phone)) throw new HttpError(400, 'Số điện thoại không hợp lệ (VD: 0912 345 678).');
+  customer.email = customer.email.toLowerCase();
+  if (customer.email && !isValidEmail(customer.email)) throw new HttpError(400, 'Email không hợp lệ.');
   if (customer.address.length < 5) throw new HttpError(400, 'Vui lòng nhập địa chỉ nhận hàng.');
   return customer;
 }

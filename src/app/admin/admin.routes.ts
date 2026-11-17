@@ -75,6 +75,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./orders/orders').then((m) => m.AdminOrders),
       },
       {
+        path: 'lien-he',
+        title: 'Liên hệ',
+        loadComponent: () => import('./contacts/contacts').then((m) => m.AdminContacts),
+      },
+      {
         path: 'tro-ly-ai',
         title: 'Trợ lý AI',
         loadComponent: () => import('./ai/ai-assistant').then((m) => m.AdminAiAssistant),
