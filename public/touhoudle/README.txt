@@ -1,7 +1,7 @@
 ẢNH ĐẠI DIỆN CHO GAME "ĐOÁN NHÂN VẬT (TOUHOUDLE)"
 
 Thả ảnh vào đúng thư mục này (public/touhoudle/) với tên file như danh sách dưới,
-game sẽ tự hiện ảnh cạnh tên nhân vật. Chưa có ảnh thì hiện vòng tròn màu tóc + chữ cái đầu.
+game sẽ tự hiện ảnh cạnh tên nhân vật. Chưa có ảnh thì game tự vẽ avatar chibi (màu tóc, mắt, phụ kiện).
 
 Gợi ý: ảnh vuông, khoảng 128x128 đến 256x256 px, định dạng .webp (nhẹ). Ảnh .png/.jpg thì đổi
 sang .webp trước (vd. squoosh.app) hoặc đổi đuôi trong hàm avatar() ở touhoudle.ts.
