@@ -1,0 +1,105 @@
+-- =====================================================================
+-- Cơ sở dữ liệu Fumo Mai Nga trên Supabase.
+-- Cách dùng: Supabase → SQL Editor → New query → dán toàn bộ file này → Run.
+-- Chạy lại nhiều lần cũng không sao (chỉ tạo khi chưa có).
+--
+-- Bảo mật: mọi bảng đều BẬT Row Level Security và KHÔNG có policy nào,
+-- nên khoá công khai (anon key) không đọc / ghi được gì. Chỉ máy chủ (Vercel Functions)
+-- dùng SERVICE ROLE KEY mới truy cập được — thông tin khách hàng không bị lộ ra trình duyệt.
+-- =====================================================================
+
+-- ---------- Khách hàng (mỗi số điện thoại là một khách) ----------
+create table if not exists public.customers (
+  id          bigint generated always as identity primary key,
+  phone       text not null unique,          -- chỉ chữ số, dùng để nhận diện khách
+  name        text not null,
+  email       text not null default '',
+  address     text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- ---------- Đơn hàng ----------
+create table if not exists public.orders (
+  code           text primary key,             -- FMxxxxxx (khách thấy trong popup QR)
+  status         text not null default 'pending'
+                 check (status in ('pending', 'paid', 'shipping', 'done', 'cancelled')),
+  customer_id    bigint references public.customers (id) on delete set null,
+  customer       jsonb not null,               -- thông tin người nhận lúc đặt (tên, sđt, email, địa chỉ, ghi chú)
+  total          bigint not null check (total >= 0),
+  admin_note     text not null default '',
+  paid_claim_at  timestamptz,                  -- lúc khách bấm "Tôi đã chuyển khoản"
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create index if not exists orders_created_at_idx on public.orders (created_at desc);
+create index if not exists orders_customer_idx on public.orders (customer_id);
+
+-- ---------- Sản phẩm trong từng đơn (giỏ hàng lúc đặt) ----------
+create table if not exists public.order_items (
+  id          bigint generated always as identity primary key,
+  order_code  text not null references public.orders (code) on delete cascade,
+  product_id  text not null default '',
+  name        text not null,
+  price       bigint not null check (price >= 0),
+  qty         integer not null check (qty between 1 and 99)
+);
+create index if not exists order_items_order_idx on public.order_items (order_code);
+
+-- ---------- Sản phẩm (đồng bộ từ Admin → Trợ lý AI → "Đồng bộ dữ liệu cho AI") ----------
+create table if not exists public.products (
+  id           text primary key,
+  name         text not null,
+  category     text not null default '',
+  price        bigint not null default 0,
+  size         text not null default '',
+  in_stock     boolean not null default true,
+  featured     boolean not null default false,
+  tags         text[] not null default '{}',
+  description  text not null default '',
+  synced_at    timestamptz not null default now()
+);
+
+-- ---------- Dữ liệu dạng khoá–giá trị (kiến thức AI, ảnh chụp dữ liệu website...) ----------
+create table if not exists public.app_kv (
+  key         text primary key,
+  value       jsonb not null,
+  updated_at  timestamptz not null default now()
+);
+
+-- ---------- Chống spam: đếm số lần gọi theo IP trong một khoảng thời gian ----------
+create table if not exists public.rate_limits (
+  key       text primary key,
+  count     integer not null,
+  reset_at  timestamptz not null
+);
+
+create or replace function public.hit_rate_limit(p_key text, p_window_sec integer)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n integer;
+begin
+  insert into public.rate_limits as r (key, count, reset_at)
+  values (p_key, 1, now() + make_interval(secs => p_window_sec))
+  on conflict (key) do update
+    set count    = case when r.reset_at < now() then 1 else r.count + 1 end,
+        reset_at = case when r.reset_at < now() then now() + make_interval(secs => p_window_sec) else r.reset_at end
+  returning count into n;
+  return n;
+end;
+$$;
+
+-- Hàm chống spam chỉ cho máy chủ gọi.
+revoke all on function public.hit_rate_limit(text, integer) from public, anon, authenticated;
+
+-- ---------- Bật RLS, không mở policy nào cho anon / authenticated ----------
+alter table public.customers   enable row level security;
+alter table public.orders      enable row level security;
+alter table public.order_items enable row level security;
+alter table public.products    enable row level security;
+alter table public.app_kv      enable row level security;
+alter table public.rate_limits enable row level security;

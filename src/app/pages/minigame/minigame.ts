@@ -7,6 +7,7 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
   imports: [RouterLink],
   template: `
     <div class="container wrap">
+      <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a></nav>
       <header class="head">
         <span class="chip">🎮 Mini game</span>
         <h1>Đại chiến <span class="hl">Mọt Vải</span></h1>
@@ -94,6 +95,8 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
   `,
   styles: `
     .wrap { padding: 24px 0 56px; }
+    .crumbs a { color: var(--muted); font-weight: 700; }
+    .crumbs a:hover { color: var(--primary); }
     .head { text-align: center; margin-bottom: 20px; }
     .head h1 { margin: 8px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); }
     .hl { color: var(--primary); }

@@ -1,0 +1,13 @@
+{
+  "//": "Cấu hình riêng cho Vercel Functions trong /api. Không dùng tsconfig của Angular (module: preserve) vì Node sẽ không chạy được.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["./**/*.ts"]
+}

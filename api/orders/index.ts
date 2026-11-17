@@ -24,8 +24,11 @@ export const POST = handle(async (req) => {
   const body = await readJson(req);
   const items = parseItems(body['items']);
   const now = Date.now();
+  // Khách đã thấy mã đơn trong popup (tạo trên trình duyệt) → dùng lại nếu hợp lệ và chưa trùng.
+  const wanted = typeof body['code'] === 'string' ? body['code'].toUpperCase() : '';
+  const code = /^FM[A-HJ-NP-Z2-9]{6}$/.test(wanted) && !(await getStore().get(wanted)) ? wanted : await newOrderCode();
   const order: Order = {
-    code: await newOrderCode(),
+    code,
     status: admin && body['status'] ? parseStatus(body['status']) : 'pending',
     customer: parseCustomer(body['customer']),
     items,

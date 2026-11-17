@@ -3,6 +3,16 @@ import { Customer, Order, OrderItem, OrderStatus, PublicOrder } from '../models/
 
 const ADMIN_KEY = 'fumo.admin.apiKey';
 
+/** Lỗi API kèm mã HTTP (401: sai mã quản trị, 503: máy chủ chưa cấu hình...). */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
 /** Gọi các API trên máy chủ (Vercel Functions trong thư mục /api) — đơn hàng và dùng chung mã quản trị. */
 @Injectable({ providedIn: 'root' })
 export class OrderApiService {
@@ -20,8 +30,13 @@ export class OrderApiService {
   }
 
   // ---------- Khách ----------
-  create(customer: Customer, items: OrderItem[]): Promise<{ code: string; total: number; createdAt: number }> {
-    return this.call('POST', '/api/orders', { customer, items });
+  create(customer: Customer, items: OrderItem[], code?: string): Promise<{ code: string; total: number; createdAt: number }> {
+    return this.call('POST', '/api/orders', { customer, items, code });
+  }
+
+  /** Dùng khi admin đăng nhập: nếu chưa có mã quản trị thì thử dùng luôn mật khẩu admin. */
+  rememberLoginKey(password: string): void {
+    if (!this.adminKey()) this.setAdminKey(password);
   }
 
   lookup(code: string, phone: string): Promise<{ order: PublicOrder }> {
@@ -62,12 +77,12 @@ export class OrderApiService {
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
     } catch {
-      throw new Error('Không kết nối được máy chủ. Kiểm tra mạng và thử lại.');
+      throw new ApiError('Không kết nối được máy chủ. Kiểm tra mạng và thử lại.', 0);
     }
     const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
     if (!res.ok || !data) {
       const fallback = res.status === 404 && !data ? 'Máy chủ đơn hàng chưa sẵn sàng (chỉ chạy khi deploy trên Vercel).' : 'Có lỗi xảy ra, vui lòng thử lại.';
-      throw new Error(data?.error || fallback);
+      throw new ApiError(data?.error || fallback, res.status);
     }
     return data;
   }

@@ -4,6 +4,10 @@
  */
 import { Redis } from '@upstash/redis';
 import { randomInt, timingSafeEqual } from 'node:crypto';
+import { ProductRow, supabaseStore } from './supabase-store';
+
+/** Project Supabase của shop (URL không phải bí mật; khoá đặt trong biến môi trường). */
+const DEFAULT_SUPABASE_URL = 'https://socfkoptqceyzhhpwxoe.supabase.co';
 
 export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'done' | 'cancelled';
 export const ORDER_STATUSES: OrderStatus[] = ['pending', 'paid', 'shipping', 'done', 'cancelled'];
@@ -49,6 +53,8 @@ interface Store {
   getJson<T>(key: string): Promise<T | null>;
   setJson(key: string, value: unknown): Promise<void>;
   delKey(key: string): Promise<void>;
+  /** Ghi bảng sản phẩm (chỉ có ở Supabase). */
+  syncProducts?(products: ProductRow[]): Promise<void>;
 }
 
 function redisStore(redis: Redis): Store {
@@ -110,11 +116,14 @@ function memoryStore(): Store {
 let store: Store | null = null;
 export function getStore(): Store {
   if (store) return store;
+  // Ưu tiên Supabase; vẫn hỗ trợ Upstash Redis nếu đã cài từ trước.
+  const sbKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
   const url = process.env['KV_REST_API_URL'] ?? process.env['UPSTASH_REDIS_REST_URL'];
   const token = process.env['KV_REST_API_TOKEN'] ?? process.env['UPSTASH_REDIS_REST_TOKEN'];
-  if (url && token) store = redisStore(new Redis({ url, token }));
+  if (sbKey) store = supabaseStore(process.env['SUPABASE_URL'] || DEFAULT_SUPABASE_URL, sbKey);
+  else if (url && token) store = redisStore(new Redis({ url, token }));
   else if (!process.env['VERCEL']) store = memoryStore();
-  else throw new HttpError(503, 'Chưa cấu hình cơ sở dữ liệu đơn hàng (Upstash Redis).');
+  else throw new HttpError(503, 'Chưa cấu hình cơ sở dữ liệu: thêm SUPABASE_SERVICE_ROLE_KEY trên Vercel.');
   return store;
 }
 
@@ -142,7 +151,9 @@ export function handle(fn: (req: Request) => Promise<Response>) {
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status);
       console.error(e);
-      return json({ error: 'Máy chủ gặp lỗi, vui lòng thử lại.' }, 500);
+      // Admin được xem chi tiết lỗi (vd. chưa chạy schema.sql trên Supabase); khách chỉ thấy thông báo chung.
+      const detail = isAdmin(req) && e instanceof Error ? ` (${e.message})` : '';
+      return json({ error: 'Máy chủ gặp lỗi, vui lòng thử lại.' + detail }, 500);
     }
   };
 }

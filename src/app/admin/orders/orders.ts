@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Customer, EMPTY_CUSTOMER, ORDER_STATUSES, ORDER_STATUS_LABEL, Order, OrderItem, OrderStatus } from '../../models/order';
-import { OrderApiService } from '../../services/order-api.service';
+import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { ProductService } from '../../services/product.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AdminToastService } from '../toast.service';
@@ -31,6 +31,25 @@ interface Draft {
     </div>
 
     @if (!connected()) {
+      @if (loading() && !setup() && !needKey()) {
+        <div class="adm-notice">⏳ Đang tải...</div>
+      }
+      @if (setup()) {
+        <section class="adm-box narrow setup">
+          <h2>⚙️ Cần cài đặt một lần trên Vercel</h2>
+          <div class="box-body">
+            <p class="err">{{ setup() }}</p>
+            <ol>
+              <li><b>Supabase</b> → <b>SQL Editor</b> → <b>New query</b> → dán toàn bộ file <code>supabase/schema.sql</code> trong mã nguồn → <b>Run</b> (tạo bảng khách hàng, đơn hàng, sản phẩm...).</li>
+              <li><b>Supabase</b> → <b>Project Settings</b> → <b>API Keys</b> → sao chép khoá <b>service_role</b> (secret). Không dán khoá này vào đâu khác ngoài Vercel.</li>
+              <li><b>Vercel</b> → project <b>fumomainga</b> → <b>Settings → Environment Variables</b>, thêm:
+                <code>SUPABASE_SERVICE_ROLE_KEY</code> = khoá vừa chép, và <code>ADMIN_API_KEY</code> = <b>mật khẩu đăng nhập admin</b> (đặt giống nhau thì không phải nhập thêm mã).</li>
+              <li><b>Deployments</b> → bấm <b>⋯</b> ở bản mới nhất → <b>Redeploy</b>.</li>
+            </ol>
+            <button class="btn primary small" type="button" [disabled]="loading()" (click)="load()">{{ loading() ? 'Đang kiểm tra...' : '↻ Kiểm tra lại' }}</button>
+          </div>
+        </section>
+      } @else if (needKey()) {
       <section class="adm-box narrow">
         <h2>Kết nối máy chủ đơn hàng</h2>
         <form class="box-body" (ngSubmit)="connect()">
@@ -46,7 +65,14 @@ interface Draft {
           <button class="btn primary small" type="submit" [disabled]="loading()">{{ loading() ? 'Đang kết nối...' : 'Kết nối' }}</button>
         </form>
       </section>
+      }
     } @else {
+      <div class="view-switch" role="tablist">
+        <button type="button" role="tab" [class.on]="view() === 'orders'" (click)="view.set('orders')">🧾 Đơn hàng ({{ orders().length }})</button>
+        <button type="button" role="tab" [class.on]="view() === 'customers'" (click)="view.set('customers')">👥 Khách hàng ({{ customers().length }})</button>
+      </div>
+
+      @if (view() === 'orders') {
       <nav class="adm-tabs">
         @for (t of tabs(); track t.key) {
           <button type="button" [class.on]="tab() === t.key" (click)="tab.set(t.key)">
@@ -54,6 +80,7 @@ interface Draft {
           </button>
         }
       </nav>
+      }
 
       <div class="adm-toolbar">
         <span class="spacer"></span>
@@ -120,60 +147,88 @@ interface Draft {
         </section>
       }
 
-      <div class="adm-table-wrap">
-        <table class="adm-table">
-          <thead>
-            <tr>
-              <th>Mã đơn</th>
-              <th>Khách hàng</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
-              <th>Ngày đặt</th>
-              <th style="width: 170px"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (o of rows(); track o.code) {
+      @if (view() === 'customers') {
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead>
+              <tr><th>Khách hàng</th><th>Liên hệ</th><th>Địa chỉ gần nhất</th><th>Số đơn</th><th>Đã chi (đơn đã thanh toán)</th><th>Đơn gần nhất</th></tr>
+            </thead>
+            <tbody>
+              @for (c of customerRows(); track c.phone) {
+                <tr>
+                  <td><b>{{ c.name }}</b></td>
+                  <td>{{ c.phone }}@if (c.email) {<div class="sub">{{ c.email }}</div>}</td>
+                  <td><div class="sub wrap">{{ c.address }}</div></td>
+                  <td>{{ c.orders }}</td>
+                  <td><b>{{ c.spent | vnd }}</b></td>
+                  <td>
+                    <button type="button" class="link" (click)="showOrdersOf(c.phone)">{{ c.lastCode }}</button>
+                    <div class="sub">{{ c.lastAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="empty">Chưa có khách hàng nào.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead>
               <tr>
-                <td>
-                  <b class="mono">{{ o.code }}</b>
-                  @if (o.status === 'pending' && o.paidClaimAt) {
-                    <div><span class="flag" [title]="'Khách báo đã CK lúc ' + (o.paidClaimAt | date: 'HH:mm dd/MM')">💸 Khách báo đã CK</span></div>
-                  }
-                </td>
-                <td>
-                  <b>{{ o.customer.name }}</b>
-                  <div class="sub">{{ o.customer.phone }}{{ o.customer.email ? ' · ' + o.customer.email : '' }}</div>
-                  <div class="sub">{{ o.customer.address }}</div>
-                </td>
-                <td>
-                  <b>{{ o.total | vnd }}</b>
-                  <div class="sub">{{ o.items.length }} sản phẩm</div>
-                </td>
-                <td>
-                  <select class="status-select" [ngModel]="o.status" (ngModelChange)="quickStatus(o, $event)" [attr.aria-label]="'Trạng thái đơn ' + o.code">
-                    @for (s of statuses; track s) { <option [value]="s">{{ label[s] }}</option> }
-                  </select>
-                </td>
-                <td>{{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td class="row-btns">
-                  <button type="button" class="mini" (click)="startEdit(o)">Xem / sửa</button>
-                  <button type="button" class="mini del" (click)="remove(o.code)">Xoá</button>
-                </td>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày đặt</th>
+                <th style="width: 170px"></th>
               </tr>
-            } @empty {
-              <tr><td colspan="6" class="empty">{{ loading() ? 'Đang tải...' : 'Chưa có đơn hàng nào.' }}</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (o of rows(); track o.code) {
+                <tr>
+                  <td>
+                    <b class="mono">{{ o.code }}</b>
+                    @if (o.status === 'pending' && o.paidClaimAt) {
+                      <div><span class="flag" [title]="'Khách báo đã CK lúc ' + (o.paidClaimAt | date: 'HH:mm dd/MM')">💸 Khách báo đã CK</span></div>
+                    }
+                  </td>
+                  <td>
+                    <b>{{ o.customer.name }}</b>
+                    <div class="sub">{{ o.customer.phone }}{{ o.customer.email ? ' · ' + o.customer.email : '' }}</div>
+                    <div class="sub">{{ o.customer.address }}</div>
+                  </td>
+                  <td>
+                    <b>{{ o.total | vnd }}</b>
+                    <div class="sub">{{ o.items.length }} sản phẩm</div>
+                  </td>
+                  <td>
+                    <select class="status-select" [ngModel]="o.status" (ngModelChange)="quickStatus(o, $event)" [attr.aria-label]="'Trạng thái đơn ' + o.code">
+                      @for (s of statuses; track s) { <option [value]="s">{{ label[s] }}</option> }
+                    </select>
+                  </td>
+                  <td>{{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="row-btns">
+                    <button type="button" class="mini" (click)="startEdit(o)">Xem / sửa</button>
+                    <button type="button" class="mini del" (click)="remove(o.code)">Xoá</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="empty">{{ loading() ? 'Đang tải...' : 'Chưa có đơn hàng nào.' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
       <p class="hint footer-hint">
         Đã kết nối máy chủ. <button type="button" class="link" (click)="disconnect()">Đổi mã quản trị</button>
       </p>
     }
   `,
   styles: `
-    .narrow { max-width: 560px; }
+    .narrow { max-width: 620px; }
+    .setup ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
     .hint { color: #646970; font-size: 0.85rem; margin: 0; }
     .err { color: var(--error, #b32d2e); font-weight: 700; margin: 0; }
     .mono { font-family: ui-monospace, Consolas, monospace; letter-spacing: .04em; }
@@ -197,6 +252,10 @@ interface Draft {
     .link-del, .link { background: none; border: none; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; color: var(--primary-ink); }
     .link { color: var(--primary-dark); font-size: .85rem; }
     .footer-hint { margin-top: 12px; }
+    .view-switch { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border-radius: 10px; background: #f0f0f1; }
+    .view-switch button { font: inherit; font-weight: 700; padding: 7px 14px; border: none; border-radius: 8px; background: none; cursor: pointer; color: #50575e; }
+    .view-switch button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .sub.wrap { white-space: normal; }
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .item-row { grid-template-columns: 1fr 90px 56px 32px; }
@@ -213,10 +272,44 @@ export class AdminOrders {
   readonly statuses = ORDER_STATUSES;
   readonly orders = signal<Order[]>([]);
   readonly connected = signal(false);
+  /** Thông báo khi máy chủ chưa cấu hình (503). */
+  readonly setup = signal('');
+  /** Cần nhập mã quản trị (401 hoặc chưa có mã). */
+  readonly needKey = signal(false);
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
   readonly tab = signal<Tab>('all');
+  readonly view = signal<'orders' | 'customers'>('orders');
+
+  /** Khách hàng gom theo số điện thoại từ các đơn đã có. */
+  readonly customers = computed(() => {
+    const map = new Map<string, { name: string; phone: string; email: string; address: string; orders: number; spent: number; lastCode: string; lastAt: number }>();
+    for (const o of this.orders()) {
+      const key = o.customer.phone.replace(/\D/g, '');
+      const c = map.get(key);
+      const paid = o.status === 'paid' || o.status === 'shipping' || o.status === 'done' ? o.total : 0;
+      if (!c) {
+        map.set(key, { name: o.customer.name, phone: o.customer.phone, email: o.customer.email, address: o.customer.address, orders: 1, spent: paid, lastCode: o.code, lastAt: o.createdAt });
+      } else {
+        c.orders++;
+        c.spent += paid;
+        if (o.createdAt > c.lastAt) Object.assign(c, { name: o.customer.name, email: o.customer.email || c.email, address: o.customer.address, lastCode: o.code, lastAt: o.createdAt });
+      }
+    }
+    return [...map.values()].sort((a, b) => b.lastAt - a.lastAt);
+  });
+
+  readonly customerRows = computed(() => {
+    const term = this.search().trim().toLowerCase();
+    return this.customers().filter((c) => !term || [c.name, c.phone, c.email, c.address].some((v) => v.toLowerCase().includes(term)));
+  });
+
+  showOrdersOf(phone: string): void {
+    this.view.set('orders');
+    this.tab.set('all');
+    this.search.set(phone);
+  }
   readonly search = signal('');
   readonly draft = signal<Draft | null>(null);
   keyInput = '';
@@ -242,7 +335,7 @@ export class AdminOrders {
   });
 
   constructor() {
-    if (this.api.adminKey()) void this.load();
+    void this.load();
   }
 
   async connect(): Promise<void> {
@@ -253,6 +346,7 @@ export class AdminOrders {
   disconnect(): void {
     this.api.setAdminKey('');
     this.connected.set(false);
+    this.needKey.set(true);
     this.orders.set([]);
     this.draft.set(null);
   }
@@ -263,9 +357,16 @@ export class AdminOrders {
     try {
       this.orders.set((await this.api.list()).orders);
       this.connected.set(true);
+      this.setup.set('');
+      this.needKey.set(false);
     } catch (e) {
       this.connected.set(false);
-      this.error.set(e instanceof Error ? e.message : 'Không tải được đơn hàng.');
+      const status = e instanceof ApiError ? e.status : 0;
+      const msg = e instanceof Error ? e.message : 'Không tải được dữ liệu.';
+      this.setup.set(status === 503 || status === 404 ? msg : '');
+      this.needKey.set(status === 401);
+      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng — nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
+      if (!status) this.needKey.set(true);
     } finally {
       this.loading.set(false);
     }

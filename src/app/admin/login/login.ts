@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate } from 'animejs';
 import { AuthService } from '../../services/auth.service';
+import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 
 @Component({
@@ -47,6 +48,7 @@ export class AdminLogin implements AfterViewInit {
   readonly next = input<string>();
 
   readonly auth = inject(AuthService);
+  private readonly orderApi = inject(OrderApiService);
   readonly settings = inject(SettingsService).settings;
   private readonly router = inject(Router);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
@@ -71,6 +73,8 @@ export class AdminLogin implements AfterViewInit {
     const ok = await this.auth.login(this.password);
     this.busy.set(false);
     if (ok) {
+      // Nếu ADMIN_API_KEY trên Vercel đặt giống mật khẩu admin thì trang Đơn hàng / Trợ lý AI tự kết nối.
+      this.orderApi.rememberLoginKey(this.password);
       const next = this.next();
       this.router.navigateByUrl(next?.startsWith('/admin') ? next : '/admin');
       return;

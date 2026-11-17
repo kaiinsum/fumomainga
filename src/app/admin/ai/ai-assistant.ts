@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { newsPath } from '../../models/news';
 import { CategoryService } from '../../services/category.service';
 import { NewsService } from '../../services/news.service';
-import { OrderApiService } from '../../services/order-api.service';
+import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { downloadBlob } from '../../shared/download';
@@ -35,6 +35,25 @@ const MAX_CHARS = 100_000;
     </div>
 
     @if (!connected()) {
+      @if (loading() && !setup() && !needKey()) {
+        <div class="adm-notice">⏳ Đang tải...</div>
+      }
+      @if (setup()) {
+        <section class="adm-box narrow setup">
+          <h2>⚙️ Cần cài đặt một lần trên Vercel</h2>
+          <div class="box-body">
+            <p class="err">{{ setup() }}</p>
+            <ol>
+              <li><b>Supabase</b> → <b>SQL Editor</b> → <b>New query</b> → dán toàn bộ file <code>supabase/schema.sql</code> trong mã nguồn → <b>Run</b> (tạo bảng khách hàng, đơn hàng, sản phẩm...).</li>
+              <li><b>Supabase</b> → <b>Project Settings</b> → <b>API Keys</b> → sao chép khoá <b>service_role</b> (secret). Không dán khoá này vào đâu khác ngoài Vercel.</li>
+              <li><b>Vercel</b> → project <b>fumomainga</b> → <b>Settings → Environment Variables</b>, thêm:
+                <code>SUPABASE_SERVICE_ROLE_KEY</code> = khoá vừa chép, và <code>ADMIN_API_KEY</code> = <b>mật khẩu đăng nhập admin</b> (đặt giống nhau thì không phải nhập thêm mã).</li>
+              <li><b>Deployments</b> → bấm <b>⋯</b> ở bản mới nhất → <b>Redeploy</b>.</li>
+            </ol>
+            <button class="btn primary small" type="button" [disabled]="loading()" (click)="load()">{{ loading() ? 'Đang kiểm tra...' : '↻ Kiểm tra lại' }}</button>
+          </div>
+        </section>
+      } @else if (needKey()) {
       <section class="adm-box narrow">
         <h2>Kết nối máy chủ</h2>
         <form class="box-body" (ngSubmit)="connect()">
@@ -50,6 +69,7 @@ const MAX_CHARS = 100_000;
           <button class="btn primary small" type="submit" [disabled]="loading()">{{ loading() ? 'Đang kết nối...' : 'Kết nối' }}</button>
         </form>
       </section>
+      }
     } @else {
       <div class="adm-notice">
         Trợ lý AI chỉ trả lời trong phạm vi website: dựa trên <b>file kiến thức</b> bên dưới và <b>dữ liệu sản phẩm đã đồng bộ</b>
@@ -137,7 +157,8 @@ const MAX_CHARS = 100_000;
     }
   `,
   styles: `
-    .narrow { max-width: 560px; }
+    .narrow { max-width: 620px; }
+    .setup ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
     .layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
     .hint { color: #646970; font-size: .85rem; margin: 0; }
     .err, .warn { color: var(--error, #b32d2e); font-weight: 700; margin: 0; }
@@ -167,6 +188,10 @@ export class AdminAiAssistant {
 
   readonly max = MAX_CHARS;
   readonly connected = signal(false);
+  /** Thông báo khi máy chủ chưa cấu hình (503). */
+  readonly setup = signal('');
+  /** Cần nhập mã quản trị (401 hoặc chưa có mã). */
+  readonly needKey = signal(false);
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly syncing = signal(false);
@@ -191,7 +216,7 @@ export class AdminAiAssistant {
   });
 
   constructor() {
-    if (this.api.adminKey()) void this.load();
+    void this.load();
   }
 
   async connect(): Promise<void> {
@@ -210,9 +235,16 @@ export class AdminAiAssistant {
       this.setKnowledge(k);
       this.catalog.set(c);
       this.connected.set(true);
+      this.setup.set('');
+      this.needKey.set(false);
     } catch (e) {
       this.connected.set(false);
-      this.error.set(e instanceof Error ? e.message : 'Không kết nối được máy chủ.');
+      const status = e instanceof ApiError ? e.status : 0;
+      const msg = e instanceof Error ? e.message : 'Không tải được dữ liệu.';
+      this.setup.set(status === 503 || status === 404 ? msg : '');
+      this.needKey.set(status === 401);
+      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng — nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
+      if (!status) this.needKey.set(true);
     } finally {
       this.loading.set(false);
     }

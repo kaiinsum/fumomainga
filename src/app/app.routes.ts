@@ -50,8 +50,18 @@ export const routes: Routes = [
       },
       {
         path: 'mini-game',
-        title: 'Mini game: Đại chiến Mọt Vải',
+        title: 'Mini game',
+        loadComponent: () => import('./pages/minigame/hub').then((m) => m.MiniGameHubPage),
+      },
+      {
+        path: 'mini-game/dai-chien-mot-vai',
+        title: 'Đại chiến Mọt Vải',
         loadComponent: () => import('./pages/minigame/minigame').then((m) => m.MiniGamePage),
+      },
+      {
+        path: 'mini-game/tui-mu',
+        title: 'Túi mù may mắn',
+        loadComponent: () => import('./pages/minigame/gacha').then((m) => m.GachaPage),
       },
       {
         path: 'gioi-thieu',

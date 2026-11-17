@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Customer, EMPTY_CUSTOMER } from '../../models/order';
 import { CartService } from '../../services/cart.service';
+import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 
@@ -206,6 +207,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
 export class CartPage {
   readonly cart = inject(CartService);
   readonly s = inject(SettingsService).settings;
+  private readonly api = inject(OrderApiService);
 
   customer: Customer = { ...EMPTY_CUSTOMER };
   readonly error = signal('');
@@ -236,8 +238,18 @@ export class CartPage {
       `Địa chỉ: ${c.address.trim()}`,
       ...(c.note.trim() ? [`Ghi chú: ${c.note.trim()}`] : []),
     ].join('\n');
+    // Gửi đơn ngầm lên máy chủ để hiện trong Admin → Đơn hàng. Lỗi mạng / máy chủ không ảnh hưởng popup QR
+    // (khách vẫn có nút sao chép thông tin đơn để gửi shop).
+    const customer: Customer = {
+      name: c.name.trim(),
+      phone: c.phone.trim(),
+      email: c.email.trim(),
+      address: c.address.trim(),
+      note: c.note.trim(),
+    };
+    this.api.create(customer, this.cart.orderItems(), code).catch((e) => console.warn('Không lưu được đơn lên máy chủ:', e));
     this.cart.clear();
-    this.setPending({ code, total, phone: c.phone.trim(), email: c.email.trim(), summary });
+    this.setPending({ code, total, phone: customer.phone, email: customer.email, summary });
   }
 
   /** Đóng popup. */
