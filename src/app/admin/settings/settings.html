@@ -215,6 +215,34 @@
       </section>
 
       <section class="adm-box">
+        <h2>Thanh toán chuyển khoản (VietQR)</h2>
+        <div class="box-body grid">
+          <div class="field">
+            <label for="bankName">Ngân hàng</label>
+            <input id="bankName" [(ngModel)]="draft.bankName" />
+          </div>
+          <div class="field">
+            <label for="bankBin">Mã BIN ngân hàng (NAPAS)</label>
+            <input id="bankBin" [(ngModel)]="draft.bankBin" inputmode="numeric" maxlength="6" />
+          </div>
+          <div class="field">
+            <label for="bankAccount">Số tài khoản</label>
+            <input id="bankAccount" [(ngModel)]="draft.bankAccount" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="bankAccountName">Tên chủ tài khoản</label>
+            <input id="bankAccountName" [(ngModel)]="draft.bankAccountName" />
+          </div>
+          <div class="field full">
+            <small class="hint">
+              Mã QR ở trang thanh toán được tạo tự động từ thông tin này, có sẵn số tiền và nội dung chuyển khoản là mã đơn.
+              Mã BIN của Timo là <code>963388</code>.
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
         <h2>Bong bóng nổi (góc phải màn hình)</h2>
         <div class="box-body grid">
           <div class="field full">

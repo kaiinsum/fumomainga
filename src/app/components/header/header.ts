@@ -4,6 +4,7 @@ import { animate, createTimeline, stagger } from 'animejs';
 import { filter } from 'rxjs';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
+import { CartService } from '../../services/cart.service';
 
 interface NavItem {
   label: string;
@@ -20,6 +21,7 @@ interface NavItem {
 export class HeaderComponent implements AfterViewInit {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   readonly settings = inject(SettingsService).settings;
+  readonly cartCount = inject(CartService).count;
   private readonly theme = inject(ThemeService);
   readonly isDark = computed(() => this.theme.theme() === 'dark');
   private switching = false;

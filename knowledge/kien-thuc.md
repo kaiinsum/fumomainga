@@ -39,16 +39,23 @@
 
 Giá và tình trạng có thể thay đổi — luôn mời khách xem trang /san-pham hoặc nhắn shop để xác nhận.
 
-## Cách đặt hàng [CẦN ĐIỀN]
+## Cách đặt hàng
 
-- Website chỉ để trưng bày, chưa đặt hàng trực tiếp trên web.
-- Khách đặt hàng bằng cách nhắn tin Facebook / TikTok / Zalo của shop hoặc gọi điện, gửi tên sản phẩm muốn mua.
+1. Vào trang sản phẩm, chọn số lượng rồi bấm **Thêm vào giỏ** hoặc **Mua ngay**.
+2. Vào **Giỏ hàng** (/gio-hang), điền họ tên, số điện thoại, địa chỉ nhận hàng (email và ghi chú không bắt buộc) rồi bấm **Đặt hàng & chuyển khoản**.
+3. Quét mã QR hiện ra bằng app ngân hàng — mã đã có sẵn số tiền và nội dung chuyển khoản là **mã đơn hàng** (dạng FMxxxxxx). Chuyển xong bấm **Tôi đã chuyển khoản**.
+4. Shop kiểm tra giao dịch, duyệt đơn và báo cho khách qua email hoặc số điện thoại.
+5. Khách tra cứu trạng thái đơn bất cứ lúc nào ở trang **Tra cứu đơn hàng** (/tra-cuu-don-hang) bằng mã đơn + số điện thoại đã đặt.
+
+Trạng thái đơn: Chờ thanh toán / duyệt → Đã xác nhận thanh toán → Đang giao hàng → Hoàn thành (hoặc Đã huỷ).
+Tài khoản nhận tiền: Timo Digital Bank by BVBank — số tài khoản 9021083115251 — chủ tài khoản MAI NGA.
+Khách vẫn có thể nhắn Facebook / TikTok / Zalo nếu cần tư vấn trước khi đặt.
 
 ## Giao hàng và thanh toán [CẦN ĐIỀN]
 
 - Giao toàn quốc. Nội thành TP.HCM 1–2 ngày, tỉnh khác 3–5 ngày.
 - Phí ship tính theo đơn vị vận chuyển; miễn phí ship cho đơn từ 500.000đ.
-- Thanh toán: chuyển khoản hoặc COD (nhận hàng trả tiền).
+- Thanh toán: chuyển khoản qua mã QR khi đặt hàng trên website.
 
 ## Đổi trả và bảo quản [CẦN ĐIỀN]
 

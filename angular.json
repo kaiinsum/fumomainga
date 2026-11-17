@@ -34,7 +34,9 @@
               "src/styles.scss"
             ],
             "allowedCommonJsDependencies": [
-              "exceljs"
+              "exceljs",
+              "qrcode",
+              "dijkstrajs"
             ]
           },
           "configurations": {

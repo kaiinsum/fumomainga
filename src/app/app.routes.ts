@@ -39,6 +39,16 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/news-detail/news-detail').then((m) => m.NewsDetailPage),
       },
       {
+        path: 'gio-hang',
+        title: 'Giỏ hàng',
+        loadComponent: () => import('./pages/cart/cart').then((m) => m.CartPage),
+      },
+      {
+        path: 'tra-cuu-don-hang',
+        title: 'Tra cứu đơn hàng',
+        loadComponent: () => import('./pages/order-lookup/order-lookup').then((m) => m.OrderLookupPage),
+      },
+      {
         path: 'gioi-thieu',
         title: 'Giới thiệu',
         loadComponent: () => import('./pages/about/about').then((m) => m.AboutPage),

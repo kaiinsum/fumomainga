@@ -48,8 +48,21 @@
           </div>
         }
 
+        <div class="buy">
+          <div class="qty" aria-label="Số lượng">
+            <button type="button" (click)="qty.set(qty() > 1 ? qty() - 1 : 1)" aria-label="Giảm">−</button>
+            <span>{{ qty() }}</span>
+            <button type="button" (click)="qty.set(qty() < 99 ? qty() + 1 : 99)" aria-label="Tăng">+</button>
+          </div>
+          <button class="btn ghost" type="button" (click)="addToCart()">{{ added() ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ' }}</button>
+          <button class="btn primary" type="button" (click)="addToCart(true)">Mua ngay</button>
+        </div>
+        @if (!p.inStock) {
+          <p class="stock-note">Sản phẩm đang hết hàng — bạn vẫn có thể đặt trước, shop sẽ liên hệ báo thời gian có hàng.</p>
+        }
+
         <div class="actions">
-          <a class="btn primary" routerLink="/lien-he">💬 Liên hệ đặt hàng</a>
+          <a class="btn ghost" routerLink="/lien-he">💬 Liên hệ tư vấn</a>
           <a class="btn ghost" routerLink="/san-pham">← Xem sản phẩm khác</a>
         </div>
       </div>

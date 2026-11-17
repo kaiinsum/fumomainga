@@ -16,6 +16,13 @@
     </nav>
 
     <div class="tools">
+    <a class="theme-btn cart-btn" routerLink="/gio-hang" [attr.aria-label]="'Giỏ hàng, ' + cartCount() + ' sản phẩm'" title="Giỏ hàng">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6.2" />
+        <circle cx="10" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" />
+      </svg>
+      @if (cartCount()) { <span class="cart-badge">{{ cartCount() > 99 ? '99+' : cartCount() }}</span> }
+    </a>
     <button
       class="theme-btn"
       type="button"

@@ -1,11 +1,12 @@
 import { Component, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Title } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { setPageTitle } from '../../core/shop-title.strategy';
 import { SettingsService } from '../../services/settings.service';
 import { animate, createTimeline, stagger } from 'animejs';
 import { ProductService } from '../../services/product.service';
+import { CartService } from '../../services/cart.service';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
@@ -24,6 +25,22 @@ export class ProductDetailPage {
   private readonly service = inject(ProductService);
   private readonly title = inject(Title);
   private readonly settings = inject(SettingsService).settings;
+  private readonly cart = inject(CartService);
+  private readonly router = inject(Router);
+  readonly qty = signal(1);
+  readonly added = signal(false);
+
+  addToCart(buyNow = false): void {
+    const p = this.product();
+    if (!p) return;
+    this.cart.add(p.id, this.qty());
+    if (buyNow) {
+      this.router.navigate(['/gio-hang']);
+      return;
+    }
+    this.added.set(true);
+    setTimeout(() => this.added.set(false), 1800);
+  }
 
   readonly product = computed(() => this.service.getById(this.id()));
   readonly activeIndex = signal(0);

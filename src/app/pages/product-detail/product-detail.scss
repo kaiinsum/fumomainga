@@ -188,3 +188,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+.buy {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.qty {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+
+  button {
+    width: 40px;
+    height: 44px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    cursor: pointer;
+  }
+
+  span {
+    min-width: 28px;
+    text-align: center;
+    font-weight: 800;
+  }
+}
+
+.stock-note {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

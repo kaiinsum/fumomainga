@@ -70,6 +70,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./news/news-form').then((m) => m.AdminNewsForm),
       },
       {
+        path: 'don-hang',
+        title: 'Đơn hàng',
+        loadComponent: () => import('./orders/orders').then((m) => m.AdminOrders),
+      },
+      {
         path: 'cai-dat',
         title: 'Cài đặt',
         loadComponent: () => import('./settings/settings').then((m) => m.AdminSettings),
