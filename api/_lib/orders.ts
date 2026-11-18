@@ -5,6 +5,7 @@
 import { Redis } from '@upstash/redis';
 import { randomInt, timingSafeEqual } from 'node:crypto';
 import { ProductRow, supabaseStore } from './supabase-store';
+import { AnalyticsStore, memoryAnalytics } from './analytics';
 
 /** Project Supabase của shop (URL không phải bí mật; khoá đặt trong biến môi trường). */
 const DEFAULT_SUPABASE_URL = 'https://socfkoptqceyzhhpwxoe.supabase.co';
@@ -55,6 +56,8 @@ interface Store {
   delKey(key: string): Promise<void>;
   /** Ghi bảng sản phẩm (chỉ có ở Supabase). */
   syncProducts?(products: ProductRow[]): Promise<void>;
+  /** Thống kê truy cập (Supabase hoặc bộ nhớ khi chạy thử). */
+  analytics?: AnalyticsStore;
   /** Lưu ảnh và trả về link công khai (chỉ có ở Supabase Storage). */
   uploadImage?(path: string, bytes: Uint8Array, contentType: string): Promise<string>;
   /** Lời nhắn liên hệ (Supabase có bảng riêng; kho khác lưu dạng danh sách JSON). */
@@ -189,6 +192,7 @@ function memoryStore(): Store {
       hits.set(key, next);
       return next.n;
     },
+    analytics: memoryAnalytics(),
     getJson: async <T,>(key: string) => structuredClone((kv.get(key) as T | undefined) ?? null),
     setJson: async (key, value) => void kv.set(key, structuredClone(value)),
     delKey: async (key) => void kv.delete(key),

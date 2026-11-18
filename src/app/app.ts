@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CatalogSyncService } from './services/catalog-sync.service';
 import { SettingsService } from './services/settings.service';
+import { TrackerService } from './services/tracker.service';
 
 @Component({
   selector: 'app-root',
@@ -13,4 +14,9 @@ export class App {
   private readonly _settings = inject(SettingsService);
   // Tải sản phẩm / danh mục / tin tức từ máy chủ (dùng chung cho mọi máy).
   private readonly _catalog = inject(CatalogSyncService);
+
+  constructor() {
+    // Thống kê truy cập (trang admin "Thống kê").
+    inject(TrackerService).start();
+  }
 }

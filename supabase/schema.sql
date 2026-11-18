@@ -157,3 +157,66 @@ alter table public.products    enable row level security;
 alter table public.app_kv      enable row level security;
 alter table public.rate_limits enable row level security;
 alter table public.contacts    enable row level security;
+
+-- ---------- Thống kê truy cập (trang admin "Thống kê") ----------
+-- Mỗi lần khách mở một trang = 1 dòng. vid = mã khách (lưu trên trình duyệt), sid = phiên.
+create table if not exists public.page_views (
+  id   bigint generated always as identity primary key,
+  at   timestamptz not null default now(),
+  vid  text not null,
+  sid  text,
+  path text,
+  ip   text,
+  ua   text,
+  ref  text
+);
+create index if not exists page_views_at_idx on public.page_views (at desc);
+
+-- Khách đang mở web: cập nhật mỗi ~30 giây khi tab còn hiển thị.
+create table if not exists public.visitors_online (
+  vid       text primary key,
+  last_seen timestamptz not null default now(),
+  path      text,
+  ip        text,
+  ua        text
+);
+create index if not exists visitors_online_seen_idx on public.visitors_online (last_seen desc);
+
+-- Gom lượt xem / số khách theo từng phút / giờ / ngày / tháng (giờ Việt Nam).
+create or replace function public.analytics_series(p_from timestamptz, p_unit text)
+returns table (bucket timestamptz, views bigint, visitors bigint)
+language sql stable
+as $$
+  select date_trunc(p_unit, at, 'Asia/Ho_Chi_Minh') as bucket, count(*), count(distinct vid)
+  from public.page_views
+  where at >= p_from
+  group by 1
+  order by 1;
+$$;
+
+-- Tổng lượt xem + số khách khác nhau từ một mốc (null = toàn bộ).
+create or replace function public.analytics_totals(p_from timestamptz)
+returns table (views bigint, visitors bigint)
+language sql stable
+as $$
+  select count(*), count(distinct vid) from public.page_views where p_from is null or at >= p_from;
+$$;
+
+-- Trang được xem nhiều nhất từ một mốc.
+create or replace function public.analytics_top_pages(p_from timestamptz, p_limit integer)
+returns table (path text, views bigint, visitors bigint)
+language sql stable
+as $$
+  select coalesce(path, '/'), count(*), count(distinct vid)
+  from public.page_views
+  where p_from is null or at >= p_from
+  group by 1
+  order by 2 desc
+  limit p_limit;
+$$;
+
+revoke all on function public.analytics_series(timestamptz, text) from public, anon, authenticated;
+revoke all on function public.analytics_totals(timestamptz) from public, anon, authenticated;
+revoke all on function public.analytics_top_pages(timestamptz, integer) from public, anon, authenticated;
+alter table public.page_views      enable row level security;
+alter table public.visitors_online enable row level security;

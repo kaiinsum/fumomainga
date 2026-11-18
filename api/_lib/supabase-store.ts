@@ -4,6 +4,7 @@
  */
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import type { Contact, ContactStore, Order, OrderItem, OrderStatus } from './orders';
+import type { AnalyticsStore, PageView } from './analytics';
 
 /** Bucket công khai chứa ảnh sản phẩm / tin tức. */
 const MEDIA_BUCKET = 'media';
@@ -135,7 +136,60 @@ export function supabaseStore(url: string, serviceKey: string) {
     },
   };
 
+  const num = (v: unknown) => Number(v) || 0;
+  const isoOrNull = (t: number | null) => (t === null ? null : new Date(t).toISOString());
+  const analytics: AnalyticsStore = {
+    async view(v) {
+      check(await db.from('page_views').insert({ vid: v.vid, sid: v.sid, path: v.path, ip: v.ip, ua: v.ua, ref: v.ref }), 'ghi lượt xem');
+    },
+    async ping(p) {
+      check(
+        await db.from('visitors_online').upsert({ vid: p.vid, last_seen: new Date().toISOString(), path: p.path, ip: p.ip, ua: p.ua }),
+        'ghi khách online',
+      );
+    },
+    async online(since) {
+      const rows = check(
+        await db.from('visitors_online').select('vid,last_seen,path,ip,ua').gte('last_seen', new Date(since).toISOString()).order('last_seen', { ascending: false }).limit(200),
+        'khách online',
+      ) as { vid: string; last_seen: string; path: string | null; ip: string | null; ua: string | null }[];
+      return rows.map((r) => ({ vid: r.vid, lastSeen: new Date(r.last_seen).getTime(), path: r.path ?? '', ip: r.ip ?? '', ua: r.ua ?? '' }));
+    },
+    async series(from, unit) {
+      const rows = check(await db.rpc('analytics_series', { p_from: new Date(from).toISOString(), p_unit: unit }), 'biểu đồ truy cập') as {
+        bucket: string;
+        views: number;
+        visitors: number;
+      }[];
+      return rows.map((r) => ({ t: new Date(r.bucket).getTime(), views: num(r.views), visitors: num(r.visitors) }));
+    },
+    async totals(from) {
+      const rows = check(await db.rpc('analytics_totals', { p_from: isoOrNull(from) }), 'tổng truy cập') as { views: number; visitors: number }[];
+      const r = rows?.[0];
+      return { views: num(r?.views), visitors: num(r?.visitors) };
+    },
+    async top(from, limit) {
+      const rows = check(await db.rpc('analytics_top_pages', { p_from: isoOrNull(from), p_limit: limit }), 'trang xem nhiều') as {
+        path: string;
+        views: number;
+        visitors: number;
+      }[];
+      return rows.map((r) => ({ path: r.path, views: num(r.views), visitors: num(r.visitors) }));
+    },
+    async latest(limit) {
+      const rows = check(await db.from('page_views').select('at,vid,sid,path,ip,ua,ref').order('at', { ascending: false }).limit(limit), 'lượt xem gần nhất') as (Omit<
+        PageView,
+        'at'
+      > & { at: string })[];
+      return rows.map((r) => ({ ...r, at: new Date(r.at).getTime(), sid: r.sid ?? '', path: r.path ?? '', ip: r.ip ?? '', ua: r.ua ?? '', ref: r.ref ?? '' }));
+    },
+    async cleanup(before) {
+      check(await db.from('visitors_online').delete().lt('last_seen', new Date(before).toISOString()), 'dọn khách online');
+    },
+  };
+
   return {
+    analytics,
     contacts,
     async get(code: string): Promise<Order | null> {
       const row = check(await db.from('orders').select(ORDER_SELECT).eq('code', code).maybeSingle(), 'đọc đơn');

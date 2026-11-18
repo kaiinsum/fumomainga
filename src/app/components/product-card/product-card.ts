@@ -91,6 +91,18 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
       mix-blend-mode: soft-light;
     }
 
+    /* Điện thoại: thẻ nhỏ gọn để xếp 2 cột */
+    @media (max-width: 600px) {
+      .card { border-radius: 14px; }
+      .badge { top: 7px; left: 7px; font-size: .62rem; padding: 2px 7px; }
+      .info { padding: 8px 10px 10px; }
+      .cat { font-size: .66rem; }
+      h3 { font-size: .86rem; line-height: 1.3; margin: 2px 0 6px; }
+      .pt { font-size: .86rem; }
+      strong { font-size: .86rem; }
+      .go { width: 24px; height: 24px; font-size: .75rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .card, .thumb::after, .go, h3 { transition: none; }
     }

@@ -30,6 +30,12 @@
     },
     "api/media.ts": {
       "maxDuration": 30
+    },
+    "api/analytics.ts": {
+      "maxDuration": 30
+    },
+    "api/track.ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
