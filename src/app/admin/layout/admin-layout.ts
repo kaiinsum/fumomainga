@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { animate, stagger } from 'animejs';
@@ -6,12 +6,15 @@ import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
+import { AdminInboxService } from '../inbox.service';
 
 interface MenuItem {
   icon: string;
   label: string;
   path: string;
   exact?: boolean;
+  /** Số hiện trên menu (lời nhắn / đơn mới). */
+  badge?: 'messages' | 'orders';
   children?: { label: string; path: string; exact?: boolean }[];
 }
 
@@ -30,6 +33,7 @@ export class AdminLayout implements AfterViewInit {
   readonly usingDefaultPassword = this.auth.usingDefaultPassword;
 
   readonly sidebarOpen = signal(false);
+  readonly inbox = inject(AdminInboxService);
 
   readonly menu: MenuItem[] = [
     { icon: '📊', label: 'Bảng tin', path: '/admin', exact: true },
@@ -53,13 +57,15 @@ export class AdminLayout implements AfterViewInit {
         { label: 'Viết bài mới', path: '/admin/tin-tuc/moi', exact: true },
       ],
     },
-    { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang' },
-    { icon: '✉️', label: 'Liên hệ', path: '/admin/lien-he' },
+    { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang', badge: 'orders' },
+    { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
     { icon: '🤖', label: 'Trợ lý AI', path: '/admin/tro-ly-ai' },
     { icon: '⚙️', label: 'Cài đặt', path: '/admin/cai-dat' },
   ];
 
   constructor() {
+    this.inbox.start();
+    inject(DestroyRef).onDestroy(() => this.inbox.stop());
     this.router.events
       .pipe(
         filter((e) => e instanceof NavigationEnd),
@@ -82,6 +88,10 @@ export class AdminLayout implements AfterViewInit {
       duration: 500,
       ease: 'outExpo',
     });
+  }
+
+  badgeCount(m: MenuItem): number {
+    return m.badge === 'messages' ? this.inbox.newMessages() : m.badge === 'orders' ? this.inbox.pendingOrders() : 0;
   }
 
   isActive(path: string): boolean {

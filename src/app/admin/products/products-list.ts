@@ -77,7 +77,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
                 <a [routerLink]="['/admin/san-pham', p.id]">{{ p.name }}</a>
                 <div class="row-actions">
                   <a [routerLink]="['/admin/san-pham', p.id]">Sửa</a>
-                  <a [href]="'/san-pham/' + p.id" target="_blank" rel="noopener">Xem</a>
+                  <a [href]="'/san-pham/' + (p.slug || p.id)" target="_blank" rel="noopener">Xem</a>
                   <button type="button" class="del" (click)="remove(p)">Xoá</button>
                 </div>
               </td>

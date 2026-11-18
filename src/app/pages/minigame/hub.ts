@@ -19,7 +19,7 @@ interface GameCard {
   title: string;
   tag: string;
   desc: string;
-  art: 'shmup' | 'gacha' | 'dle' | 'ninja' | 'soon';
+  art: 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp' | 'soon';
 }
 
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
@@ -80,6 +80,12 @@ interface GameCard {
             <span class="blt b1"></span><span class="blt b2"></span><span class="blt b3"></span><span class="blt b4"></span><span class="blt b5"></span>
             <span class="boss"></span>
             <span class="ship"></span>
+          }
+          @case ('jp') {
+            <img class="jpf f1" src="jp-type/remilia.webp" alt="" /><b class="jpw w1">猫</b>
+            <img class="jpf f2" src="jp-type/cirno.webp" alt="" /><b class="jpw w2">さくら</b>
+            <img class="jpf f3" src="jp-type/teto.webp" alt="" /><b class="jpw w3">幻想郷</b>
+            <span class="jpkey">neko_</span>
           }
           @case ('ninja') {
             <img class="nj n1" src="fumo-ninja/cirno.webp" alt="" />
@@ -228,6 +234,14 @@ interface GameCard {
       transform: rotate(-18deg) scaleX(0); box-shadow: 0 0 14px #bfe8ff; animation: nj-slash 2.4s ease-in-out infinite paused; }
     @keyframes nj-toss { 0%, 100% { transform: translateY(40px) rotate(-10deg); } 50% { transform: translateY(-10px) rotate(12deg); } }
     @keyframes nj-slash { 0%, 40% { transform: rotate(-18deg) scaleX(0); opacity: 0; } 50% { transform: rotate(-18deg) scaleX(1); opacity: 1; } 65%, 100% { transform: rotate(-18deg) scaleX(1); opacity: 0; } }
+    .art-jp { background: linear-gradient(#120c2e, #3b1d5c 60%, #a8467a); }
+    .jpf { position: absolute; width: 64px; height: 64px; object-fit: contain; animation: jp-fall 3s linear infinite paused; filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+    .jpw { position: absolute; padding: 2px 8px; border-radius: 8px; background: #fff; color: #2b2140; font-size: .95rem; animation: jp-fall 3s linear infinite paused; }
+    .f1, .w1 { left: 22px; } .f2, .w2 { left: 112px; animation-delay: -1s; } .f3, .w3 { left: 200px; animation-delay: -2s; }
+    .jpf { top: 34px; } .jpw { top: 10px; }
+    .jpkey { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; padding: 4px 14px; border-radius: 8px; background: rgba(20,12,40,.85);
+      color: #ffd23f; font: 700 1rem ui-monospace, Consolas, monospace; border: 2px solid #6b4fd6; }
+    @keyframes jp-fall { 0% { transform: translateY(-70px); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(80px); opacity: 0; } }
     .art-dle { background: linear-gradient(135deg, #1b2a4a, #3a1c5c); display: grid; place-items: center; }
     .dle-grid { display: grid; grid-template-columns: repeat(4, 34px); gap: 6px; }
     .dle-grid i { width: 34px; height: 34px; border-radius: 7px; animation: tile 2.4s ease-in-out infinite paused; }
@@ -300,6 +314,13 @@ export class MiniGameHubPage implements AfterViewInit {
   }
 
   readonly games: GameCard[] = [
+    {
+      path: '/mini-game/go-chu-diet-fumo',
+      title: 'Gõ chữ diệt Fumo',
+      tag: '⌨️ Gõ chữ · Tiếng Nhật · Mới',
+      desc: 'Fumo mang chữ tiếng Nhật rơi từ trời xuống — gõ đúng cách đọc để tiêu diệt, phản đòn boss. 3 mức từ hiragana tới kanji khó!',
+      art: 'jp',
+    },
     {
       path: '/mini-game/tui-mu',
       title: 'Túi mù may mắn',

@@ -1,8 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { AdminToastService } from '../toast.service';
+import { AdminInboxService } from '../inbox.service';
 
 interface Contact {
   id: number;
@@ -24,7 +25,7 @@ type Tab = 'new' | 'done' | 'all';
   imports: [FormsModule, DatePipe],
   template: `
     <div class="adm-head">
-      <h1>Liên hệ</h1>
+      <h1>Lời nhắn từ khách</h1>
       @if (connected()) {
         <button class="btn ghost small" type="button" [disabled]="loading()" (click)="load()">↻ Tải lại</button>
       }
@@ -121,6 +122,11 @@ export class AdminContacts {
 
   readonly replySubject = encodeURIComponent('Phản hồi từ Fumo Mai Nga');
   readonly contacts = signal<Contact[]>([]);
+  private readonly inbox = inject(AdminInboxService);
+  private readonly syncBadge = effect(() => {
+    const list = this.contacts();
+    if (this.connected()) this.inbox.setMessages(list);
+  });
   readonly connected = signal(false);
   readonly loading = signal(false);
   readonly needKey = signal(false);

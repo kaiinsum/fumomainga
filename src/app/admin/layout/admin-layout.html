@@ -14,6 +14,7 @@
         <li [class.open]="isActive(m.path) && !m.exact">
           <a [routerLink]="m.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!m.exact }">
             <span class="ic">{{ m.icon }}</span> {{ m.label }}
+            @if (badgeCount(m); as n) { <span class="nbadge" [title]="n + ' mục mới'">{{ n > 99 ? '99+' : n }}</span> }
           </a>
           @if (m.children && isActive(m.path)) {
             <ul class="sub">

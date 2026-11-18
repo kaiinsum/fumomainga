@@ -200,3 +200,24 @@
     padding: calc(var(--top-h) + 16px) 16px 32px;
   }
 }
+
+// Số lời nhắn / đơn mới trên menu
+.nbadge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d63638;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  animation: nbadge-pop 2.4s ease-in-out infinite;
+}
+
+@keyframes nbadge-pop {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 54, 56, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(214, 54, 56, 0); }
+}

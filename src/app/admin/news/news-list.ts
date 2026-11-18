@@ -7,6 +7,7 @@ import { EMPTY_SEO, NewsPost, NewsStatus, newsPath } from '../../models/news';
 import { NewsService } from '../../services/news.service';
 import { analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
 import { downloadBlob } from '../../shared/download';
+import { ProductService } from '../../services/product.service';
 import { buildNewsSitemap, buildRobotsTxt } from '../../shared/sitemap';
 import { AdminToastService } from '../toast.service';
 
@@ -111,6 +112,7 @@ import { AdminToastService } from '../toast.service';
   `,
 })
 export class AdminNewsList {
+  private readonly products = inject(ProductService);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(NewsService);
   private readonly toast = inject(AdminToastService);
@@ -143,7 +145,7 @@ export class AdminNewsList {
   });
 
   downloadSitemap(): void {
-    const xml = buildNewsSitemap(this.origin, this.service.posts());
+    const xml = buildNewsSitemap(this.origin, this.service.posts(), this.products.products());
     downloadBlob(new Blob([xml], { type: 'application/xml' }), 'sitemap.xml');
   }
 

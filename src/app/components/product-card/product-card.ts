@@ -16,7 +16,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
   imports: [RouterLink, PriceTagComponent],
   template: `
     @let p = product();
-    <a class="card" [routerLink]="['/san-pham', p.id]">
+    <a class="card" [routerLink]="['/san-pham', p.slug || p.id]">
       <div class="thumb">
         <img [src]="p.images[0]" [alt]="p.name" loading="lazy" />
         @if (!p.inStock) {

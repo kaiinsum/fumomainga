@@ -1,9 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, effect, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Customer, EMPTY_CUSTOMER, ORDER_STATUSES, ORDER_STATUS_LABEL, Order, OrderItem, OrderStatus } from '../../models/order';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { ProductService } from '../../services/product.service';
+import { AdminInboxService } from '../inbox.service';
 import { Product, finalPrice } from '../../models/product';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AdminToastService } from '../toast.service';
@@ -273,6 +274,11 @@ export class AdminOrders {
   readonly label = ORDER_STATUS_LABEL;
   readonly statuses = ORDER_STATUSES;
   readonly orders = signal<Order[]>([]);
+  private readonly inbox = inject(AdminInboxService);
+  private readonly syncBadge = effect(() => {
+    const list = this.orders();
+    if (list.length) this.inbox.setOrders(list);
+  });
   readonly connected = signal(false);
   /** Thông báo khi máy chủ chưa cấu hình (503). */
   readonly setup = signal('');

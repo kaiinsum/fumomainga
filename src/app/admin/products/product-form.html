@@ -1,7 +1,7 @@
 <div class="adm-head">
   <h1>{{ editing() ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới' }}</h1>
   @if (editing(); as p) {
-    <a class="btn ghost small" [href]="'/san-pham/' + p.id" target="_blank" rel="noopener">Xem trên web ↗</a>
+    <a class="btn ghost small" [href]="'/san-pham/' + (p.slug || p.id)" target="_blank" rel="noopener">Xem trên web ↗</a>
   }
 </div>
 
@@ -17,6 +17,17 @@
     @if (invalid('name')) {
       <span class="error">Tên từ 3–80 ký tự.</span>
     }
+    <div class="slug-row">
+      <span class="slug-label">🔗 Đường dẫn:</span>
+      <span class="slug-base">{{ origin }}/san-pham/</span>
+      <input class="slug-input" [value]="slug()" (input)="onSlugInput($any($event.target).value)" (blur)="normalizeSlug()"
+        placeholder="tu-dong-theo-ten" aria-label="Đường dẫn sản phẩm" spellcheck="false" />
+      @if (slugManual()) {
+        <button type="button" class="link-del" (click)="resetSlug()" title="Tạo lại từ tên sản phẩm">↺ Theo tên</button>
+      } @else {
+        <small class="hint">tự động theo tên</small>
+      }
+    </div>
 
     <section class="adm-box">
       <h2>Hình ảnh ({{ images().length }}/{{ maxImages }}) — ảnh đầu tiên là ảnh bìa</h2>

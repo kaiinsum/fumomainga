@@ -22,6 +22,7 @@ export interface CatalogProduct {
   category: string;
   price: number;
   /** Giá sau giảm, null nếu không giảm. */
+  slug: string;
   salePrice: number | null;
   variants: { name: string; price: number; salePrice: number | null }[];
   inStock: boolean;
@@ -71,6 +72,7 @@ export function parseCatalog(body: Record<string, unknown>): CatalogSnapshot {
           const s = Math.round(Number(p['salePrice']));
           return p['salePrice'] !== null && p['salePrice'] !== undefined && Number.isFinite(s) && s >= 0 && s < price ? s : null;
         })(),
+        slug: /^[a-z0-9-]{1,90}$/.test(String(p['slug'] ?? '')) ? String(p['slug']) : '',
         variants: (Array.isArray(p['variants']) ? p['variants'] : []).slice(0, 30).map((rv) => {
           const v = (rv && typeof rv === 'object' ? rv : {}) as Record<string, unknown>;
           const vp = Math.max(0, Math.round(Number(v['price'])) || 0);
@@ -132,7 +134,7 @@ export function catalogToPrompt(c: CatalogSnapshot): string {
     '|---|---|---|---|---|---|---|---|---|',
     ...byPrice.map(
       (p) =>
-        `| ${p.name} | ${p.category} | ${vnd(p.salePrice ?? p.price)} | ${p.salePrice !== null ? `đang giảm ${Math.round((1 - p.salePrice / p.price) * 100)}% (giá gốc ${vnd(p.price)})` : ''} | ${p.variants.map((v) => `${v.name}: ${v.salePrice !== null ? `${vnd(v.salePrice)} (gốc ${vnd(v.price)})` : vnd(v.price)}`).join('; ')} | ${p.inStock ? 'Còn hàng' : 'Hết hàng'} | ${p.featured ? 'Có' : ''} | ${p.tags.join(', ')} | /san-pham/${p.id} | ${p.description.replace(/\|/g, '/').replace(/\s+/g, ' ')} |`,
+        `| ${p.name} | ${p.category} | ${vnd(p.salePrice ?? p.price)} | ${p.salePrice !== null ? `đang giảm ${Math.round((1 - p.salePrice / p.price) * 100)}% (giá gốc ${vnd(p.price)})` : ''} | ${p.variants.map((v) => `${v.name}: ${v.salePrice !== null ? `${vnd(v.salePrice)} (gốc ${vnd(v.price)})` : vnd(v.price)}`).join('; ')} | ${p.inStock ? 'Còn hàng' : 'Hết hàng'} | ${p.featured ? 'Có' : ''} | ${p.tags.join(', ')} | /san-pham/${p.slug || p.id} | ${p.description.replace(/\|/g, '/').replace(/\s+/g, ' ')} |`,
     ),
   ];
 

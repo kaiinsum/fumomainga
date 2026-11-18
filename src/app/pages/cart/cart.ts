@@ -47,7 +47,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
               <div class="line">
                 <img [src]="l.product.images[0]" [alt]="l.product.name" />
                 <div class="line-info">
-                  <a [routerLink]="['/san-pham', l.product.id]">{{ l.product.name }}</a>
+                  <a [routerLink]="['/san-pham', l.product.slug || l.product.id]">{{ l.product.name }}</a>
                   @if (l.variant) { <span class="variant">{{ l.variant.name }}</span> }
                   <small><app-price-tag [product]="l.variant ?? l.product" />{{ l.product.inStock ? '' : ' · Hết hàng — shop sẽ liên hệ' }}</small>
                 </div>

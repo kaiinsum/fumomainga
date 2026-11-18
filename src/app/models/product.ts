@@ -10,6 +10,10 @@ export interface ProductVariant {
 export interface Product {
   id: string;
   name: string;
+  /** Đường dẫn đẹp: /san-pham/<slug>, tự sinh từ tên (bỏ dấu, khoảng trắng → -). */
+  slug?: string;
+  /** Các slug cũ (sau khi đổi tên) — link cũ vẫn mở được và tự chuyển sang link mới. */
+  oldSlugs?: string[];
   category: string;
   price: number;
   description: string;
@@ -24,7 +28,10 @@ export interface Product {
   createdAt: number;
 }
 
-export type ProductInput = Omit<Product, 'id' | 'createdAt'>;
+export type ProductInput = Omit<Product, 'id' | 'createdAt' | 'oldSlugs'>;
+
+/** Link trang chi tiết sản phẩm. */
+export const productPath = (p: Pick<Product, 'id' | 'slug'>): string => `/san-pham/${p.slug || p.id}`;
 
 export interface Category {
   name: string;

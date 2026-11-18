@@ -2,6 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { STORAGE_KEYS, loadJson, saveJson } from '../core/storage';
 import { Product, ProductInput } from '../models/product';
 import { SEED_PRODUCTS } from './seed-data';
+import { slugify } from '../shared/seo';
 
 /**
  * Sản phẩm mẫu đã lưu từ phiên bản cũ có ảnh minh hoạ nhiều màu: thay bằng ảnh mẫu mới
@@ -15,10 +16,26 @@ function refreshSeedImages(list: Product[]): Product[] {
   });
 }
 
+/** Slug không trùng với sản phẩm khác (thêm -2, -3... nếu cần). */
+function uniqueSlug(base: string, list: Product[], selfId?: string): string {
+  const root = base || 'san-pham';
+  const taken = new Set(list.filter((p) => p.id !== selfId).flatMap((p) => [p.slug, p.id, ...(p.oldSlugs ?? [])]));
+  let slug = root;
+  for (let n = 2; taken.has(slug); n++) slug = `${root}-${n}`;
+  return slug;
+}
+
+/** Sản phẩm cũ chưa có slug → tự tạo từ tên. */
+function ensureSlugs(list: Product[]): Product[] {
+  const out: Product[] = [];
+  for (const p of list) out.push(p.slug ? p : { ...p, slug: uniqueSlug(slugify(p.name), [...out, ...list], p.id) });
+  return out;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly _products = signal<Product[]>(
-    refreshSeedImages(loadJson(STORAGE_KEYS.products, () => structuredClone(SEED_PRODUCTS))),
+    ensureSlugs(refreshSeedImages(loadJson(STORAGE_KEYS.products, () => structuredClone(SEED_PRODUCTS)))),
   );
 
   readonly products = this._products.asReadonly();
@@ -32,14 +49,39 @@ export class ProductService {
     return this._products().find((p) => p.id === id);
   }
 
+  /** Tìm theo slug (mới hoặc cũ) hoặc id — dùng cho trang /san-pham/:id. */
+  find(key: string): Product | undefined {
+    const list = this._products();
+    return list.find((p) => p.slug === key) ?? list.find((p) => p.id === key) ?? list.find((p) => p.oldSlugs?.includes(key));
+  }
+
+  /** Gợi ý slug cho tên (đã tránh trùng) — admin xem trước khi lưu. */
+  suggestSlug(text: string, selfId?: string): string {
+    return uniqueSlug(slugify(text), this._products(), selfId);
+  }
+
   add(input: ProductInput): Product {
-    const product: Product = { ...input, id: crypto.randomUUID(), createdAt: Date.now() };
+    const id = crypto.randomUUID();
+    const slug = uniqueSlug(slugify(input.slug || input.name), this._products(), id);
+    const product: Product = { ...input, id, slug, createdAt: Date.now() };
     this.commit([product, ...this._products()]);
     return product;
   }
 
   update(id: string, patch: Partial<ProductInput>): void {
-    this.commit(this._products().map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    const list = this._products();
+    this.commit(
+      list.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p, ...patch };
+        // Có gửi slug (form admin) → chuẩn hoá + tránh trùng; đổi slug thì giữ slug cũ để link cũ vẫn chạy.
+        if (patch.slug !== undefined || !next.slug) {
+          next.slug = uniqueSlug(slugify(patch.slug || next.name), list, id);
+          if (p.slug && p.slug !== next.slug) next.oldSlugs = [p.slug, ...(p.oldSlugs ?? []).filter((s) => s !== next.slug)].slice(0, 10);
+        }
+        return next;
+      }),
+    );
   }
 
   remove(id: string): void {

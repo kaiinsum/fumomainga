@@ -11,7 +11,7 @@ export const H = 640;
 const STEP = 1000 / 60;
 
 export type GameState = 'title' | 'playing' | 'paused' | 'over' | 'win';
-export type Difficulty = 'easy' | 'normal';
+export type Difficulty = 'easy' | 'normal' | 'hard';
 
 export interface GameResult {
   score: number;
@@ -198,8 +198,8 @@ export class DanmakuGame {
     this.boss = null;
     this.bossDefeatedAt = 0;
     this.score = 0;
-    this.lives = diff === 'easy' ? 5 : 3;
-    this.bombs = 3;
+    this.lives = this.pick(5, 3, 2);
+    this.bombs = this.pick(3, 3, 2);
     this.graze = 0;
     this.bombFx = 0;
     this.script = this.buildScript();
@@ -331,7 +331,7 @@ export class DanmakuGame {
         e.y += e.t < 50 ? 2.2 : e.t < 200 ? 0.15 : 2.4;
       },
       shoot: (e) => {
-        if (e.t > 50 && e.t < 200 && e.t % 45 === 0) this.aimed(e.x, e.y, this.spd(2.4), this.diff === 'easy' ? 3 : 5, 0.22, COLORS.blue, 5);
+        if (e.t > 50 && e.t < 200 && e.t % 45 === 0) this.aimed(e.x, e.y, this.spd(2.4), this.pick(3, 5, 7), 0.2, COLORS.blue, 5);
       },
     });
   }
@@ -346,7 +346,7 @@ export class DanmakuGame {
       },
       shoot: (e) => {
         if (e.t > 70 && e.t < 420 && e.t % 50 === 0) {
-          this.ring(e.x, e.y, this.spd(1.9), this.diff === 'easy' ? 12 : 18, e.t / 50 * 0.17, COLORS.purple, 6);
+          this.ring(e.x, e.y, this.spd(1.9), this.pick(12, 18, 24), e.t / 50 * 0.17, COLORS.purple, 6);
         }
       },
     });
@@ -360,7 +360,7 @@ export class DanmakuGame {
       time: 45,
       pattern: (b, g) => {
         // Xoắn ốc 3 nhánh + đạn ngắm.
-        const arms = g.diff === 'easy' ? 2 : 3;
+        const arms = g.pick(2, 3, 4);
         if (b.t % 5 === 0) {
           for (let i = 0; i < arms; i++) {
             const a = b.t * 0.045 + (i * Math.PI * 2) / arms;
@@ -376,11 +376,11 @@ export class DanmakuGame {
       time: 45,
       pattern: (b, g) => {
         // Kim rơi từ trên xuống + vòng đạn từ boss.
-        const every = g.diff === 'easy' ? 7 : 4;
+        const every = g.pick(7, 4, 3);
         if (b.t % every === 0) {
           g.bullets.push({ x: rand(0, W), y: -10, vx: rand(-0.3, 0.3), vy: g.spd(rand(2.2, 3.4)), r: 4, color: COLORS.yellow, rice: true });
         }
-        if (b.t % 70 === 0) g.ring(b.x, b.y, g.spd(2), g.diff === 'easy' ? 16 : 24, rand(0, 1), COLORS.red, 7);
+        if (b.t % 70 === 0) g.ring(b.x, b.y, g.spd(2), g.pick(16, 24, 30), rand(0, 1), COLORS.red, 7);
         if (b.t % 140 === 100) b.tx = rand(90, W - 90);
       },
     },
@@ -390,7 +390,7 @@ export class DanmakuGame {
       time: 60,
       pattern: (b, g) => {
         // Hoa xoay hai chiều + đạn rẽ hướng + đạn ngắm dày.
-        const n = g.diff === 'easy' ? 10 : 14;
+        const n = g.pick(10, 14, 18);
         if (b.t % 22 === 0) {
           const off = b.t * 0.03;
           for (let i = 0; i < n; i++) {
@@ -416,7 +416,7 @@ export class DanmakuGame {
   }
 
   private scaleHp(hp: number): number {
-    return Math.round(hp * (this.diff === 'easy' ? 0.7 : 1));
+    return Math.round(hp * this.pick(0.7, 1, 1.3));
   }
 
   private updateBoss(): void {
@@ -649,7 +649,7 @@ export class DanmakuGame {
     if (e.kind === 'big' && Math.random() < 0.35) drops.push('bomb');
     for (const k of drops) this.items.push({ x: e.x + rand(-14, 14), y: e.y + rand(-10, 10), vy: -2.2, kind: k });
     // Cuộn len to nổ ra vòng đạn khi bị hạ (chế độ thường).
-    if (e.kind === 'big' && this.diff === 'normal') this.ring(e.x, e.y, 1.6, 12, 0, COLORS.purple, 5);
+    if (e.kind === 'big' && this.diff !== 'easy') this.ring(e.x, e.y, this.spd(1.6), this.pick(0, 12, 16), 0, COLORS.purple, 5);
   }
 
   private collect(it: Item): void {
@@ -687,7 +687,12 @@ export class DanmakuGame {
   // ================= Mẫu bắn =================
   /** Tốc độ đạn theo độ khó. */
   spd(v: number): number {
-    return this.diff === 'easy' ? v * 0.78 : v;
+    return v * this.pick(0.78, 1, 1.18);
+  }
+
+  /** Chọn giá trị theo độ khó: dễ / trung bình / khó. */
+  pick<T>(easy: T, normal: T, hard: T): T {
+    return this.diff === 'easy' ? easy : this.diff === 'hard' ? hard : normal;
   }
 
   fire(x: number, y: number, vx: number, vy: number, r: number, color: string, rice = false): void {

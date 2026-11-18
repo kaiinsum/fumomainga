@@ -5,6 +5,7 @@ import { animate, stagger } from 'animejs';
 import { NewsService } from '../../services/news.service';
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
+import { AdminInboxService } from '../inbox.service';
 import { PriceTagComponent } from '../../shared/price-tag';
 
 @Component({
@@ -15,6 +16,21 @@ import { PriceTagComponent } from '../../shared/price-tag';
       <h1>Bảng tin</h1>
     </div>
     <p class="welcome">Chào mừng quay lại <b>{{ settings().shopName }}</b>! Đây là tổng quan cửa hàng của bạn.</p>
+
+    @if (inbox.newMessages() || inbox.pendingOrders()) {
+      <section class="adm-box inbox">
+        <h2>📬 Cần xử lý</h2>
+        <div class="box-body">
+          <div class="inbox-links">
+            @if (inbox.newMessages()) { <a class="btn primary small" routerLink="/admin/lien-he">✉️ {{ inbox.newMessages() }} lời nhắn mới</a> }
+            @if (inbox.pendingOrders()) { <a class="btn ghost small" routerLink="/admin/don-hang">🧾 {{ inbox.pendingOrders() }} đơn chờ duyệt</a> }
+          </div>
+          @for (m of inbox.latest(); track m.id) {
+            <a class="msg" routerLink="/admin/lien-he"><b>{{ m.name }}</b> <small>{{ m.createdAt | date: 'HH:mm dd/MM' }}</small><span>{{ m.message }}</span></a>
+          }
+        </div>
+      </section>
+    }
 
     <div class="stats">
       @for (s of stats(); track s.label) {
@@ -74,6 +90,12 @@ import { PriceTagComponent } from '../../shared/price-tag';
   styles: `
     .welcome { margin: -8px 0 20px; color: #50575e; }
     .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .inbox { margin-bottom: 18px; border-left: 4px solid #d63638; }
+    .inbox-links { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .msg { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; padding: 8px 10px; border-radius: 8px; color: inherit; text-decoration: none; }
+    .msg:hover { background: #f6f7f7; }
+    .msg small { color: #646970; align-self: center; }
+    .msg span { grid-column: 1 / -1; color: #50575e; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .stat { display: flex; align-items: center; gap: 14px; padding: 16px; transition: transform .2s, box-shadow .2s; }
     .stat:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.08); }
     .stat .ic { font-size: 1.8rem; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px;
@@ -96,6 +118,7 @@ export class AdminDashboard implements AfterViewInit {
   private readonly productsSvc = inject(ProductService);
   private readonly newsSvc = inject(NewsService);
   readonly settings = inject(SettingsService).settings;
+  readonly inbox = inject(AdminInboxService);
 
   readonly recentProducts = computed(() =>
     [...this.productsSvc.products()].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5),

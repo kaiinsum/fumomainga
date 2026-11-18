@@ -9,11 +9,12 @@ export type SfxName =
   | 'shot' | 'hit' | 'explode' | 'playerHit' | 'pickup' | 'spell'
   | 'tick' | 'shake' | 'reveal-common' | 'reveal-rare' | 'reveal-epic' | 'reveal-legendary'
   | 'flip' | 'wrong' | 'correct'
-  | 'launch' | 'boom' | 'curtain' | 'click';
+  | 'launch' | 'boom' | 'curtain' | 'click'
+  | 'key' | 'typo' | 'reflect' | 'heal' | 'freeze' | 'bossIn' | 'bossHit' | 'kill';
 
 const MUTE_KEY = 'fumo.sfx.muted';
 /** Khoảng cách tối thiểu giữa hai lần phát cùng một âm (ms) — tránh rè khi bắn liên tục. */
-const THROTTLE: Partial<Record<SfxName, number>> = { shot: 95, hit: 45, pickup: 60, tick: 28, whoosh: 160, flip: 60, launch: 120, boom: 70 };
+const THROTTLE: Partial<Record<SfxName, number>> = { key: 25, typo: 90, shot: 95, hit: 45, pickup: 60, tick: 28, whoosh: 160, flip: 60, launch: 120, boom: 70 };
 
 class Sfx {
   readonly muted = signal(readMuted());
@@ -98,6 +99,30 @@ class Sfx {
         for (let i = 0; i < 6; i++) this.noise(t + 0.15 + Math.random() * 0.4, 0.03, 'highpass', 4000, 4000, 0.06);
         break;
       case 'curtain': this.noise(t, 1.4, 'bandpass', 300, 1200, 0.25); break;
+      // ----- Gõ chữ diệt Fumo -----
+      case 'key': this.tone(t, 1200 + Math.random() * 400, 0.025, 'square', 0.05); break;
+      case 'typo': this.tone(t, 150, 0.12, 'square', 0.12, 110); break;
+      case 'kill':
+        this.tone(t, 660, 0.09, 'triangle', 0.22, 1320);
+        this.noise(t + 0.03, 0.12, 'highpass', 3000, 6000, 0.12);
+        break;
+      case 'reflect':
+        this.tone(t, 300, 0.25, 'sawtooth', 0.12, 1600);
+        this.noise(t, 0.2, 'bandpass', 800, 4000, 0.15);
+        break;
+      case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone(t + i * 0.08, f, 0.3, 'sine', 0.2)); break;
+      case 'freeze':
+        [2093, 1760, 1568, 1319, 1175].forEach((f, i) => this.tone(t + i * 0.05, f, 0.4, 'sine', 0.1));
+        this.noise(t, 0.5, 'highpass', 6000, 9000, 0.08);
+        break;
+      case 'bossIn':
+        this.tone(t, 110, 1.2, 'sawtooth', 0.18, 55);
+        [220, 207, 196, 185].forEach((f, i) => this.tone(t + 0.2 + i * 0.22, f, 0.3, 'square', 0.1));
+        break;
+      case 'bossHit':
+        this.noise(t, 0.3, 'lowpass', 2500, 300, 0.4);
+        this.tone(t, 240, 0.3, 'square', 0.15, 80);
+        break;
     }
   }
 

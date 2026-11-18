@@ -64,6 +64,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/minigame/touhoudle').then((m) => m.TouhoudlePage),
       },
       {
+        path: 'mini-game/go-chu-diet-fumo',
+        title: 'Gõ chữ diệt Fumo',
+        loadComponent: () => import('./pages/minigame/jp-type').then((m) => m.JpTypePage),
+      },
+      {
         path: 'mini-game/fumo-ninja',
         title: 'Fumo Ninja',
         loadComponent: () => import('./pages/minigame/ninja').then((m) => m.FumoNinjaPage),

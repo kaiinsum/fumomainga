@@ -96,7 +96,7 @@ const WIN_INDEX = 54;
               <p class="muted">{{ r.product.description }}</p>
               <div class="row">
                 <button class="btn primary" type="button" (click)="addToCart(r.product)">{{ added() ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ' }}</button>
-                <a class="btn ghost" [routerLink]="['/san-pham', r.product.id]">Xem chi tiết</a>
+                <a class="btn ghost" [routerLink]="['/san-pham', r.product.slug || r.product.id]">Xem chi tiết</a>
                 <button class="btn ghost" type="button" (click)="reset()">🔁 Bóc túi khác</button>
               </div>
             </div>
@@ -120,7 +120,7 @@ const WIN_INDEX = 54;
               <h2>Đã bóc gần đây</h2>
               <ul>
                 @for (h of history(); track $index) {
-                  <li [style.--rc]="h.rarity.color"><i></i><a [routerLink]="['/san-pham', h.product.id]">{{ h.product.name }}</a></li>
+                  <li [style.--rc]="h.rarity.color"><i></i><a [routerLink]="['/san-pham', h.product.slug || h.product.id]">{{ h.product.name }}</a></li>
                 }
               </ul>
             </section>

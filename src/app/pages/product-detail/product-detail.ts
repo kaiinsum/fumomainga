@@ -51,7 +51,7 @@ export class ProductDetailPage {
     setTimeout(() => this.added.set(false), 1800);
   }
 
-  readonly product = computed(() => this.service.getById(this.id()));
+  readonly product = computed(() => this.service.find(this.id()));
   readonly activeIndex = signal(0);
   readonly activeImage = computed(() => this.product()?.images[this.activeIndex()] ?? '');
   readonly related = computed(() => {
@@ -70,6 +70,8 @@ export class ProductDetailPage {
       untracked(() => {
         const p = this.product();
         if (p) setPageTitle(this.title, p.name, this.settings().shopName);
+        // Mở bằng id hoặc slug cũ → đổi URL sang link chuẩn (không thêm lịch sử).
+        if (p?.slug && this.id() !== p.slug) this.router.navigate(['/san-pham', p.slug], { replaceUrl: true });
         this.activeIndex.set(0);
         this.variantId.set(this.variants()[0]?.id ?? null);
         requestAnimationFrame(() => this.intro());

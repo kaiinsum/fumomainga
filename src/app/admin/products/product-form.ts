@@ -6,6 +6,7 @@ import { ProductInput, ProductVariant, cheapest, discountPercent, finalPrice, on
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
+import { slugify } from '../../shared/seo';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { AdminToastService } from '../toast.service';
 
@@ -83,6 +84,12 @@ export class AdminProductForm {
   readonly salePrice = new FormControl<number | null>(null);
   readonly saleError = signal('');
 
+  // ---------- Đường dẫn (slug) ----------
+  readonly origin = location.origin;
+  readonly slug = signal('');
+  /** true = admin tự sửa đường dẫn → thôi tự cập nhật theo tên. */
+  readonly slugManual = signal(false);
+
   // ---------- Biến thể ----------
   readonly variants = signal<VariantDraft[]>([]);
   readonly maxVariants = MAX_VARIANTS;
@@ -96,6 +103,10 @@ export class AdminProductForm {
   });
 
   constructor() {
+    // Gõ tên → đường dẫn tự cập nhật (khoảng trắng → -, bỏ dấu tiếng Việt).
+    this.form.controls.name.valueChanges.subscribe((name) => {
+      if (!this.slugManual()) this.slug.set(this.service.suggestSlug(name ?? '', this.editing()?.id));
+    });
     // Đổi giá gốc khi đang giảm theo % → tính lại giá sau giảm.
     this.form.controls.price.valueChanges.subscribe(() => {
       if (this.salePercent.value) this.onPercentInput();
@@ -117,6 +128,9 @@ export class AdminProductForm {
             featured: p.featured,
           });
           this.images.set([...p.images]);
+          this.slug.set(p.slug ?? this.service.suggestSlug(p.name, p.id));
+          // Đường dẫn đã sửa tay (khác tên) thì giữ nguyên khi đổi tên.
+          this.slugManual.set(!!p.slug && slugify(p.name) !== p.slug.replace(/-\d+$/, '') && slugify(p.name) !== p.slug);
           this.salePrice.setValue(onSale(p) ? (p.salePrice as number) : null);
           this.salePercent.setValue(onSale(p) ? discountPercent(p) : null);
           this.variants.set(
@@ -130,6 +144,8 @@ export class AdminProductForm {
           );
         } else {
           this.variants.set([]);
+          this.slug.set('');
+          this.slugManual.set(false);
           this.salePrice.setValue(null);
           this.salePercent.setValue(null);
           this.form.reset({ category: this.categories()[0] ?? '' });
@@ -232,6 +248,7 @@ export class AdminProductForm {
       price: variants.length ? cheapest({ price: 0, variants }).price : Number(v.price),
       salePrice: variants.length ? (cheapest({ price: 0, variants }).salePrice ?? null) : this.validSale(),
       variants,
+      slug: slugify(this.slug()) || slugify(v.name),
       tags: [...new Set(v.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
       images: this.images(),
     };
@@ -244,6 +261,23 @@ export class AdminProductForm {
       const ok = this.toast.run(() => (createdId = this.service.add(data).id), 'Đã đăng sản phẩm');
       if (ok) this.router.navigate(['/admin/san-pham', createdId]);
     }
+  }
+
+  onSlugInput(value: string): void {
+    this.slugManual.set(true);
+    // Gõ khoảng trắng thì đổi ngay thành dấu -.
+    this.slug.set(value.replace(/\s+/g, '-'));
+  }
+
+  normalizeSlug(): void {
+    const s = slugify(this.slug());
+    if (!s) return this.resetSlug();
+    this.slug.set(s);
+  }
+
+  resetSlug(): void {
+    this.slugManual.set(false);
+    this.slug.set(this.service.suggestSlug(this.form.controls.name.value, this.editing()?.id));
   }
 
   // ---------- Biến thể ----------
