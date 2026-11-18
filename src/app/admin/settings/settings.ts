@@ -12,7 +12,7 @@ import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 
-type TabKey = 'chung' | 'trang-chu' | 'gioi-thieu' | 'lien-he' | 'bao-mat' | 'sao-luu';
+type TabKey = 'chung' | 'trang-chu' | 'gioi-thieu' | 'lien-he' | 'chinh-sach' | 'bao-mat' | 'sao-luu';
 
 /** Gợi ý chỉ gồm các sắc của #60B5FF (đậm → nhạt) để giữ giao diện một tông màu. */
 const COLOR_PRESETS = ['#60B5FF', '#4A9EE8', '#3A86CC', '#2F6FA8'];
@@ -42,6 +42,7 @@ export class AdminSettings implements OnDestroy {
     { key: 'trang-chu', label: 'Trang chủ' },
     { key: 'gioi-thieu', label: 'Giới thiệu' },
     { key: 'lien-he', label: 'Liên hệ' },
+    { key: 'chinh-sach', label: 'Chính sách' },
     { key: 'bao-mat', label: 'Bảo mật' },
     { key: 'sao-luu', label: 'Sao lưu' },
   ];
@@ -140,6 +141,10 @@ export class AdminSettings implements OnDestroy {
 
   addValue(): void {
     this.draft.aboutValues.push({ icon: '✨', title: '', text: '' });
+  }
+
+  addPolicy(): void {
+    this.draft.policies.push({ icon: '📌', title: '', text: '' });
   }
 
   addMilestone(): void {

@@ -113,7 +113,15 @@
 </section>
 
 <section class="section featured">
-  <div class="container">
+  <!-- Phông nền "sân khấu" cho sản phẩm nổi bật -->
+  <div class="feat-bg" aria-hidden="true">
+    <span class="fb-grid"></span>
+    <span class="fb-blob b1"></span><span class="fb-blob b2"></span><span class="fb-blob b3"></span>
+    <span class="fb-spot"></span>
+    <span class="fb-ring r1"></span><span class="fb-ring r2"></span>
+    @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) { <span class="fb-star" [class]="'fb-star st' + i">✦</span> }
+  </div>
+  <div class="container feat-inner">
     <h2 class="section-title" appAnimateIn>Sản phẩm <span>nổi bật</span></h2>
     <p class="section-sub" appAnimateIn [animDelay]="100">Những bé được yêu thích nhất tuần này.</p>
     @if (featured().length) {

@@ -114,7 +114,216 @@ h1 {
 }
 
 .featured {
-  background: var(--primary-100);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in srgb, var(--primary) 30%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--primary-100) 0%, var(--primary-200) 55%, var(--primary-100) 100%);
+  border-block: 1px solid var(--primary-200);
+
+  .section-title {
+    text-shadow: 0 2px 18px color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+
+  .grid > * {
+    filter: drop-shadow(0 14px 22px color-mix(in srgb, var(--primary) 26%, transparent));
+  }
+}
+
+.feat-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.feat-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+  }
+}
+
+/* Lưới chấm mờ dần về hai mép */
+.fb-grid {
+  inset: 0;
+  background-image: radial-gradient(color-mix(in srgb, var(--primary) 45%, transparent) 1.4px, transparent 1.6px);
+  background-size: 22px 22px;
+  opacity: 0.55;
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 20%, transparent 75%);
+  animation: fb-pan 30s linear infinite;
+}
+
+/* Các đốm màu lớn trôi chậm phía sau */
+.fb-blob {
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.6;
+  animation: fb-float 14s ease-in-out infinite alternate;
+
+  &.b1 {
+    width: 420px;
+    height: 420px;
+    left: -120px;
+    top: 10%;
+    background: var(--primary-300);
+  }
+
+  &.b2 {
+    width: 360px;
+    height: 360px;
+    right: -100px;
+    top: 35%;
+    background: var(--primary);
+    opacity: 0.4;
+    animation-duration: 18s;
+    animation-delay: -6s;
+  }
+
+  &.b3 {
+    width: 300px;
+    height: 300px;
+    left: 40%;
+    bottom: -160px;
+    background: var(--primary-300);
+    animation-duration: 16s;
+    animation-delay: -3s;
+  }
+}
+
+/* Đèn rọi từ trên xuống tiêu đề */
+.fb-spot {
+  left: 50%;
+  top: -40px;
+  width: min(900px, 120%);
+  height: 420px;
+  transform: translateX(-50%);
+  background: conic-gradient(from 180deg at 50% 0%, transparent 155deg, color-mix(in srgb, #fff 55%, transparent) 180deg, transparent 205deg);
+  filter: blur(14px);
+  opacity: 0.7;
+  animation: fb-sway 9s ease-in-out infinite alternate;
+  transform-origin: 50% 0;
+}
+
+/* Vòng tròn mảnh xoay chậm */
+.fb-ring {
+  border-radius: 50%;
+  border: 2px dashed color-mix(in srgb, var(--primary) 40%, transparent);
+  animation: fb-spin 60s linear infinite;
+
+  &.r1 {
+    width: 520px;
+    height: 520px;
+    left: -220px;
+    bottom: -260px;
+  }
+
+  &.r2 {
+    width: 380px;
+    height: 380px;
+    right: -150px;
+    top: -170px;
+    border-style: dotted;
+    animation-direction: reverse;
+  }
+}
+
+/* Lấp lánh */
+.fb-star {
+  color: var(--primary);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 70%, transparent);
+  animation: fb-twinkle 3.6s ease-in-out infinite;
+
+  &.st1 { left: 8%; top: 14%; }
+  &.st2 { left: 22%; top: 70%; font-size: 12px; animation-delay: -1.2s; }
+  &.st3 { left: 36%; top: 8%; font-size: 14px; animation-delay: -2.4s; }
+  &.st4 { left: 62%; top: 12%; animation-delay: -0.6s; }
+  &.st5 { left: 78%; top: 62%; font-size: 13px; animation-delay: -1.8s; }
+  &.st6 { left: 92%; top: 22%; font-size: 22px; animation-delay: -3s; }
+  &.st7 { left: 50%; top: 88%; font-size: 12px; animation-delay: -2.1s; }
+  &.st8 { left: 4%; top: 48%; font-size: 14px; animation-delay: -0.9s; }
+}
+
+@keyframes fb-pan {
+  to { background-position: 22px 22px; }
+}
+
+@keyframes fb-float {
+  to { transform: translate(60px, -40px) scale(1.15); }
+}
+
+@keyframes fb-sway {
+  from { transform: translateX(-50%) rotate(-6deg); }
+  to { transform: translateX(-50%) rotate(6deg); }
+}
+
+@keyframes fb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fb-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50% { opacity: 0.9; transform: scale(1) rotate(45deg); }
+}
+
+/* Dark: sân khấu neon đỏ + lưới kiểu "coding" */
+:host-context(app-public-layout.dark) {
+  .featured {
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in srgb, var(--primary) 26%, transparent), transparent 70%),
+      linear-gradient(180deg, var(--ink-0) 0%, color-mix(in srgb, var(--primary) 10%, var(--ink-0)) 50%, var(--ink-0) 100%);
+    border-block: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    box-shadow: inset 0 1px 18px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 -1px 18px color-mix(in srgb, var(--primary) 30%, transparent);
+
+    .grid > * {
+      filter: drop-shadow(0 0 16px color-mix(in srgb, var(--primary) 30%, transparent));
+    }
+  }
+
+  .fb-grid {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--primary) 22%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--primary) 22%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+    opacity: 0.6;
+  }
+
+  .fb-blob {
+    background: var(--primary);
+    opacity: 0.22;
+  }
+
+  .fb-spot {
+    background: conic-gradient(from 180deg at 50% 0%, transparent 155deg, color-mix(in srgb, var(--primary) 45%, transparent) 180deg, transparent 205deg);
+  }
+
+  .fb-ring {
+    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+
+  .fb-star {
+    color: #fff;
+    text-shadow: 0 0 6px var(--primary), 0 0 14px var(--primary);
+  }
+}
+
+@media (max-width: 760px) {
+  .fb-blob { filter: blur(40px); }
+  .fb-blob.b1 { width: 260px; height: 260px; }
+  .fb-blob.b2 { width: 220px; height: 220px; }
+  .fb-ring { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-grid, .fb-blob, .fb-spot, .fb-ring, .fb-star { animation: none; }
+  .fb-star { opacity: 0.5; }
 }
 
 .grid {

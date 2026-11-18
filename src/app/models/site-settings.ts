@@ -11,6 +11,14 @@ export interface Milestone {
   text: string;
 }
 
+/** Một mục trong trang Chính sách (/chinh-sach). */
+export interface PolicySection {
+  icon: string;
+  title: string;
+  /** Mỗi dòng là một gạch đầu dòng. */
+  text: string;
+}
+
 export interface FontOption {
   name: string;
   /** Các độ đậm cần tải từ Google Fonts. */
@@ -68,6 +76,9 @@ export interface SiteSettings {
   /** Hiện bong bóng trợ lý AI. */
   chatEnabled: boolean;
   chatGreeting: string;
+  // Chính sách
+  policyIntro: string;
+  policies: PolicySection[];
   // Thanh toán chuyển khoản (ảnh QR: public/img/qr-thanh-toan.jpg)
   bankAccount: string;
   bankAccountName: string;
@@ -120,6 +131,35 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   shopeeUrl: '',
   chatEnabled: true,
   chatGreeting: 'Xin chào! Mình là trợ lý của shop 🧸 Bạn cần tư vấn sản phẩm, giá hay cách đặt hàng không?',
+
+  policyIntro: 'Những điều cần biết khi mua sắm tại shop. Có thắc mắc gì cứ nhắn shop nhé!',
+  policies: [
+    {
+      icon: '🛒',
+      title: 'Đặt hàng & thanh toán',
+      text: 'Chọn sản phẩm, thêm vào giỏ và điền thông tin nhận hàng.\nThanh toán bằng chuyển khoản qua mã QR hiện ngay khi đặt hàng.\nGửi ảnh giao dịch kèm mã đơn (FMxxxxxx) cho shop qua Facebook / Zalo.\nShop kiểm tra và xác nhận đơn qua điện thoại hoặc email.',
+    },
+    {
+      icon: '🚚',
+      title: 'Giao hàng',
+      text: 'Giao hàng toàn quốc.\nNội thành TP.HCM 1–2 ngày, tỉnh khác 3–5 ngày.\nPhí ship tính theo đơn vị vận chuyển; miễn phí ship cho đơn từ 500.000đ.\nGói quà miễn phí — ghi chú khi đặt hàng.',
+    },
+    {
+      icon: '🔄',
+      title: 'Đổi trả',
+      text: 'Đổi trong 7 ngày nếu sản phẩm lỗi đường may hoặc sai mẫu.\nSản phẩm còn nguyên tem, bao bì; vui lòng quay video khi mở hàng.\nShop chịu phí ship đổi hàng khi lỗi từ phía shop.',
+    },
+    {
+      icon: '🧼',
+      title: 'Bảo quản fumo',
+      text: 'Chải bụi bằng bàn chải mềm mỗi tuần.\nGiặt tay nhẹ với nước ấm và xà phòng dịu, không vắt mạnh.\nPhơi nơi thoáng mát, tránh nắng gắt.',
+    },
+    {
+      icon: '🔒',
+      title: 'Bảo mật thông tin',
+      text: 'Thông tin khách hàng chỉ dùng để giao hàng và liên hệ về đơn.\nShop không chia sẻ thông tin cho bên thứ ba.',
+    },
+  ],
 
   bankAccount: '9021083115251',
   bankAccountName: 'MAI NGA',

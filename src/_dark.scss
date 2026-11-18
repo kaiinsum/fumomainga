@@ -138,6 +138,19 @@ $d: 'app-public-layout.dark.dark';
 
   .nav-desktop a {
     border-radius: 6px;
+    white-space: nowrap;
+
+    /* Font mono rộng hơn → thu gọn để 7 mục menu nằm trên một dòng */
+    @media (max-width: 1440px) {
+      padding: 8px 9px;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 1240px) {
+      padding: 6px 6px;
+      font-size: 0.82rem;
+      letter-spacing: -0.03em;
+    }
 
     &.active {
       background: transparent;

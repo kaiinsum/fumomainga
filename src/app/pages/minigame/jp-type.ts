@@ -4,15 +4,6 @@ import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { H, JpResult, JpState, JpTypingGame, W } from './jp-engine';
 import { JpLevel } from './jp-words';
 
-const ROMAJI_KEY = 'fumo.jptype.romaji';
-function readRomaji(): boolean {
-  try {
-    return localStorage.getItem(ROMAJI_KEY) !== '0';
-  } catch {
-    return true;
-  }
-}
-
 interface LevelCard {
   id: JpLevel;
   label: string;
@@ -29,7 +20,7 @@ interface LevelCard {
       <header class="head">
         <span class="chip">⌨️ Gõ chữ · Học tiếng Nhật</span>
         <h1>Gõ chữ <span class="hl">diệt Fumo</span></h1>
-        <p class="muted">Các bé fumo mang chữ tiếng Nhật đang rơi xuống! Gõ đúng cách đọc (romaji) để tiêu diệt. Để chạm đất 3 lần là thua.</p>
+        <p class="muted">Các bé fumo mang chữ tiếng Nhật đang rơi xuống! Gõ đúng cách đọc để tiêu diệt. Để chạm đất 3 lần là thua.</p>
       </header>
 
       <div class="layout">
@@ -52,11 +43,6 @@ interface LevelCard {
                     </button>
                   }
                 </div>
-                <button type="button" class="ro-toggle" [class.on]="romaji()" [attr.aria-pressed]="romaji()" (click)="toggleRomaji(); $event.stopPropagation()">
-                  <span class="knob" aria-hidden="true"></span>
-                  <span class="t">Romaji: <b>{{ romaji() ? 'Bật' : 'Tắt' }}</b></span>
-                  <small>{{ romaji() ? 'hiện cách đọc dưới mỗi chữ' : 'tự đọc chữ, không gợi ý' }}</small>
-                </button>
               </div>
             }
             @if (state() === 'paused') {
@@ -82,7 +68,7 @@ interface LevelCard {
                     <b>Ôn lại các chữ bị lọt:</b>
                     <ul>
                       @for (m of r!.missed; track m.jp) {
-                        <li><span class="jp">{{ m.jp }}</span>@if (m.kana) { <small>{{ m.kana }}</small> }<code>{{ m.ro }}</code><i>{{ m.vi }}</i></li>
+                        <li><span class="jp">{{ m.jp }}</span>@if (m.kana) { <small>{{ m.kana }}</small> }<i>{{ m.vi }}</i></li>
                       }
                     </ul>
                   </div>
@@ -106,15 +92,12 @@ interface LevelCard {
               spellcheck="false"
               enterkeyhint="done"
               [disabled]="state() !== 'playing'"
-              [placeholder]="state() === 'playing' ? (narrow ? 'Gõ romaji…' : 'Gõ romaji (vd: neko) hoặc chữ Nhật rồi để tự diệt…') : 'Chọn độ khó để bắt đầu'"
+              [placeholder]="state() === 'playing' ? (narrow ? 'Gõ cách đọc…' : 'Gõ cách đọc (vd: neko) hoặc chữ Nhật rồi để tự diệt…') : 'Chọn độ khó để bắt đầu'"
               (input)="onInput()"
               (keydown)="onKey($event)"
               aria-label="Ô gõ chữ"
             />
             @if (state() === 'playing') {
-              <button type="button" class="ro-mini" [class.on]="romaji()" [attr.aria-pressed]="romaji()" (click)="toggleRomaji()" title="Bật / tắt romaji">
-                Aa {{ romaji() ? 'ON' : 'OFF' }}
-              </button>
               <button type="button" class="pause" (click)="pause()" aria-label="Tạm dừng">⏸</button>
             }
           </div>
@@ -123,17 +106,16 @@ interface LevelCard {
         <aside class="guide card-surface">
           <h2>Cách chơi</h2>
           <ul>
-            <li>Gõ <b>romaji</b> của chữ trên đầu bé fumo — đúng là bé nổ tung, không cần bấm Enter.</li>
+            <li>Đọc chữ trên đầu bé fumo rồi gõ <b>cách đọc bằng chữ Latin</b> (vd: ねこ → <code>neko</code>) — đúng là bé nổ tung, không cần bấm Enter.</li>
             <li>Chấp nhận cả kiểu gõ <code>shi/si</code>, <code>tsu/tu</code>, <code>chi/ti</code>, <code>ou/o</code>… hoặc gõ thẳng kana / kanji bằng bộ gõ tiếng Nhật.</li>
             <li><kbd>Esc</kbd> xoá ô gõ · bấm ⏸ để tạm dừng.</li>
             <li>Càng chơi fumo rơi càng nhanh, càng nhiều.</li>
           </ul>
           <h3>Gợi ý theo độ khó</h3>
           <ul>
-            <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản.</li>
+            <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản — có nghĩa.</li>
             <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có cách đọc kana + nghĩa.</li>
             <li><b class="c-hard">Khó</b>: kanji khó — chỉ có nghĩa, kana lộ ra khi bé rơi quá nửa.</li>
-            <li>Nút <b>Romaji Bật/Tắt</b>: bật để luôn hiện cách đọc, tắt để tự đọc chữ (khó hơn). Đổi được cả khi đang chơi.</li>
           </ul>
           <h3>Fumo đặc biệt</h3>
           <ul class="specials">
@@ -225,23 +207,6 @@ interface LevelCard {
     .guide ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
     .guide p { margin: 0; }
     .guide code, .guide kbd { font-size: .82rem; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); }
-    /* Nút bật/tắt romaji */
-    .ro-toggle { display: grid; grid-template-columns: auto auto; grid-template-areas: 'k t' 'k s'; align-items: center; column-gap: 10px;
-      margin-top: 4px; padding: 8px 16px 8px 10px; border-radius: 14px; cursor: pointer; font: inherit; color: #fff; text-align: left;
-      background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.35); transition: border-color .2s, background .2s; }
-    .ro-toggle:hover { background: rgba(255,255,255,.16); }
-    .ro-toggle b { color: #ff9e9e; }
-    .ro-toggle.on { border-color: #8fd3ff; }
-    .ro-toggle.on b { color: #8fd3ff; }
-    .ro-toggle .t { grid-area: t; font-weight: 700; }
-    .ro-toggle small { grid-area: s; color: rgba(255,255,255,.75); font-size: .78rem; }
-    .ro-toggle .knob { grid-area: k; position: relative; width: 40px; height: 22px; border-radius: 999px; background: rgba(255,255,255,.25); transition: background .2s; }
-    .ro-toggle .knob::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; }
-    .ro-toggle.on .knob { background: #2f9ee8; }
-    .ro-toggle.on .knob::after { transform: translateX(18px); }
-    .ro-mini { flex: none; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: rgba(255,255,255,.75);
-      height: 38px; padding: 0 10px; border-radius: 10px; cursor: pointer; font: 800 .82rem ui-monospace, Consolas, monospace; }
-    .ro-mini.on { border-color: #8fd3ff; color: #8fd3ff; }
     .c-easy { color: #2fae5f; } .c-normal { color: #d4a400; } .c-hard { color: #e53950; }
     .specials { list-style: none; padding: 0 !important; }
     .specials li { display: flex; align-items: center; gap: 10px; }
@@ -249,6 +214,41 @@ interface LevelCard {
     .bosses { display: flex; justify-content: space-around; gap: 6px; margin-top: 10px; }
     .bosses img { height: 90px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
     @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+    /* Điện thoại: thẻ độ khó + nút nhỏ gọn để vừa khung chơi */
+    @media (max-width: 600px) {
+      .wrap { padding-top: 14px; }
+      .head { margin: 4px 0 12px; }
+      .head .muted { font-size: .88rem; }
+      .stage { border-radius: 14px 14px 0 0; }
+      .overlay { gap: 7px; padding: 10px 12px; }
+      .overlay h2 { font-size: 1.15rem; }
+      .overlay .score { font-size: 1.5rem; }
+      .overlay .stats { font-size: .78rem; }
+      .levels { gap: 6px; width: min(300px, 100%); }
+      .level { gap: 9px; padding: 4px 12px 4px 6px; border-radius: 12px; border-width: 1.5px; }
+      .level:hover, .level:focus-visible { transform: scale(1.02); }
+      .level img { width: 36px; height: 36px; }
+      .lv-text { line-height: 1.2; }
+      .lv-text b { font-size: .95rem; }
+      .lv-text b::before { width: 8px; height: 8px; margin-right: 6px; }
+      .lv-text small { font-size: .7rem; }
+      .lv-text em { font-size: .66rem; }
+      .btns { gap: 6px; }
+      .btns .btn { padding: 7px 14px; font-size: .85rem; }
+      .review { padding: 6px 10px; }
+      .review ul { max-height: 84px; }
+      .review li { font-size: .78rem; gap: 6px; }
+      .review .jp { font-size: .95rem; }
+      .typebar { gap: 8px; padding: 6px 10px; border-radius: 0 0 14px 14px; border-width: 2px; }
+      .typebar input { font-size: 16px; padding: 4px 0; }
+      .typebar input::placeholder { font-size: .85rem; }
+      .prompt { font-size: 1rem; }
+      .pause { width: 32px; height: 32px; border-radius: 8px; font-size: .85rem; }
+    }
+    @media (max-width: 380px) {
+      .level img { width: 30px; height: 30px; }
+      .lv-text small { display: none; }
+    }
   `,
 })
 export class JpTypePage implements AfterViewInit {
@@ -256,8 +256,6 @@ export class JpTypePage implements AfterViewInit {
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('inp');
   private readonly zone = inject(NgZone);
   private game?: JpTypingGame;
-  /** Bật / tắt romaji — nhớ cho lần sau. */
-  readonly romaji = signal(readRomaji());
   private typoTimer?: ReturnType<typeof setTimeout>;
   private hitTimer?: ReturnType<typeof setTimeout>;
 
@@ -302,21 +300,7 @@ export class JpTypePage implements AfterViewInit {
           if (s !== 'playing') this.input().nativeElement.value = '';
         }),
       );
-      if (this.game) this.game.showRomaji = this.romaji();
     });
-  }
-
-  toggleRomaji(): void {
-    const on = !this.romaji();
-    this.romaji.set(on);
-    if (this.game) this.game.showRomaji = on;
-    try {
-      localStorage.setItem(ROMAJI_KEY, on ? '1' : '0');
-    } catch {
-      /* bỏ qua */
-    }
-    // Đang chơi thì trả lại con trỏ cho ô gõ.
-    setTimeout(() => this.focusInput());
   }
 
   start(level: JpLevel): void {

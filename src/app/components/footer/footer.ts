@@ -25,6 +25,7 @@ import { SettingsService } from '../../services/settings.service';
           <a routerLink="/tin-tuc">Tin tức</a>
           <a routerLink="/gioi-thieu">Giới thiệu</a>
           <a routerLink="/lien-he">Liên hệ</a>
+          <a routerLink="/chinh-sach">Chính sách</a>
           <a routerLink="/gio-hang">Giỏ hàng</a>
           <a routerLink="/tra-cuu-don-hang">📦 Tra cứu đơn hàng</a>
           <a routerLink="/mini-game">🎮 Mini game</a>

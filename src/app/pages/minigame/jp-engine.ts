@@ -151,8 +151,6 @@ export class JpTypingGame {
   private shake = 0;
   private banner: { title: string; sub: string; t: number; color: string } | null = null;
   private targetId = -1;
-  /** Hiện romaji gợi ý dưới chữ (nút Bật/Tắt romaji của người chơi). */
-  showRomaji = true;
   /** Hệ số phóng chữ: 1 trên máy tính, lớn hơn khi canvas bị thu nhỏ (điện thoại) để chữ vẫn đọc được. */
   private ui = 1;
   private typed = '';
@@ -220,7 +218,7 @@ export class JpTypingGame {
     this.missed = [];
     this.typed = '';
     this.targetId = -1;
-    this.showBanner('Bắt đầu!', this.showRomaji ? 'Gõ romaji hiện dưới mỗi bé fumo' : level === 'hard' ? 'Không romaji — kanji khó, chỉ có nghĩa' : 'Không romaji — tự đọc chữ nhé!', LEVELS[level].color);
+    this.showBanner('Bắt đầu!', level === 'hard' ? 'Kanji khó — tự đọc chữ nhé!' : 'Đọc chữ và gõ cách đọc nhé!', LEVELS[level].color);
     this.setState('playing');
   }
 
@@ -495,7 +493,7 @@ export class JpTypingGame {
     this.flash = 0.7;
     this.flashColor = '#ff3b4e';
     this.burst(x, y, color, 16, false);
-    this.popups.push({ x, y: y - 30, text: `${word.jp} = ${word.ro}`, color: '#ffb3bf', life: 1.6 });
+    this.popups.push({ x, y: y - 30, text: word.kana ? `${word.jp} · ${word.kana}` : word.jp, color: '#ffb3bf', life: 1.6 });
     if (!this.missed.some((m) => m.jp === word.jp)) this.missed.push(word);
     sfx.play('miss');
     if (this.lives <= 0) this.gameOver();
@@ -723,14 +721,11 @@ export class JpTypingGame {
     g.fillRect(0, GROUND, W, 4);
   }
 
-  /** Mức gợi ý theo độ khó và độ cao của vật (càng gần đất càng lộ romaji). */
-  private hints(word: JpWord, y: number): { kana: boolean; ro: boolean; vi: boolean } {
+  /** Gợi ý dưới chữ theo độ khó — chỉ chữ Nhật (kana) và nghĩa, không hiện romaji. */
+  private hints(word: JpWord, y: number): { kana: boolean; vi: boolean } {
     const p = y / GROUND;
-    // Romaji: theo nút Bật/Tắt của người chơi. Kana và nghĩa: theo độ khó.
-    const ro = this.showRomaji;
-    if (this.level === 'easy') return { kana: !!word.kana, ro, vi: !ro };
-    if (this.level === 'normal') return { kana: !!word.kana, ro, vi: true };
-    return { kana: !!word.kana && p > 0.5, ro, vi: true };
+    if (this.level === 'hard') return { kana: !!word.kana && p > 0.5, vi: true };
+    return { kana: !!word.kana, vi: true };
   }
 
   private drawLabel(g: CanvasRenderingContext2D, word: JpWord, x: number, y: number, targeted: boolean, accent: string): void {
@@ -781,32 +776,6 @@ export class JpTypingGame {
       g.font = `600 13px ${TEXT_FONT}`;
       g.fillStyle = '#6b5d86';
       g.fillText(sub, x, by + jpSize + 9);
-    }
-    // Dòng romaji / phần đã gõ
-    const showTyped = targeted && this.typed && !/[^\x00-\x7f]/.test(this.typed);
-    if (h.ro || showTyped) {
-      g.font = `bold 15px ui-monospace, Consolas, monospace`;
-      const ro = h.ro ? word.ro : this.typed.toLowerCase();
-      const wRo = g.measureText(ro).width + 14;
-      g.fillStyle = 'rgba(20, 12, 40, .78)';
-      g.beginPath();
-      g.roundRect(x - wRo / 2, by + bh + 3, wRo, 22, 6);
-      g.fill();
-      if (showTyped && h.ro) {
-        // Tô phần đã gõ đúng
-        const typed = this.typed.toLowerCase();
-        const n = word.ro.toLowerCase().startsWith(typed) ? typed.length : 0;
-        const left = x - (wRo - 14) / 2;
-        g.textAlign = 'left';
-        g.fillStyle = accent;
-        g.fillText(ro.slice(0, n), left, by + bh + 7);
-        g.fillStyle = '#fff';
-        g.fillText(ro.slice(n), left + g.measureText(ro.slice(0, n)).width, by + bh + 7);
-        g.textAlign = 'center';
-      } else {
-        g.fillStyle = showTyped ? accent : '#fff';
-        g.fillText(ro, x, by + bh + 7);
-      }
     }
     g.restore();
     g.textBaseline = 'alphabetic';

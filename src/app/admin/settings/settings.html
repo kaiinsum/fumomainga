@@ -191,6 +191,41 @@
       </section>
     }
 
+    @case ('chinh-sach') {
+      <section class="adm-box">
+        <h2>Trang Chính sách</h2>
+        <div class="box-body">
+          <div class="field">
+            <label for="policyIntro">Lời mở đầu</label>
+            <textarea id="policyIntro" rows="2" [(ngModel)]="draft.policyIntro"></textarea>
+            <small class="hint">Hiện ở trang <code>/chinh-sach</code> (mục "Chính sách" trên thanh menu).</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Các mục chính sách</h2>
+        <div class="box-body">
+          @for (p of draft.policies; track $index; let i = $index) {
+            <div class="item-row">
+              <input class="emoji-input" [(ngModel)]="p.icon" maxlength="4" aria-label="Biểu tượng" />
+              <div class="item-fields">
+                <input [(ngModel)]="p.title" placeholder="Tiêu đề, ví dụ: Đổi trả" />
+                <textarea rows="4" [(ngModel)]="p.text" placeholder="Mỗi dòng là một ý"></textarea>
+              </div>
+              <div class="item-actions">
+                <button type="button" (click)="move(draft.policies, i, -1)" title="Lên">↑</button>
+                <button type="button" (click)="move(draft.policies, i, 1)" title="Xuống">↓</button>
+                <button type="button" class="del" (click)="removeAt(draft.policies, i)" title="Xoá">✕</button>
+              </div>
+            </div>
+          }
+          <button class="btn ghost small add" type="button" (click)="addPolicy()">+ Thêm mục</button>
+          <small class="hint">Mỗi dòng trong ô nội dung sẽ thành một gạch đầu dòng.</small>
+        </div>
+      </section>
+    }
+
     @case ('lien-he') {
       <section class="adm-box">
         <h2>Thông tin liên hệ</h2>

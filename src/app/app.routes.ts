@@ -90,6 +90,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/about/about').then((m) => m.AboutPage),
       },
       {
+        path: 'chinh-sach',
+        title: 'Chính sách',
+        loadComponent: () => import('./pages/policy/policy').then((m) => m.PolicyPage),
+      },
+      {
         path: 'lien-he',
         title: 'Liên hệ',
         loadComponent: () => import('./pages/contact/contact').then((m) => m.ContactPage),

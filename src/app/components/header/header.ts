@@ -34,6 +34,7 @@ export class HeaderComponent implements AfterViewInit {
     { label: '🎮 Mini game', path: '/mini-game', hot: true },
     { label: 'Tin tức', path: '/tin-tuc' },
     { label: 'Giới thiệu', path: '/gioi-thieu' },
+    { label: 'Chính sách', path: '/chinh-sach' },
     { label: 'Liên hệ', path: '/lien-he' },
   ];
 
