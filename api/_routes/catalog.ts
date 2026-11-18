@@ -7,8 +7,8 @@
  * Ảnh được tải riêng nên dữ liệu ở đây chỉ chứa link ảnh.
  */
 import { createHash } from 'node:crypto';
-import { parseCatalog } from './_lib/ai';
-import { HttpError, getStore, handle, json, readJson, requireAdmin } from './_lib/orders';
+import { parseCatalog } from '../_lib/ai';
+import { HttpError, getStore, handle, json, readJson, requireAdmin } from '../_lib/orders';
 
 const KEY = 'site:catalog';
 /** Vercel giới hạn thân yêu cầu ~4.5MB. */

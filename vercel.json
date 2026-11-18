@@ -5,36 +5,18 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/fumo-showcase/browser",
   "functions": {
-    "api/chat.ts": {
+    "api/index.ts": {
       "includeFiles": "knowledge/**",
-      "maxDuration": 30
-    },
-    "api/ai/knowledge.ts": {
-      "includeFiles": "knowledge/**",
-      "maxDuration": 30
-    },
-    "api/orders/*.ts": {
-      "maxDuration": 30
-    },
-    "api/contacts/*.ts": {
-      "maxDuration": 30
-    },
-    "api/settings.ts": {
-      "maxDuration": 30
-    },
-    "api/ai/catalog.ts": {
-      "maxDuration": 30
-    },
-    "api/catalog.ts": {
-      "maxDuration": 30
-    },
-    "api/analytics.ts": {
       "maxDuration": 30
     }
   },
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/api/(.+)",
+      "destination": "/api?__path=$1"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
   ],

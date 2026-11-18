@@ -5,8 +5,8 @@
  *   (Gộp chung file để không vượt giới hạn 12 function của gói Vercel miễn phí.)
  * ?range=hour (60 phút, mỗi 1 phút) | day (24 giờ, mỗi giờ) | month (30 ngày, mỗi ngày) | all (toàn bộ, mỗi tháng)
  */
-import { TimeUnit, truncVN } from './_lib/analytics';
-import { HttpError, clientIp, getStore, handle, json, requireAdmin } from './_lib/orders';
+import { TimeUnit, truncVN } from '../_lib/analytics';
+import { HttpError, clientIp, getStore, handle, json, requireAdmin } from '../_lib/orders';
 
 /** Còn "đang truy cập" nếu trình duyệt báo về trong 75 giây qua (ping ~30 giây/lần). */
 const ONLINE_MS = 75_000;

@@ -2,8 +2,8 @@
  * /api/ai/knowledge — file kiến thức (.md) của trợ lý AI (chỉ admin).
  * GET: nội dung đang dùng · PUT: lưu nội dung mới · DELETE: quay về file mặc định trong mã nguồn.
  */
-import { KNOWLEDGE_KEY, MAX_KNOWLEDGE_CHARS, SavedKnowledge, readKnowledgeFile } from '../_lib/ai';
-import { HttpError, getStore, handle, json, readJson, requireAdmin } from '../_lib/orders';
+import { KNOWLEDGE_KEY, MAX_KNOWLEDGE_CHARS, SavedKnowledge, readKnowledgeFile } from '../../_lib/ai';
+import { HttpError, getStore, handle, json, readJson, requireAdmin } from '../../_lib/orders';
 
 export const GET = handle(async (req) => {
   requireAdmin(req);

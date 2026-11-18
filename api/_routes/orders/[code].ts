@@ -13,7 +13,7 @@ import {
   parseStatus,
   readJson,
   requireAdmin,
-} from '../_lib/orders';
+} from '../../_lib/orders';
 
 const codeOf = (req: Request) => normalizeCode(decodeURIComponent(new URL(req.url).pathname.split('/').pop() ?? ''));
 

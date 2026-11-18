@@ -4,7 +4,7 @@
  * PUT: chỉ admin.
  * Cài đặt không chứa bí mật (mật khẩu admin lưu riêng, không gửi lên đây).
  */
-import { HttpError, getStore, handle, readJson, requireAdmin } from './_lib/orders';
+import { HttpError, getStore, handle, readJson, requireAdmin } from '../_lib/orders';
 
 const KEY = 'site:settings';
 const MAX_BYTES = 200_000;

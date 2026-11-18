@@ -2,7 +2,7 @@
  * POST /api/contacts — khách gửi lời nhắn từ trang Liên hệ (công khai, có chống spam).
  * GET  /api/contacts — danh sách lời nhắn (chỉ admin).
  */
-import { HttpError, getContacts, handle, isValidEmail, isValidVnPhone, json, normalizePhone, rateLimit, readJson, requireAdmin } from '../_lib/orders';
+import { HttpError, getContacts, handle, isValidEmail, isValidVnPhone, json, normalizePhone, rateLimit, readJson, requireAdmin } from '../../_lib/orders';
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 

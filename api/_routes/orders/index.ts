@@ -16,7 +16,7 @@ import {
   rateLimit,
   readJson,
   requireAdmin,
-} from '../_lib/orders';
+} from '../../_lib/orders';
 
 export const POST = handle(async (req) => {
   const admin = isAdmin(req);

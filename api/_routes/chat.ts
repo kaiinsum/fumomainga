@@ -9,7 +9,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { ApiError as GeminiApiError, GoogleGenAI } from '@google/genai';
-import { catalogToPrompt, loadAiContext } from './_lib/ai';
+import { catalogToPrompt, loadAiContext } from '../_lib/ai';
 
 const MODEL = 'claude-opus-5-5';
 /** Gemini (gói miễn phí của Google AI Studio). Đổi model bằng biến GEMINI_MODEL nếu cần. */
