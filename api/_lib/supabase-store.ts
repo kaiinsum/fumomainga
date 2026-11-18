@@ -77,10 +77,27 @@ function check<T>(res: { data: T; error: { message: string } | null }, what: str
   return res.data;
 }
 
+/** Mỗi lần gọi Supabase tối đa 9 giây; lỗi mạng (không tới được máy chủ) thì thử lại 1 lần. */
+const REQUEST_TIMEOUT_MS = 9000;
+const fetchWithRetry: typeof fetch = async (input, init) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    } catch (e) {
+      // Chỉ thử lại lỗi kết nối / quá giờ; không thử lại khi bên gọi tự huỷ.
+      if (attempt >= 1 || init?.signal?.aborted) throw e;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+};
+
 export function supabaseStore(url: string, serviceKey: string) {
   const db: SupabaseClient = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchWithRetry },
   });
+  /** false khi DB chưa có hàm save_order (chưa chạy lại schema.sql) → dùng cách cũ nhiều bước. */
+  let hasSaveOrderRpc = true;
 
   const contacts: ContactStore = {
     async add(c) {
@@ -123,7 +140,27 @@ export function supabaseStore(url: string, serviceKey: string) {
     },
 
     async put(order: Order): Promise<void> {
-      // 1) Khách hàng: mỗi số điện thoại một dòng, cập nhật thông tin mới nhất.
+      // Nhanh: một lần gọi duy nhất, chạy trọn trong một giao dịch.
+      if (hasSaveOrderRpc) {
+        const { error } = await db.rpc('save_order', {
+          p: {
+            code: order.code,
+            status: order.status,
+            phone: digits(order.customer.phone),
+            customer: order.customer,
+            total: order.total,
+            admin_note: order.adminNote,
+            paid_claim_at: iso(order.paidClaimAt),
+            created_at: iso(order.createdAt),
+            updated_at: iso(order.updatedAt),
+            items: order.items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+          },
+        });
+        if (!error) return;
+        if (!/save_order|PGRST202|function/i.test(`${error.code ?? ''} ${error.message}`)) throw new Error(`Supabase (lưu đơn): ${error.message}`);
+        hasSaveOrderRpc = false;
+      }
+      // Dự phòng (DB cũ): 1) Khách hàng: mỗi số điện thoại một dòng, cập nhật thông tin mới nhất.
       const c = order.customer;
       const customer = check(
         await db

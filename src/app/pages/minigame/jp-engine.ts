@@ -151,6 +151,8 @@ export class JpTypingGame {
   private shake = 0;
   private banner: { title: string; sub: string; t: number; color: string } | null = null;
   private targetId = -1;
+  /** Hiện romaji gợi ý dưới chữ (nút Bật/Tắt romaji của người chơi). */
+  showRomaji = true;
   /** Hệ số phóng chữ: 1 trên máy tính, lớn hơn khi canvas bị thu nhỏ (điện thoại) để chữ vẫn đọc được. */
   private ui = 1;
   private typed = '';
@@ -218,7 +220,7 @@ export class JpTypingGame {
     this.missed = [];
     this.typed = '';
     this.targetId = -1;
-    this.showBanner('Bắt đầu!', level === 'easy' ? 'Gõ romaji dưới mỗi bé fumo' : level === 'normal' ? 'Đọc chữ — gợi ý romaji hiện khi bé rơi thấp' : 'Kanji khó — chỉ có nghĩa tiếng Việt', LEVELS[level].color);
+    this.showBanner('Bắt đầu!', this.showRomaji ? 'Gõ romaji hiện dưới mỗi bé fumo' : level === 'hard' ? 'Không romaji — kanji khó, chỉ có nghĩa' : 'Không romaji — tự đọc chữ nhé!', LEVELS[level].color);
     this.setState('playing');
   }
 
@@ -724,9 +726,11 @@ export class JpTypingGame {
   /** Mức gợi ý theo độ khó và độ cao của vật (càng gần đất càng lộ romaji). */
   private hints(word: JpWord, y: number): { kana: boolean; ro: boolean; vi: boolean } {
     const p = y / GROUND;
-    if (this.level === 'easy') return { kana: !!word.kana, ro: true, vi: false };
-    if (this.level === 'normal') return { kana: !!word.kana, ro: p > 0.55, vi: true };
-    return { kana: !!word.kana && p > 0.5, ro: p > 0.75, vi: true };
+    // Romaji: theo nút Bật/Tắt của người chơi. Kana và nghĩa: theo độ khó.
+    const ro = this.showRomaji;
+    if (this.level === 'easy') return { kana: !!word.kana, ro, vi: !ro };
+    if (this.level === 'normal') return { kana: !!word.kana, ro, vi: true };
+    return { kana: !!word.kana && p > 0.5, ro, vi: true };
   }
 
   private drawLabel(g: CanvasRenderingContext2D, word: JpWord, x: number, y: number, targeted: boolean, accent: string): void {

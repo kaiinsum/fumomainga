@@ -19,8 +19,7 @@ export const PUT = handle(async (req) => {
   requireAdmin(req);
   const snapshot = parseCatalog(await readJson(req));
   const store = getStore();
-  await store.setJson(CATALOG_KEY, snapshot);
-  // Có Supabase thì ghi luôn bảng products để xem / truy xuất trong Supabase.
-  await store.syncProducts?.(snapshot.products);
+  // Ghi bản tóm tắt cho AI và bảng products (Supabase) cùng lúc.
+  await Promise.all([store.setJson(CATALOG_KEY, snapshot), store.syncProducts?.(snapshot.products)]);
   return json(summary(snapshot));
 });

@@ -35,7 +35,7 @@ export class OrderApiService {
    * quá 15 giây thì báo lỗi để đưa vào hộp thư chờ gửi lại.
    */
   create(customer: Customer, items: OrderItem[], code?: string): Promise<{ code: string; total: number; createdAt: number }> {
-    return this.call('POST', '/api/orders', { customer, items, code }, false, { keepalive: true, timeoutMs: 15000 });
+    return this.call('POST', '/api/orders', { customer, items, code }, false, { keepalive: true, timeoutMs: 30000 });
   }
 
   /** Dùng khi admin đăng nhập: nếu chưa có mã quản trị thì thử dùng luôn mật khẩu admin. */

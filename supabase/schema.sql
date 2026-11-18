@@ -114,6 +114,41 @@ $$;
 -- Hàm chống spam chỉ cho máy chủ gọi.
 revoke all on function public.hit_rate_limit(text, integer) from public, anon, authenticated;
 
+-- ---------- Lưu đơn trong MỘT lần gọi (khách hàng + đơn + sản phẩm, cùng một giao dịch) ----------
+-- Trước đây máy chủ phải gọi Supabase 4 lần nối tiếp cho mỗi đơn → chậm, dễ lỗi giữa chừng.
+create or replace function public.save_order(p jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cid bigint;
+begin
+  insert into public.customers (phone, name, email, address, updated_at)
+  values (p->>'phone', p->'customer'->>'name', coalesce(p->'customer'->>'email', ''), coalesce(p->'customer'->>'address', ''), now())
+  on conflict (phone) do update
+    set name = excluded.name, email = excluded.email, address = excluded.address, updated_at = now()
+  returning id into cid;
+
+  insert into public.orders (code, status, customer_id, customer, total, admin_note, paid_claim_at, created_at, updated_at)
+  values (
+    p->>'code', p->>'status', cid, p->'customer', (p->>'total')::bigint, coalesce(p->>'admin_note', ''),
+    (p->>'paid_claim_at')::timestamptz, (p->>'created_at')::timestamptz, (p->>'updated_at')::timestamptz
+  )
+  on conflict (code) do update
+    set status = excluded.status, customer_id = excluded.customer_id, customer = excluded.customer, total = excluded.total,
+        admin_note = excluded.admin_note, paid_claim_at = excluded.paid_claim_at, updated_at = excluded.updated_at;
+
+  delete from public.order_items where order_code = p->>'code';
+  insert into public.order_items (order_code, product_id, name, price, qty)
+  select p->>'code', coalesce(i->>'id', ''), i->>'name', (i->>'price')::bigint, (i->>'qty')::integer
+  from jsonb_array_elements(coalesce(p->'items', '[]'::jsonb)) as i;
+end;
+$$;
+
+revoke all on function public.save_order(jsonb) from public, anon, authenticated;
+
 -- ---------- Bật RLS, không mở policy nào cho anon / authenticated ----------
 alter table public.customers   enable row level security;
 alter table public.orders      enable row level security;

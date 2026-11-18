@@ -5,18 +5,51 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/fumo-showcase/browser",
   "functions": {
-    "api/chat.ts": { "includeFiles": "knowledge/**", "maxDuration": 30 },
-    "api/ai/knowledge.ts": { "includeFiles": "knowledge/**" }
+    "api/chat.ts": {
+      "includeFiles": "knowledge/**",
+      "maxDuration": 30
+    },
+    "api/ai/knowledge.ts": {
+      "includeFiles": "knowledge/**",
+      "maxDuration": 30
+    },
+    "api/orders/*.ts": {
+      "maxDuration": 30
+    },
+    "api/contacts/*.ts": {
+      "maxDuration": 30
+    },
+    "api/settings.ts": {
+      "maxDuration": 30
+    },
+    "api/ai/catalog.ts": {
+      "maxDuration": 30
+    }
   },
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.(js|css)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/index.html",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }

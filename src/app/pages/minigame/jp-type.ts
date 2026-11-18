@@ -4,6 +4,15 @@ import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { H, JpResult, JpState, JpTypingGame, W } from './jp-engine';
 import { JpLevel } from './jp-words';
 
+const ROMAJI_KEY = 'fumo.jptype.romaji';
+function readRomaji(): boolean {
+  try {
+    return localStorage.getItem(ROMAJI_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
 interface LevelCard {
   id: JpLevel;
   label: string;
@@ -43,6 +52,11 @@ interface LevelCard {
                     </button>
                   }
                 </div>
+                <button type="button" class="ro-toggle" [class.on]="romaji()" [attr.aria-pressed]="romaji()" (click)="toggleRomaji(); $event.stopPropagation()">
+                  <span class="knob" aria-hidden="true"></span>
+                  <span class="t">Romaji: <b>{{ romaji() ? 'Bật' : 'Tắt' }}</b></span>
+                  <small>{{ romaji() ? 'hiện cách đọc dưới mỗi chữ' : 'tự đọc chữ, không gợi ý' }}</small>
+                </button>
               </div>
             }
             @if (state() === 'paused') {
@@ -98,6 +112,9 @@ interface LevelCard {
               aria-label="Ô gõ chữ"
             />
             @if (state() === 'playing') {
+              <button type="button" class="ro-mini" [class.on]="romaji()" [attr.aria-pressed]="romaji()" (click)="toggleRomaji()" title="Bật / tắt romaji">
+                Aa {{ romaji() ? 'ON' : 'OFF' }}
+              </button>
               <button type="button" class="pause" (click)="pause()" aria-label="Tạm dừng">⏸</button>
             }
           </div>
@@ -113,9 +130,10 @@ interface LevelCard {
           </ul>
           <h3>Gợi ý theo độ khó</h3>
           <ul>
-            <li><b class="c-easy">Dễ</b>: hiragana, luôn hiện romaji.</li>
-            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có nghĩa, romaji hiện khi bé rơi quá nửa.</li>
-            <li><b class="c-hard">Khó</b>: kanji khó — chỉ có nghĩa, cách đọc lộ ra khi sát đất.</li>
+            <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản.</li>
+            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có cách đọc kana + nghĩa.</li>
+            <li><b class="c-hard">Khó</b>: kanji khó — chỉ có nghĩa, kana lộ ra khi bé rơi quá nửa.</li>
+            <li>Nút <b>Romaji Bật/Tắt</b>: bật để luôn hiện cách đọc, tắt để tự đọc chữ (khó hơn). Đổi được cả khi đang chơi.</li>
           </ul>
           <h3>Fumo đặc biệt</h3>
           <ul class="specials">
@@ -207,6 +225,23 @@ interface LevelCard {
     .guide ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
     .guide p { margin: 0; }
     .guide code, .guide kbd { font-size: .82rem; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); }
+    /* Nút bật/tắt romaji */
+    .ro-toggle { display: grid; grid-template-columns: auto auto; grid-template-areas: 'k t' 'k s'; align-items: center; column-gap: 10px;
+      margin-top: 4px; padding: 8px 16px 8px 10px; border-radius: 14px; cursor: pointer; font: inherit; color: #fff; text-align: left;
+      background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.35); transition: border-color .2s, background .2s; }
+    .ro-toggle:hover { background: rgba(255,255,255,.16); }
+    .ro-toggle b { color: #ff9e9e; }
+    .ro-toggle.on { border-color: #8fd3ff; }
+    .ro-toggle.on b { color: #8fd3ff; }
+    .ro-toggle .t { grid-area: t; font-weight: 700; }
+    .ro-toggle small { grid-area: s; color: rgba(255,255,255,.75); font-size: .78rem; }
+    .ro-toggle .knob { grid-area: k; position: relative; width: 40px; height: 22px; border-radius: 999px; background: rgba(255,255,255,.25); transition: background .2s; }
+    .ro-toggle .knob::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .ro-toggle.on .knob { background: #2f9ee8; }
+    .ro-toggle.on .knob::after { transform: translateX(18px); }
+    .ro-mini { flex: none; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: rgba(255,255,255,.75);
+      height: 38px; padding: 0 10px; border-radius: 10px; cursor: pointer; font: 800 .82rem ui-monospace, Consolas, monospace; }
+    .ro-mini.on { border-color: #8fd3ff; color: #8fd3ff; }
     .c-easy { color: #2fae5f; } .c-normal { color: #d4a400; } .c-hard { color: #e53950; }
     .specials { list-style: none; padding: 0 !important; }
     .specials li { display: flex; align-items: center; gap: 10px; }
@@ -221,6 +256,8 @@ export class JpTypePage implements AfterViewInit {
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('inp');
   private readonly zone = inject(NgZone);
   private game?: JpTypingGame;
+  /** Bật / tắt romaji — nhớ cho lần sau. */
+  readonly romaji = signal(readRomaji());
   private typoTimer?: ReturnType<typeof setTimeout>;
   private hitTimer?: ReturnType<typeof setTimeout>;
 
@@ -235,7 +272,7 @@ export class JpTypePage implements AfterViewInit {
 
   /** 3 mức · 3 màu: xanh lá / vàng / đỏ, mỗi mức một bé fumo cùng tông. */
   readonly levels: LevelCard[] = [
-    { id: 'easy', label: 'Dễ', desc: 'Hiragana · luôn có romaji', img: 'koishi' },
+    { id: 'easy', label: 'Dễ', desc: 'Hiragana & từ đơn giản', img: 'koishi' },
     { id: 'normal', label: 'Trung bình', desc: 'Katakana & kanji N5 · có nghĩa', img: 'yukari' },
     { id: 'hard', label: 'Khó', desc: 'Kanji khó · chỉ có nghĩa', img: 'reimu' },
   ];
@@ -265,7 +302,21 @@ export class JpTypePage implements AfterViewInit {
           if (s !== 'playing') this.input().nativeElement.value = '';
         }),
       );
+      if (this.game) this.game.showRomaji = this.romaji();
     });
+  }
+
+  toggleRomaji(): void {
+    const on = !this.romaji();
+    this.romaji.set(on);
+    if (this.game) this.game.showRomaji = on;
+    try {
+      localStorage.setItem(ROMAJI_KEY, on ? '1' : '0');
+    } catch {
+      /* bỏ qua */
+    }
+    // Đang chơi thì trả lại con trỏ cho ô gõ.
+    setTimeout(() => this.focusInput());
   }
 
   start(level: JpLevel): void {
