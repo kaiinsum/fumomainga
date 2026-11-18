@@ -7,6 +7,8 @@
 import { sfx } from '../../shared/sfx';
 
 export const W = 480;
+/** Font chữ trong game (giống font web, hiển thị dấu tiếng Việt chuẩn). */
+const GAME_FONT = 'Montserrat, "Segoe UI", Roboto, Arial, sans-serif';
 export const H = 640;
 const STEP = 1000 / 60;
 
@@ -728,6 +730,9 @@ export class DanmakuGame {
   }
 
   // ================= Vẽ =================
+  /** Hệ số phóng chữ HUD: lớn hơn 1 khi canvas bị thu nhỏ trên điện thoại. */
+  private ui = 1;
+
   private readonly resize = () => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     const rect = this.canvas.getBoundingClientRect();
@@ -735,6 +740,7 @@ export class DanmakuGame {
     this.canvas.width = Math.round(W * scale * dpr);
     this.canvas.height = Math.round(H * scale * dpr);
     this.ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+    this.ui = Math.min(1.6, Math.max(1, 0.9 / scale));
   };
 
   private bulletSprite(color: string, r: number, rice: boolean): HTMLCanvasElement {
@@ -960,7 +966,7 @@ export class DanmakuGame {
     g.fillStyle = color;
     g.fillRect(it.x - 6, it.y - 6, 12, 12);
     g.fillStyle = '#fff';
-    g.font = 'bold 9px sans-serif';
+    g.font = `bold 9px ${GAME_FONT}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(it.kind === 'power' ? 'P' : it.kind === 'point' ? '+' : it.kind === 'bomb' ? 'B' : '♥', it.x, it.y + 0.5);
@@ -968,36 +974,50 @@ export class DanmakuGame {
 
   private drawHud(): void {
     const g = this.ctx;
+    const u = this.ui;
     g.textBaseline = 'top';
+    // Góc trái: điểm, kỷ lục
+    g.save();
+    g.scale(u, u);
     g.textAlign = 'left';
     g.fillStyle = '#fff';
-    g.font = 'bold 15px sans-serif';
+    g.font = `800 15px ${GAME_FONT}`;
     g.fillText(`Điểm ${this.score.toLocaleString('vi-VN')}`, 10, 10);
-    g.font = '12px sans-serif';
-    g.fillStyle = 'rgba(255,255,255,.7)';
+    g.font = `600 12px ${GAME_FONT}`;
+    g.fillStyle = 'rgba(255,255,255,.75)';
     g.fillText(`Kỷ lục ${Math.max(this.hi, this.score).toLocaleString('vi-VN')} · Sượt ${this.graze}`, 10, 30);
+    g.restore();
+    // Góc phải: tim, bom, thanh sức mạnh
+    g.save();
+    g.translate(W, 0);
+    g.scale(u, u);
     g.textAlign = 'right';
-    g.font = '15px sans-serif';
+    g.font = `15px ${GAME_FONT}`;
     g.fillStyle = COLORS.pink;
-    g.fillText('♥'.repeat(Math.min(this.lives, 8)), W - 10, 10);
+    g.fillText('♥'.repeat(Math.min(this.lives, 8)), -10, 10);
     g.fillStyle = COLORS.green;
-    g.fillText('★'.repeat(this.bombs), W - 10, 30);
-    // Thanh sức mạnh
+    g.fillText('★'.repeat(this.bombs), -10, 30);
     g.fillStyle = 'rgba(255,255,255,.18)';
-    g.fillRect(W - 90, 52, 80, 5);
+    g.fillRect(-90, 52, 80, 5);
     g.fillStyle = COLORS.red;
-    g.fillRect(W - 90, 52, 80 * ((this.player.power - 1) / 3), 5);
+    g.fillRect(-90, 52, 80 * ((this.player.power - 1) / 3), 5);
+    g.restore();
 
     const b = this.boss;
     if (b && !b.entering) {
+      const top = 52 * u + (u - 1) * 14;
       g.fillStyle = 'rgba(255,255,255,.2)';
-      g.fillRect(10, 52, W - 120, 6);
+      g.fillRect(10, top, W - 120 * u, 6);
       g.fillStyle = '#ff7ac6';
-      g.fillRect(10, 52, (W - 120) * Math.max(0, b.hp / b.maxHp), 6);
+      g.fillRect(10, top, (W - 120 * u) * Math.max(0, b.hp / b.maxHp), 6);
+      g.save();
+      g.translate(10, top + 10);
+      g.scale(u, u);
       g.textAlign = 'left';
-      g.font = '11px sans-serif';
+      g.font = `700 11px ${GAME_FONT}`;
       g.fillStyle = '#fff';
-      g.fillText(`${this.bossPhases[b.phase].name} · ${Math.ceil(b.timeLeft / 60)}s · còn ${this.bossPhases.length - b.phase} chiêu`, 10, 62);
+      g.fillText(`${this.bossPhases[b.phase].name} · ${Math.ceil(b.timeLeft / 60)}s · còn ${this.bossPhases.length - b.phase} chiêu`, 0, 0, (W - 20) / u);
+      g.restore();
     }
   }
 
@@ -1005,18 +1025,23 @@ export class DanmakuGame {
     const bn = this.banner;
     if (!bn) return;
     const g = this.ctx;
+    const u = this.ui;
     const a = bn.t < 20 ? bn.t / 20 : bn.t > 120 ? (150 - bn.t) / 30 : 1;
     g.globalAlpha = Math.max(0, a);
+    g.fillStyle = 'rgba(0,0,0,.35)';
+    g.fillRect(0, H / 2 - 50 * u, W, 100 * u);
+    g.save();
+    g.translate(W / 2, H / 2);
+    g.scale(u, u);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(0,0,0,.35)';
-    g.fillRect(0, H / 2 - 50, W, 100);
     g.fillStyle = '#fff';
-    g.font = 'bold 34px sans-serif';
-    g.fillText(bn.text, W / 2, H / 2 - 12);
-    g.font = '16px sans-serif';
+    g.font = `900 34px ${GAME_FONT}`;
+    g.fillText(bn.text, 0, -12, (W - 20) / u);
+    g.font = `600 16px ${GAME_FONT}`;
     g.fillStyle = '#ffd6ec';
-    g.fillText(bn.sub, W / 2, H / 2 + 22);
+    g.fillText(bn.sub, 0, 22, (W - 20) / u);
+    g.restore();
     g.globalAlpha = 1;
   }
 

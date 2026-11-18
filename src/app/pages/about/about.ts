@@ -21,7 +21,7 @@ const FIGURES = {
         <div class="dots" aria-hidden="true">
           @for (d of dots; track $index) { <span></span> }
         </div>
-        <h1>{{ s().aboutTitle }} <span>{{ s().shopName }}</span></h1>
+        <h1 class="neon-title"><span class="nt-main" [attr.data-text]="s().aboutTitle">{{ s().aboutTitle }}</span> <span class="nt-shop">{{ s().shopName }}</span></h1>
         <p class="lead">{{ s().aboutIntro }}</p>
       </div>
     </section>
@@ -80,7 +80,32 @@ const FIGURES = {
   styles: `
     .hero { position: relative; text-align: center; padding: 72px 0 48px; overflow: hidden; }
     .hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); }
-    .hero h1 span { color: var(--primary); }
+    /* --- Tiêu đề "Về chúng tôi": chữ neon phát sáng chuyển động --- */
+    .neon-title { position: relative; z-index: 1; }
+    .nt-main { color: var(--text); animation: neon-breathe 3.2s ease-in-out infinite; }
+    .nt-shop {
+      margin-left: .28em;
+      background: linear-gradient(90deg, var(--primary-dark), var(--primary), #b06bff, #ff6fa8, var(--primary-dark));
+      background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: neon-flow 5s linear infinite;
+      filter: drop-shadow(0 0 3px color-mix(in srgb, var(--primary) 45%, transparent)) drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 30%, transparent));
+    }
+    @keyframes neon-breathe {
+      0%, 100% { text-shadow: 0 0 4px color-mix(in srgb, var(--primary) 35%, transparent), 0 0 14px color-mix(in srgb, var(--primary) 25%, transparent); }
+      50% { text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 70%, transparent), 0 0 22px color-mix(in srgb, var(--primary) 55%, transparent), 0 0 44px color-mix(in srgb, var(--primary) 35%, transparent); }
+    }
+    @keyframes neon-flow { to { background-position: 300% 0; } }
+    /* Dark: ống neon thật — lõi trắng, quầng đỏ, chập chờn như đèn */
+    :host(.dark) .nt-main { color: #fff; animation: neon-flicker 4.5s linear infinite; }
+    :host(.dark) .nt-shop { background-image: linear-gradient(90deg, #ff2d55, #ff8fab, #fff, #ff2d55); filter: drop-shadow(0 0 4px #ff2d55) drop-shadow(0 0 14px #ff2d55) drop-shadow(0 0 30px rgba(255, 45, 85, .7)); }
+    @keyframes neon-flicker {
+      0%, 17%, 21%, 23%, 53%, 57%, 100% {
+        text-shadow: 0 0 3px #fff, 0 0 8px #ff2d55, 0 0 18px #ff2d55, 0 0 36px rgba(255, 45, 85, .85), 0 0 64px rgba(255, 45, 85, .5);
+        opacity: 1;
+      }
+      19%, 22%, 55% { text-shadow: none; opacity: .55; }
+    }
+    @media (prefers-reduced-motion: reduce) { .nt-main, .nt-shop { animation: none; } }
     .lead { max-width: 640px; margin: 0 auto; color: var(--muted); font-size: 1.1rem; }
     .dots { position: absolute; inset: 0; pointer-events: none; }
     .dots span { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); opacity: .25; }
@@ -173,7 +198,21 @@ const FIGURES = {
       box-shadow: 0 14px 34px -14px color-mix(in srgb, var(--primary) 45%, transparent);
       transition: transform .35s ease, box-shadow .35s ease;
     }
-    .card:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -14px color-mix(in srgb, var(--primary) 60%, transparent); }
+    /* Hover thẻ năm: nổi lên, phóng to, viền sáng; các thẻ khác mờ đi để thẻ đang xem nổi bật */
+    .timeline:hover .milestone .card { opacity: .55; filter: saturate(.7); }
+    .timeline .milestone:hover .card {
+      opacity: 1; filter: none; transform: translateY(-8px) scale(1.07);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent), 0 26px 50px -14px color-mix(in srgb, var(--primary) 70%, transparent), 0 0 34px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+    .card { position: relative; overflow: hidden; transition: transform .35s cubic-bezier(.2, 1.4, .4, 1), box-shadow .35s ease, opacity .3s ease, filter .3s ease, border-color .3s ease; }
+    .card::after { content: ''; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
+      background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); }
+    .milestone:hover .card::after { transition: transform .8s ease; transform: translateX(120%); }
+    .milestone:hover .year { animation: year-pop .6s cubic-bezier(.2, 1.6, .4, 1); letter-spacing: .01em; }
+    .milestone:hover .dot { transform: scale(1.5); box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 30%, transparent), 0 0 26px var(--primary); }
+    .dot { transition: transform .3s ease, box-shadow .3s ease; }
+    @keyframes year-pop { 0% { transform: scale(1); } 40% { transform: scale(1.18) rotate(-3deg); } 100% { transform: scale(1); } }
     .year {
       display: block; font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 900; line-height: 1; letter-spacing: -.02em;
       background: linear-gradient(120deg, var(--primary), color-mix(in srgb, var(--primary) 45%, #ff9ad5) 60%, var(--glow));
@@ -201,6 +240,9 @@ const FIGURES = {
     :host(.dark) .year { background: none; color: #fff; -webkit-text-fill-color: #fff; filter: none;
       text-shadow: 0 0 4px #fff, 0 0 10px #ff2d55, 0 0 22px #ff2d55, 0 0 42px rgba(255, 45, 85, .8); }
     :host(.dark) .card p { color: #e8e8ee; }
+    :host(.dark) .milestone:hover .card { border-color: #ff2d55; box-shadow: 0 0 0 1px #ff2d55, 0 0 30px rgba(255, 45, 85, .75), 0 0 70px rgba(255, 45, 85, .35), inset 0 0 22px rgba(255, 45, 85, .18); }
+    :host(.dark) .milestone:hover .year { text-shadow: 0 0 6px #fff, 0 0 14px #ff2d55, 0 0 30px #ff2d55, 0 0 60px rgba(255, 45, 85, 1); }
+    :host(.dark) .card::after { background: linear-gradient(105deg, transparent 35%, rgba(255, 45, 85, .35) 50%, transparent 65%); }
     :host(.dark) .dot { border-color: #07090d; }
 
     @media (max-width: 1100px) {

@@ -480,3 +480,142 @@ h1 {
     animation: none;
   }
 }
+
+// ---------- Hover vào mascot: mỗi bé fumo một kiểu hiệu ứng + sao lấp lánh ----------
+.mascot-circle,
+.neon-card {
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mascot-circle {
+  transition: box-shadow 0.4s ease, transform 0.4s ease;
+
+  &:hover {
+    transform: scale(1.03);
+    box-shadow:
+      0 0 0 10px color-mix(in srgb, var(--primary) 16%, transparent),
+      0 0 50px color-mix(in srgb, var(--primary) 55%, transparent),
+      var(--shadow);
+  }
+}
+
+.mascot-fx {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  width: 100%;
+  transform-origin: 50% 90%;
+}
+
+.mascot-circle:hover .mascot-fx,
+.neon-card:hover .mascot-fx {
+  &.fx-1 { animation: fx-jelly 0.9s ease both; }
+  &.fx-2 { animation: fx-hop 0.9s ease both; }
+  &.fx-3 { animation: fx-wiggle 0.8s ease-in-out infinite; }
+  &.fx-4 { animation: fx-heart 1s ease-in-out infinite; }
+}
+
+.mascot-circle:hover .mascot-emoji {
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--primary) 70%, transparent))
+    drop-shadow(0 16px 20px color-mix(in srgb, var(--primary) 40%, transparent)) brightness(1.06);
+}
+
+// Bé 1: thạch rung rinh
+@keyframes fx-jelly {
+  0%, 100% { transform: scale(1, 1); }
+  25% { transform: scale(1.12, 0.88); }
+  40% { transform: scale(0.9, 1.1); }
+  55% { transform: scale(1.06, 0.95); }
+  70% { transform: scale(0.97, 1.03); }
+}
+
+// Bé 2: nhảy lộn một vòng
+@keyframes fx-hop {
+  0% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-38px) rotate(-180deg) scale(1.05); }
+  60% { transform: translateY(-20px) rotate(-360deg); }
+  80% { transform: translateY(0) scale(1.08, 0.92); }
+  100% { transform: translateY(0) rotate(-360deg) scale(1); }
+}
+
+// Bé 3: lắc lư vẫy chào
+@keyframes fx-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-9deg) translateX(-4px); }
+  75% { transform: rotate(9deg) translateX(4px); }
+}
+
+// Bé 4: tim đập thình thịch
+@keyframes fx-heart {
+  0%, 40%, 100% { transform: scale(1); }
+  15% { transform: scale(1.12); }
+  28% { transform: scale(1.04); }
+}
+
+// Sao lấp lánh bung ra quanh bé khi hover
+.sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+
+  i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    background: #ffd23f;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    opacity: 0;
+    transform: translate(0, 0) scale(0);
+    filter: drop-shadow(0 0 6px #ffd23f);
+  }
+
+  i:nth-child(1) { --x: -150px; --y: -110px; }
+  i:nth-child(2) { --x: 150px; --y: -120px; background: #ff9ec4; filter: drop-shadow(0 0 6px #ff9ec4); }
+  i:nth-child(3) { --x: -170px; --y: 40px; background: #8fd3ff; filter: drop-shadow(0 0 6px #8fd3ff); }
+  i:nth-child(4) { --x: 165px; --y: 60px; }
+  i:nth-child(5) { --x: -80px; --y: 160px; background: #ff9ec4; filter: drop-shadow(0 0 6px #ff9ec4); }
+  i:nth-child(6) { --x: 95px; --y: -170px; background: #8fd3ff; filter: drop-shadow(0 0 6px #8fd3ff); }
+}
+
+.mascot-circle:hover .sparks i,
+.neon-card:hover .sparks i {
+  animation: spark-out 1.4s ease-out infinite;
+}
+
+.sparks i:nth-child(2) { animation-delay: 0.15s !important; }
+.sparks i:nth-child(3) { animation-delay: 0.3s !important; }
+.sparks i:nth-child(4) { animation-delay: 0.45s !important; }
+.sparks i:nth-child(5) { animation-delay: 0.6s !important; }
+.sparks i:nth-child(6) { animation-delay: 0.75s !important; }
+
+@keyframes spark-out {
+  0% { opacity: 0; transform: translate(0, 0) scale(0) rotate(0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(1.2) rotate(180deg); }
+}
+
+// Chế độ tối: nhiễu RGB kiểu màn hình + sao màu neon
+.neon-card:hover {
+  .mascot-emoji {
+    filter: drop-shadow(-4px 0 0 rgba(255, 0, 80, 0.75)) drop-shadow(4px 0 0 rgba(0, 240, 255, 0.6))
+      drop-shadow(0 0 18px color-mix(in srgb, var(--primary) 70%, transparent)) brightness(1.1);
+  }
+
+  .sparks i {
+    background: var(--primary);
+    filter: drop-shadow(0 0 8px var(--primary));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-fx,
+  .sparks i {
+    animation: none !important;
+  }
+}

@@ -1,6 +1,8 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { GameArt, resolveGames } from '../../models/minigames';
+import { SettingsService } from '../../services/settings.service';
 import { startFireworks } from './fireworks';
 import { sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -19,7 +21,9 @@ interface GameCard {
   title: string;
   tag: string;
   desc: string;
-  art: 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp' | 'soon';
+  art: GameArt | 'soon';
+  /** Có nội dung = game đang bị khoá. */
+  lockMsg: string;
 }
 
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
@@ -35,10 +39,14 @@ interface GameCard {
         <app-sound-toggle />
       </header>
 
+      @if (blockedGame(); as b) {
+        <p class="blocked" role="alert">🔒 <b>{{ b.title }}</b> {{ b.status === 'hidden' ? 'hiện không mở cho người chơi.' : 'đang tạm khoá — ' + b.lockMsg }}
+          <button type="button" (click)="blockedId.set(null)" aria-label="Đóng">✕</button></p>
+      }
       <div class="carousel" [class.show]="!intro()">
         <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
         <div class="track" #track>
-          @for (g of games; track g.title) {
+          @for (g of games(); track $index) {
             @if (g.path) {
               <a class="card" [routerLink]="g.path" [attr.aria-label]="'Chơi ' + g.title">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
@@ -116,7 +124,8 @@ interface GameCard {
         <span class="tag">{{ g.tag }}</span>
         <h2>{{ g.title }}</h2>
         <p>{{ g.desc }}</p>
-        <span class="play">{{ g.path ? '▶ Chơi ngay' : 'Sắp ra mắt' }}</span>
+        @if (g.lockMsg) { <span class="lock-msg">🔒 {{ g.lockMsg }}</span> }
+        <span class="play">{{ g.path ? '▶ Chơi ngay' : g.lockMsg ? '🔒 Tạm khoá' : 'Sắp ra mắt' }}</span>
       </div>
     </ng-template>
   `,
@@ -202,6 +211,10 @@ interface GameCard {
     .tag { align-self: flex-start; font-size: .72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--primary-dark); }
     .play { margin-top: 8px; align-self: flex-start; font-weight: 800; padding: 9px 18px; border-radius: 999px; background: var(--primary); color: var(--on-primary); }
     .locked .play { background: var(--surface-2); color: var(--muted); }
+    .lock-msg { margin-top: 4px; font-size: .82rem; font-weight: 700; color: #d63638; }
+    .blocked { max-width: 720px; margin: 0 auto 16px; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 8px;
+      background: color-mix(in srgb, #d63638 12%, var(--surface)); border: 1.5px solid #d63638; color: var(--text); }
+    .blocked button { margin-left: auto; border: 0; background: none; color: inherit; cursor: pointer; font-size: 1rem; }
 
     /* --- Ảnh minh hoạ: game bắn đạn --- */
     .art-shmup { background: linear-gradient(#1a0f2e, #0b1630); }
@@ -313,50 +326,23 @@ export class MiniGameHubPage implements AfterViewInit {
     requestAnimationFrame(() => this.playIntro());
   }
 
-  readonly games: GameCard[] = [
-    {
-      path: '/mini-game/go-chu-diet-fumo',
-      title: 'Gõ chữ diệt Fumo',
-      tag: '⌨️ Gõ chữ · Tiếng Nhật · Mới',
-      desc: 'Fumo mang chữ tiếng Nhật rơi từ trời xuống — gõ đúng cách đọc để tiêu diệt, phản đòn boss. 3 mức từ hiragana tới kanji khó!',
-      art: 'jp',
-    },
-    {
-      path: '/mini-game/tui-mu',
-      title: 'Túi mù may mắn',
-      tag: '🎁 Gacha · Mới',
-      desc: 'Bóc túi mù xem hôm nay số phận chọn bé thú bông nào cho bạn!',
-      art: 'gacha',
-    },
-    {
-      path: '/mini-game/doan-nhan-vat',
-      title: 'Đoán nhân vật (Touhoudle)',
-      tag: '🔎 Đố vui · Mỗi ngày',
-      desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật mới!',
-      art: 'dle',
-    },
-    {
-      path: '/mini-game/fumo-ninja',
-      title: 'Fumo Ninja',
-      tag: '🗡️ Chém fumo · Mới',
-      desc: 'Vuốt để chém các bé fumo bay lên. Cẩn thận Reimu viền neon đỏ — chém trúng là thua!',
-      art: 'ninja',
-    },
-    {
-      path: '/mini-game/dai-chien-mot-vai',
-      title: 'Đại chiến Mọt Vải',
-      tag: '🚀 Bắn đạn · Né đạn',
-      desc: 'Né mưa đạn, hạ bầy mọt vải và đánh bại Nữ hoàng Mọt.',
-      art: 'shmup',
-    },
-    {
-      path: null,
-      title: 'Game bí mật',
-      tag: '⏳ Sắp ra mắt',
-      desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!',
-      art: 'soon',
-    },
-  ];
+  private readonly settings = inject(SettingsService).settings;
+  /** Thẻ game theo thứ tự admin xếp; game bị ẩn không hiện, game bị khoá hiện mờ kèm lời nhắn. */
+  readonly games = computed<GameCard[]>(() => {
+    const list: GameCard[] = resolveGames(this.settings().minigames)
+      .filter((g) => g.status !== 'hidden')
+      .map((g) => ({ path: g.status === 'open' ? g.path : null, title: g.title, tag: g.tag, desc: g.desc, art: g.art, lockMsg: g.status === 'locked' ? g.lockMsg : '' }));
+    if (this.settings().minigameComingSoon) {
+      list.push({ path: null, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '' });
+    }
+    return list;
+  });
+  /** Bị chuyển về từ link của game đang khoá (?khoa=id). */
+  readonly blockedGame = computed(() => {
+    const id = this.blockedId();
+    return id ? resolveGames(this.settings().minigames).find((g) => g.id === id) : undefined;
+  });
+  readonly blockedId = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('khoa'));
 
   scroll(dir: -1 | 1): void {
     const el = this.track().nativeElement;

@@ -28,8 +28,11 @@ export class SettingsService {
   readonly settings = this._settings.asReadonly();
   private readonly api = inject(OrderApiService);
 
+  /** Xong khi đã thử lấy cài đặt từ máy chủ (thành công hay không). */
+  readonly ready: Promise<void>;
+
   constructor() {
-    void this.loadRemote();
+    this.ready = this.loadRemote();
     // Áp dụng màu chủ đạo, màu nền và font cho toàn site.
     effect(() => {
       const s = this._settings();

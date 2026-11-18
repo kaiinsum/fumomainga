@@ -92,7 +92,7 @@ interface LevelCard {
               spellcheck="false"
               enterkeyhint="done"
               [disabled]="state() !== 'playing'"
-              [placeholder]="state() === 'playing' ? 'Gõ romaji (vd: neko) hoặc chữ Nhật rồi để tự diệt…' : 'Chọn độ khó để bắt đầu'"
+              [placeholder]="state() === 'playing' ? (narrow ? 'Gõ romaji…' : 'Gõ romaji (vd: neko) hoặc chữ Nhật rồi để tự diệt…') : 'Chọn độ khó để bắt đầu'"
               (input)="onInput()"
               (keydown)="onKey($event)"
               aria-label="Ô gõ chữ"
@@ -192,7 +192,7 @@ interface LevelCard {
     .typebar.active { border-color: #6b4fd6; box-shadow: 0 0 0 3px rgba(107,79,214,.25); }
     .typebar.typo { border-color: #ff4d5e; animation: shake .25s; }
     .typebar.hit { border-color: #3fcf74; box-shadow: 0 0 18px rgba(63,207,116,.55); }
-    .typebar input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #fff;
+    .typebar input { flex: 1; min-width: 0; font-size: max(16px, 1rem); border: 0; outline: none; background: transparent; color: #fff;
       font: 700 1.3rem/1.2 ui-monospace, Consolas, "Yu Gothic", monospace; letter-spacing: .04em; padding: 6px 0; }
     .typebar input::placeholder { color: rgba(255,255,255,.45); font-weight: 500; font-size: .95rem; letter-spacing: 0; }
     .prompt { font-size: 1.3rem; }
@@ -225,6 +225,8 @@ export class JpTypePage implements AfterViewInit {
   private hitTimer?: ReturnType<typeof setTimeout>;
 
   readonly ratio = `${W} / ${H}`;
+  /** Màn hình hẹp (điện thoại) → rút gọn chữ gợi ý trong ô gõ. */
+  readonly narrow = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 600px)').matches;
   readonly state = signal<JpState>('title');
   readonly result = signal<JpResult | null>(null);
   readonly typo = signal(false);

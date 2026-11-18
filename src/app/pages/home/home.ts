@@ -73,6 +73,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
   }
 
+  /** Bấm vào mascot → đổi ngay sang bé khác (và tính lại giờ tự đổi). */
+  pokeMascot(): void {
+    clearInterval(this.mascotTimer);
+    this.swapMascot();
+    this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
+  }
+
   /** "Pop" bé hiện tại biến mất rồi bật ra một bé khác (ngẫu nhiên, không trùng bé đang hiện). */
   private swapMascot(): void {
     const el = this.host.querySelector<HTMLElement>('.mascot-pop');

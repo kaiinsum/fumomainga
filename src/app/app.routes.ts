@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { minigameGuard } from './core/minigame.guard';
 import { PublicLayout } from './layouts/public-layout';
 
 export const routes: Routes = [
@@ -55,26 +56,31 @@ export const routes: Routes = [
       },
       {
         path: 'mini-game/dai-chien-mot-vai',
+        canActivate: [minigameGuard('shmup')],
         title: 'Đại chiến Mọt Vải',
         loadComponent: () => import('./pages/minigame/minigame').then((m) => m.MiniGamePage),
       },
       {
         path: 'mini-game/doan-nhan-vat',
+        canActivate: [minigameGuard('touhoudle')],
         title: 'Đoán nhân vật (Touhoudle)',
         loadComponent: () => import('./pages/minigame/touhoudle').then((m) => m.TouhoudlePage),
       },
       {
         path: 'mini-game/go-chu-diet-fumo',
+        canActivate: [minigameGuard('jp-type')],
         title: 'Gõ chữ diệt Fumo',
         loadComponent: () => import('./pages/minigame/jp-type').then((m) => m.JpTypePage),
       },
       {
         path: 'mini-game/fumo-ninja',
+        canActivate: [minigameGuard('ninja')],
         title: 'Fumo Ninja',
         loadComponent: () => import('./pages/minigame/ninja').then((m) => m.FumoNinjaPage),
       },
       {
         path: 'mini-game/tui-mu',
+        canActivate: [minigameGuard('gacha')],
         title: 'Túi mù may mắn',
         loadComponent: () => import('./pages/minigame/gacha').then((m) => m.GachaPage),
       },

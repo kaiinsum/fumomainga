@@ -31,7 +31,7 @@ import { SettingsService } from '../../services/settings.service';
           @if (s.contactPhone) { <p class="contact">📞 {{ s.contactPhone }}</p> }
         </div>
       </div>
-      <p class="copy">© {{ year }} {{ s.shopName }}.</p>
+      <p class="copy">© {{ year }} {{ s.shopName }} - San Nii.</p>
     </footer>
   `,
   styles: `

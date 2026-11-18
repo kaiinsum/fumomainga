@@ -50,6 +50,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./products/product-form').then((m) => m.AdminProductForm),
       },
       {
+        path: 'minigame',
+        title: 'Minigame',
+        loadComponent: () => import('./minigames/minigames').then((m) => m.AdminMinigames),
+      },
+      {
         path: 'danh-muc',
         title: 'Danh mục',
         loadComponent: () => import('./categories/categories').then((m) => m.AdminCategories),

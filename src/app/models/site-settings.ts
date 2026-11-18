@@ -1,3 +1,5 @@
+import { DEFAULT_GAME_SETTINGS, GameSetting } from './minigames';
+
 export interface AboutValue {
   icon: string;
   title: string;
@@ -70,6 +72,11 @@ export interface SiteSettings {
   bankAccount: string;
   bankAccountName: string;
   bankName: string;
+  // Mini game
+  /** Thứ tự + khoá / mở / ẩn + nội dung thẻ của từng mini game. */
+  minigames: GameSetting[];
+  /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
+  minigameComingSoon: boolean;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -117,4 +124,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bankAccount: '9021083115251',
   bankAccountName: 'MAI NGA',
   bankName: 'Timo Digital Bank by BVBank',
+  minigames: DEFAULT_GAME_SETTINGS,
+  minigameComingSoon: true,
 };

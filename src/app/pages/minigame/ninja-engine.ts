@@ -6,6 +6,8 @@
 import { sfx } from '../../shared/sfx';
 
 export const W = 900;
+/** Font chữ trong game (giống font web, hiển thị dấu tiếng Việt chuẩn). */
+const GAME_FONT = 'Montserrat, "Segoe UI", Roboto, Arial, sans-serif';
 export const H = 600;
 const STEP = 1000 / 60;
 const MAX_MISSES = 3;
@@ -391,6 +393,9 @@ export class NinjaGame {
   }
 
   // ================= Vẽ =================
+  /** Hệ số phóng chữ HUD: lớn hơn 1 khi canvas bị thu nhỏ trên điện thoại. */
+  private ui = 1;
+
   private readonly resize = () => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     const rect = this.canvas.getBoundingClientRect();
@@ -398,6 +403,7 @@ export class NinjaGame {
     this.canvas.width = Math.round(W * scale * dpr);
     this.canvas.height = Math.round(H * scale * dpr);
     this.ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+    this.ui = Math.min(2, Math.max(1, 0.74 / scale));
   };
 
   private drawKind(kind: Kind, size: number): void {
@@ -471,7 +477,7 @@ export class NinjaGame {
         // Biểu tượng cảnh báo nhỏ
         g.rotate(-it.rot);
         g.fillStyle = '#ff1744';
-        g.font = '900 20px system-ui, sans-serif';
+        g.font = `900 20px ${GAME_FONT}`;
         g.textAlign = 'center';
         g.fillText('💣', it.r * 0.75, -it.r * 0.7);
       } else {
@@ -516,12 +522,16 @@ export class NinjaGame {
     for (const p of this.popups) {
       g.globalAlpha = 1 - p.life / 60;
       g.fillStyle = p.color;
-      g.font = `900 ${p.text.startsWith('COMBO') || p.text.startsWith('BÙM') ? 34 : 22}px system-ui, sans-serif`;
+      g.save();
+      g.translate(Math.min(W - 80, Math.max(80, p.x)), p.y);
+      g.scale(this.ui, this.ui);
+      g.font = `900 ${p.text.startsWith('COMBO') || p.text.startsWith('BÙM') ? 34 : 22}px ${GAME_FONT}`;
       g.textAlign = 'center';
       g.lineWidth = 4;
       g.strokeStyle = 'rgba(0,0,0,.55)';
-      g.strokeText(p.text, p.x, p.y);
-      g.fillText(p.text, p.x, p.y);
+      g.strokeText(p.text, 0, 0);
+      g.fillText(p.text, 0, 0);
+      g.restore();
     }
     g.globalAlpha = 1;
 
@@ -536,20 +546,31 @@ export class NinjaGame {
 
   private drawHud(): void {
     const g = this.ctx;
-    g.textAlign = 'left';
+    const u = this.ui;
     g.textBaseline = 'top';
+    g.save();
+    g.scale(u, u);
+    g.textAlign = 'left';
     g.fillStyle = '#ffd23f';
-    g.font = '900 34px system-ui, sans-serif';
+    g.font = `900 34px ${GAME_FONT}`;
+    g.lineWidth = 4;
+    g.strokeStyle = 'rgba(0,0,0,.4)';
+    g.strokeText(String(this.score), 18, 14);
     g.fillText(String(this.score), 18, 14);
-    g.font = '700 14px system-ui, sans-serif';
-    g.fillStyle = 'rgba(255,255,255,.75)';
+    g.font = `700 14px ${GAME_FONT}`;
+    g.fillStyle = 'rgba(255,255,255,.85)';
     g.fillText(`Kỷ lục ${Math.max(this.best, this.score)} · Cấp ${this.level}`, 20, 54);
+    g.restore();
+    g.save();
+    g.translate(W, 0);
+    g.scale(u, u);
     g.textAlign = 'right';
-    g.font = '900 30px system-ui, sans-serif';
+    g.font = `900 30px ${GAME_FONT}`;
     for (let i = 0; i < MAX_MISSES; i++) {
       g.fillStyle = i < this.misses ? '#ff4d6d' : 'rgba(255,255,255,.25)';
-      g.fillText('✕', W - 18 - i * 34, 14);
+      g.fillText('✕', -18 - i * 34, 14);
     }
+    g.restore();
     g.textBaseline = 'alphabetic';
   }
 

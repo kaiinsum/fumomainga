@@ -151,6 +151,8 @@ export class JpTypingGame {
   private shake = 0;
   private banner: { title: string; sub: string; t: number; color: string } | null = null;
   private targetId = -1;
+  /** Hệ số phóng chữ: 1 trên máy tính, lớn hơn khi canvas bị thu nhỏ (điện thoại) để chữ vẫn đọc được. */
+  private ui = 1;
   private typed = '';
 
   score = 0;
@@ -632,6 +634,8 @@ export class JpTypingGame {
     this.canvas.width = Math.round(W * scale * dpr);
     this.canvas.height = Math.round(H * scale * dpr);
     this.ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+    // Canvas hiển thị càng nhỏ thì chữ vẽ càng to (giữ cỡ chữ thật trên màn hình tối thiểu ~11px).
+    this.ui = Math.min(2, Math.max(1, 0.74 / scale));
   };
 
   private render(): void {
@@ -645,13 +649,17 @@ export class JpTypingGame {
     this.drawParticles(g);
     for (const p of this.popups) {
       g.globalAlpha = Math.min(1, p.life * 2);
+      g.save();
+      g.translate(Math.min(W - 60, Math.max(60, p.x)), p.y);
+      g.scale(this.ui, this.ui);
       g.font = `bold 20px ${TEXT_FONT}`;
       g.textAlign = 'center';
       g.lineWidth = 4;
       g.strokeStyle = 'rgba(0,0,0,.55)';
-      g.strokeText(p.text, p.x, p.y);
+      g.strokeText(p.text, 0, 0);
       g.fillStyle = p.color;
-      g.fillText(p.text, p.x, p.y);
+      g.fillText(p.text, 0, 0);
+      g.restore();
     }
     g.globalAlpha = 1;
     if (this.freezeT > 0) {
@@ -723,6 +731,14 @@ export class JpTypingGame {
 
   private drawLabel(g: CanvasRenderingContext2D, word: JpWord, x: number, y: number, targeted: boolean, accent: string): void {
     const h = this.hints(word, y);
+    g.save();
+    // Nhãn phóng ít hơn HUD để các bé fumo không chen nhau trên màn hình nhỏ.
+    const lu = Math.min(this.ui, 1.55);
+    const ox = x;
+    g.translate(x, y);
+    g.scale(lu, lu);
+    x = 0;
+    y = 0;
     const jpSize = word.jp.length > 4 ? 22 : 26;
     g.font = `bold ${jpSize}px ${JP_FONT}`;
     const wJp = g.measureText(word.jp).width;
@@ -731,6 +747,10 @@ export class JpTypingGame {
     const wSub = sub ? g.measureText(sub).width : 0;
     const bw = Math.max(wJp, wSub) + 24;
     const bh = jpSize + 14 + (sub ? 16 : 0);
+    // Giữ cả nhãn nằm trong khung (fumo sát mép trái / phải).
+    const half = (bw / 2) * lu;
+    const cx = Math.min(W - half - 4, Math.max(half + 4, ox));
+    if (cx !== ox) g.translate((cx - ox) / lu, 0);
     const bx = x - bw / 2;
     const by = y - bh;
 
@@ -784,6 +804,7 @@ export class JpTypingGame {
         g.fillText(ro, x, by + bh + 7);
       }
     }
+    g.restore();
     g.textBaseline = 'alphabetic';
   }
 
@@ -911,24 +932,29 @@ export class JpTypingGame {
     }
     g.restore();
     if (b.dying) return;
-    // Thanh máu
+    // Thanh máu (trên điện thoại hạ xuống dưới HUD chữ to)
     const bw = 360;
     const x = W / 2 - bw / 2;
+    const top = 52 + (this.ui - 1) * 72;
     g.fillStyle = 'rgba(0,0,0,.55)';
     g.beginPath();
-    g.roundRect(x - 4, 52, bw + 8, 18, 9);
+    g.roundRect(x - 4, top, bw + 8, 18, 9);
     g.fill();
     const hpGrad = g.createLinearGradient(x, 0, x + bw, 0);
     hpGrad.addColorStop(0, b.def.color);
     hpGrad.addColorStop(1, '#ffd23f');
     g.fillStyle = hpGrad;
     g.beginPath();
-    g.roundRect(x, 56, (bw * b.hp) / b.max, 10, 5);
+    g.roundRect(x, top + 4, (bw * b.hp) / b.max, 10, 5);
     g.fill();
+    g.save();
+    g.translate(W / 2, top - 6);
+    g.scale(this.ui, this.ui);
     g.font = `bold 13px ${TEXT_FONT}`;
     g.textAlign = 'center';
     g.fillStyle = '#fff';
-    g.fillText(`${b.def.name} · ${b.def.spell}`, W / 2, 46);
+    g.fillText(`${b.def.name} · ${b.def.spell}`, 0, 0, W / this.ui - 20);
+    g.restore();
   }
 
   private drawParticles(g: CanvasRenderingContext2D): void {
@@ -957,8 +983,11 @@ export class JpTypingGame {
   }
 
   private drawHud(g: CanvasRenderingContext2D): void {
+    const u = this.ui;
     g.textBaseline = 'top';
     g.textAlign = 'left';
+    g.save();
+    g.scale(u, u);
     g.font = `bold 22px ${TEXT_FONT}`;
     g.lineWidth = 4;
     g.strokeStyle = 'rgba(0,0,0,.5)';
@@ -971,25 +1000,36 @@ export class JpTypingGame {
     const m = Math.floor(this.time / 60);
     const s = Math.floor(this.time % 60).toString().padStart(2, '0');
     g.fillText(`⏱ ${m}:${s} · đã diệt ${this.killed}${this.combo >= 3 ? ` · combo x${this.combo}` : ''}`, 14, 40);
-    // Tim
+    g.restore();
+    // Tim (neo góc phải)
+    g.save();
+    g.translate(W, 0);
+    g.scale(u, u);
+    g.lineWidth = 4;
+    g.strokeStyle = 'rgba(0,0,0,.5)';
     g.textAlign = 'right';
     g.font = `22px ${TEXT_FONT}`;
     let hearts = '';
     for (let i = 0; i < MAX_LIVES; i++) hearts += i < this.lives ? '♥' : i < START_LIVES ? '♡' : '';
-    g.strokeText(hearts, W - 14, 12);
+    g.strokeText(hearts, -14, 12);
     g.fillStyle = '#ff5d8f';
-    g.fillText(hearts, W - 14, 12);
+    g.fillText(hearts, -14, 12);
     if (!this.boss) {
       const left = Math.max(0, Math.ceil(LEVELS[this.level].bossEvery - this.sinceBoss));
       g.font = `600 13px ${TEXT_FONT}`;
       g.fillStyle = 'rgba(255,255,255,.75)';
-      g.fillText(left <= 10 ? `⚠ Boss tới sau ${left}s` : `Boss sau ${left}s`, W - 14, 40);
+      g.fillText(left <= 10 ? `⚠ Boss tới sau ${left}s` : `Boss sau ${left}s`, -14, 40);
     }
+    g.restore();
     if (this.freezeT > 0) {
       g.textAlign = 'center';
       g.font = `bold 16px ${TEXT_FONT}`;
       g.fillStyle = '#bfefff';
-      g.fillText(`❄ Đóng băng ${this.freezeT.toFixed(1)}s`, W / 2, GROUND + 14);
+      g.save();
+      g.translate(W / 2, GROUND + 14);
+      g.scale(u, u);
+      g.fillText(`❄ Đóng băng ${this.freezeT.toFixed(1)}s`, 0, 0);
+      g.restore();
     }
     g.textBaseline = 'alphabetic';
   }
@@ -999,17 +1039,20 @@ export class JpTypingGame {
     g.save();
     g.globalAlpha = a;
     g.fillStyle = 'rgba(10, 6, 24, .62)';
-    g.fillRect(0, H / 2 - 62, W, 104);
+    const u = Math.min(this.ui, 1.6);
+    g.fillRect(0, H / 2 - 62 * u, W, 104 * u);
+    g.translate(W / 2, H / 2);
+    g.scale(u, u);
     g.textAlign = 'center';
     g.font = `900 40px ${TEXT_FONT}`;
     g.shadowColor = b.color;
     g.shadowBlur = 20;
     g.fillStyle = '#fff';
-    g.fillText(b.title, W / 2, H / 2 - 8);
+    g.fillText(b.title, 0, -8, W / u - 20);
     g.shadowBlur = 0;
     g.font = `600 18px ${TEXT_FONT}`;
     g.fillStyle = b.color;
-    g.fillText(b.sub, W / 2, H / 2 + 26);
+    g.fillText(b.sub, 0, 26, W / u - 20);
     g.restore();
   }
 }
