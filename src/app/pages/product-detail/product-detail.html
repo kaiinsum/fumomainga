@@ -85,6 +85,8 @@
         </div>
       </section>
     }
+  } @else if (!catalogLoaded()) {
+    <div class="missing card-surface"><span>⏳</span><p>Đang tải sản phẩm…</p></div>
   } @else {
     <div class="missing card-surface">
       <span>🔍</span>

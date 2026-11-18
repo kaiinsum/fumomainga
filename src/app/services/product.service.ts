@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { STORAGE_KEYS, loadJson, saveJson } from '../core/storage';
+import { STORAGE_KEYS, hasJson, loadJson, saveJson } from '../core/storage';
 import { Product, ProductInput } from '../models/product';
 import { SEED_PRODUCTS } from './seed-data';
 import { slugify } from '../shared/seo';
@@ -34,9 +34,12 @@ function ensureSlugs(list: Product[]): Product[] {
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
+  // Máy chưa từng tải dữ liệu → để trống chờ máy chủ (tránh hiện sản phẩm mẫu rồi mới đổi).
   private readonly _products = signal<Product[]>(
-    ensureSlugs(refreshSeedImages(loadJson(STORAGE_KEYS.products, () => structuredClone(SEED_PRODUCTS)))),
+    hasJson(STORAGE_KEYS.products) ? ensureSlugs(refreshSeedImages(loadJson(STORAGE_KEYS.products, () => []))) : [],
   );
+  /** Tăng mỗi khi admin thay đổi dữ liệu (không tính lần nạp từ máy chủ) → tự gửi lên máy chủ. */
+  readonly changes = signal(0);
 
   readonly products = this._products.asReadonly();
   readonly featured = computed(() => this._products().filter((p) => p.featured));
@@ -121,9 +124,29 @@ export class ProductService {
     this.commit(structuredClone(SEED_PRODUCTS));
   }
 
+  /** Nạp dữ liệu từ máy chủ (hoặc dữ liệu mẫu) — không tính là thay đổi của admin. */
+  hydrate(list: Product[]): void {
+    const next = ensureSlugs(list);
+    try {
+      saveJson(STORAGE_KEYS.products, next);
+    } catch {
+      /* bộ nhớ đầy → vẫn hiển thị trong phiên này */
+    }
+    this._products.set(next);
+  }
+
+  /**
+   * Máy này chưa có dữ liệu và máy chủ cũng chưa có → hiện sản phẩm mẫu.
+   * Không ghi vào bộ nhớ trình duyệt: "có dữ liệu trên máy" luôn nghĩa là dữ liệu thật admin đã lưu.
+   */
+  useSeedIfEmpty(): void {
+    if (!hasJson(STORAGE_KEYS.products)) this._products.set(ensureSlugs(refreshSeedImages(structuredClone(SEED_PRODUCTS))));
+  }
+
   /** Ghi vào localStorage trước; nếu bộ nhớ đầy thì ném lỗi và giữ nguyên dữ liệu cũ. */
   private commit(next: Product[]): void {
     saveJson(STORAGE_KEYS.products, next);
     this._products.set(next);
+    this.changes.update((n) => n + 1);
   }
 }

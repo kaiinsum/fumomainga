@@ -5,6 +5,9 @@
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import type { Contact, ContactStore, Order, OrderItem, OrderStatus } from './orders';
 
+/** Bucket công khai chứa ảnh sản phẩm / tin tức. */
+const MEDIA_BUCKET = 'media';
+
 interface ContactRow {
   id: number;
   name: string;
@@ -228,6 +231,19 @@ export function supabaseStore(url: string, serviceKey: string) {
 
     async delKey(key: string): Promise<void> {
       check(await db.from('app_kv').delete().eq('key', key), 'xoá dữ liệu');
+    },
+
+    /** Tải ảnh lên Supabase Storage (bucket công khai "media", tự tạo nếu chưa có) → trả về link công khai. */
+    async uploadImage(path: string, bytes: Uint8Array, contentType: string): Promise<string> {
+      const put = () => db.storage.from(MEDIA_BUCKET).upload(path, bytes, { contentType, upsert: true, cacheControl: '31536000' });
+      let res = await put();
+      if (res.error && /not.?found|does not exist/i.test(res.error.message)) {
+        const made = await db.storage.createBucket(MEDIA_BUCKET, { public: true, fileSizeLimit: '5MB' });
+        if (made.error && !/already exists/i.test(made.error.message)) throw new Error(`Tạo kho ảnh: ${made.error.message}`);
+        res = await put();
+      }
+      if (res.error) throw new Error(`Tải ảnh lên: ${res.error.message}`);
+      return db.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
     },
 
     /** Bảng products = đúng danh sách admin vừa đồng bộ (thêm / sửa / xoá cho khớp). */

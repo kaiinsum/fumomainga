@@ -721,11 +721,11 @@ export class JpTypingGame {
     g.fillRect(0, GROUND, W, 4);
   }
 
-  /** Gợi ý dưới chữ theo độ khó — chỉ chữ Nhật (kana) và nghĩa, không hiện romaji. */
+  /** Gợi ý dưới chữ theo độ khó — chỉ chữ Nhật (kana), không romaji, không nghĩa. */
   private hints(word: JpWord, y: number): { kana: boolean; vi: boolean } {
     const p = y / GROUND;
-    if (this.level === 'hard') return { kana: !!word.kana && p > 0.5, vi: true };
-    return { kana: !!word.kana, vi: true };
+    if (this.level === 'hard') return { kana: !!word.kana && p > 0.5, vi: false };
+    return { kana: !!word.kana, vi: false };
   }
 
   private drawLabel(g: CanvasRenderingContext2D, word: JpWord, x: number, y: number, targeted: boolean, accent: string): void {

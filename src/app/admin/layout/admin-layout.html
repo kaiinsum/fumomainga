@@ -3,6 +3,22 @@
     <button class="burger" type="button" (click)="toggleSidebar()" aria-label="Mở menu quản trị">☰</button>
     <a routerLink="/admin" class="brand">{{ settings().logoEmoji }} {{ settings().shopName }} <small>Quản trị</small></a>
     <div class="top-actions">
+      <button
+        type="button"
+        class="sync-pill"
+        [class]="'sync-pill ' + (sync.state() === 'error' ? 'error' : sync.dirty() ? 'saving' : sync.state())"
+        [title]="sync.message() || 'Sản phẩm, danh mục, tin tức tự lưu lên máy chủ'"
+        (click)="sync.saveNow()"
+        [disabled]="sync.state() === 'saving'"
+      >
+        @switch (sync.state()) {
+          @case ('saving') { <span class="spin">⟳</span> {{ sync.message() || 'Đang lưu lên máy chủ…' }} }
+          @case ('error') { ⚠ Chưa lưu lên máy chủ — bấm để thử lại }
+          @default {
+            @if (sync.dirty()) { ⟳ Sắp lưu lên máy chủ… } @else { ☁ Đã lưu lên máy chủ }
+          }
+        }
+      </button>
       <a href="/" target="_blank" rel="noopener" class="top-link">🌐 Xem trang web</a>
       <button type="button" class="top-link" (click)="logout()">⏻ Đăng xuất</button>
     </div>

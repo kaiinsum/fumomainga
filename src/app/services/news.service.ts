@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { STORAGE_KEYS, loadJson, saveJson } from '../core/storage';
+import { STORAGE_KEYS, hasJson, loadJson, saveJson } from '../core/storage';
 import { EMPTY_SEO, NewsInput, NewsPost, NewsSeo } from '../models/news';
 import { placeholderImage } from '../shared/placeholder';
 import { isValidSlug, slugify } from '../shared/seo';
@@ -44,13 +44,16 @@ export const SEED_NEWS: NewsPost[] = [
 
 @Injectable({ providedIn: 'root' })
 export class NewsService {
+  // Máy chưa từng tải dữ liệu → để trống chờ máy chủ.
   private readonly _posts = signal<NewsPost[]>(
     // Làm mới ảnh bìa SVG tự sinh của bài mẫu (bản cũ nhiều màu) sang bản một tông màu.
-    loadJson(STORAGE_KEYS.news, () => structuredClone(SEED_NEWS)).map((p) => {
+    loadJson<NewsPost[]>(STORAGE_KEYS.news, () => []).map((p) => {
       const seed = SEED_NEWS.find((s) => s.id === p.id);
       return seed && p.cover.startsWith('data:image/svg+xml') ? { ...p, cover: seed.cover } : p;
     }),
   );
+  /** Tăng mỗi khi admin thay đổi dữ liệu → tự gửi lên máy chủ. */
+  readonly changes = signal(0);
 
   /** Tất cả bài (kể cả nháp) — dùng trong admin. */
   readonly posts = computed(() => [...this._posts()].sort((a, b) => b.createdAt - a.createdAt));
@@ -102,8 +105,24 @@ export class NewsService {
     return next;
   }
 
+  /** Nạp dữ liệu từ máy chủ (hoặc bài mẫu) — không tính là thay đổi của admin. */
+  hydrate(list: NewsPost[]): void {
+    try {
+      saveJson(STORAGE_KEYS.news, list);
+    } catch {
+      /* bỏ qua */
+    }
+    this._posts.set(list);
+  }
+
+  useSeedIfEmpty(): void {
+    // Không ghi vào bộ nhớ trình duyệt (xem ProductService.useSeedIfEmpty).
+    if (!hasJson(STORAGE_KEYS.news)) this._posts.set(structuredClone(SEED_NEWS));
+  }
+
   private commit(next: NewsPost[]): void {
     saveJson(STORAGE_KEYS.news, next);
     this._posts.set(next);
+    this.changes.update((n) => n + 1);
   }
 }

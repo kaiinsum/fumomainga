@@ -35,6 +35,44 @@
   gap: 4px;
 }
 
+.sync-pill {
+  max-width: 340px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #c3f0d0;
+  cursor: pointer;
+
+  &.saving {
+    color: #ffe08a;
+    cursor: progress;
+  }
+
+  &.error {
+    color: #fff;
+    background: #d63638;
+    border-color: #d63638;
+  }
+
+  .spin {
+    display: inline-block;
+    animation: sync-spin 1s linear infinite;
+  }
+}
+
+@keyframes sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .top-link {
   color: #f0f0f1;
   background: none;
@@ -169,6 +207,10 @@
 @media (max-width: 860px) {
   .burger {
     display: block;
+  }
+
+  .sync-pill {
+    max-width: 150px;
   }
 
   .top-link {

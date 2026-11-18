@@ -113,9 +113,9 @@ interface LevelCard {
           </ul>
           <h3>Gợi ý theo độ khó</h3>
           <ul>
-            <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản — có nghĩa.</li>
-            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có cách đọc kana + nghĩa.</li>
-            <li><b class="c-hard">Khó</b>: kanji khó — chỉ có nghĩa, kana lộ ra khi bé rơi quá nửa.</li>
+            <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản.</li>
+            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có cách đọc kana dưới chữ.</li>
+            <li><b class="c-hard">Khó</b>: kanji khó — cách đọc kana chỉ lộ ra khi bé rơi quá nửa.</li>
           </ul>
           <h3>Fumo đặc biệt</h3>
           <ul class="specials">
@@ -271,8 +271,8 @@ export class JpTypePage implements AfterViewInit {
   /** 3 mức · 3 màu: xanh lá / vàng / đỏ, mỗi mức một bé fumo cùng tông. */
   readonly levels: LevelCard[] = [
     { id: 'easy', label: 'Dễ', desc: 'Hiragana & từ đơn giản', img: 'koishi' },
-    { id: 'normal', label: 'Trung bình', desc: 'Katakana & kanji N5 · có nghĩa', img: 'yukari' },
-    { id: 'hard', label: 'Khó', desc: 'Kanji khó · chỉ có nghĩa', img: 'reimu' },
+    { id: 'normal', label: 'Trung bình', desc: 'Katakana & kanji N5 · có cách đọc kana', img: 'yukari' },
+    { id: 'hard', label: 'Khó', desc: 'Kanji khó · kana lộ khi rơi quá nửa', img: 'reimu' },
   ];
   readonly best: Record<JpLevel, WritableSignal<number>> = {
     easy: signal(JpTypingGame.best('easy')),

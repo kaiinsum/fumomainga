@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { animate, stagger } from 'animejs';
 import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 import { AdminInboxService } from '../inbox.service';
@@ -34,6 +35,8 @@ export class AdminLayout implements AfterViewInit {
 
   readonly sidebarOpen = signal(false);
   readonly inbox = inject(AdminInboxService);
+  /** Trạng thái lưu sản phẩm / tin tức lên máy chủ. */
+  readonly sync = inject(CatalogSyncService);
 
   readonly menu: MenuItem[] = [
     { icon: '📊', label: 'Bảng tin', path: '/admin', exact: true },

@@ -9,6 +9,15 @@ export function loadJson<T>(key: string, fallback: () => T): T {
   return fallback();
 }
 
+/** Máy này đã có dữ liệu lưu cho khoá này chưa. */
+export function hasJson(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Ghi JSON vào localStorage. Ném lỗi thân thiện khi bộ nhớ đầy. */
 export function saveJson(key: string, value: unknown): void {
   try {
@@ -27,4 +36,6 @@ export const STORAGE_KEYS = {
   categories: 'fumo.categories.v1',
   settings: 'fumo.settings.v1',
   adminPass: 'fumo.admin.pass',
+  /** Admin có thay đổi sản phẩm / danh mục / tin tức chưa gửi lên máy chủ. */
+  catalogDirty: 'fumo.catalog.dirty',
 } as const;

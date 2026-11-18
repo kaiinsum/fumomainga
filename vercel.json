@@ -24,6 +24,12 @@
     },
     "api/ai/catalog.ts": {
       "maxDuration": 30
+    },
+    "api/catalog.ts": {
+      "maxDuration": 30
+    },
+    "api/media.ts": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

@@ -9,13 +9,21 @@ import { HttpError, getStore, handle, readJson, requireAdmin } from './_lib/orde
 const KEY = 'site:settings';
 const MAX_BYTES = 200_000;
 
-const reply = (body: unknown, status = 200, cache = 'no-store') =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': cache } });
+/** Trình duyệt luôn hỏi lại máy chủ; chỉ CDN của Vercel giữ bản sao vài giây. */
+const reply = (body: unknown, status = 200, cdn = '') =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-cache',
+      ...(cdn ? { 'vercel-cdn-cache-control': cdn } : {}),
+    },
+  });
 
 export const GET = handle(async () => {
   const saved = await getStore().getJson<{ settings: Record<string, unknown>; updatedAt: number }>(KEY);
-  // Cache ngắn ở CDN để trang tải nhanh mà admin sửa xong vẫn thấy trong ~1 phút.
-  return reply(saved ?? { settings: null, updatedAt: null }, 200, 'public, max-age=0, s-maxage=60, stale-while-revalidate=300');
+  // Cache ngắn ở CDN để trang tải nhanh mà admin sửa xong khách thấy sau vài giây.
+  return reply(saved ?? { settings: null, updatedAt: null }, 200, 'max-age=5, stale-while-revalidate=30');
 });
 
 export const PUT = handle(async (req) => {

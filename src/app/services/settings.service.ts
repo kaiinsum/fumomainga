@@ -46,7 +46,7 @@ export class SettingsService {
   /** Lấy cài đặt admin đã lưu trên máy chủ → mọi khách đều thấy giống nhau (link mạng xã hội, liên hệ, màu...). */
   private async loadRemote(): Promise<void> {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('/api/settings', { cache: 'no-cache' });
       if (!res.ok) return;
       const data = (await res.json()) as { settings: Partial<SiteSettings> | null };
       if (!data?.settings) return;

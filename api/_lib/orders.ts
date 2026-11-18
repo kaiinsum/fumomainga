@@ -55,6 +55,8 @@ interface Store {
   delKey(key: string): Promise<void>;
   /** Ghi bảng sản phẩm (chỉ có ở Supabase). */
   syncProducts?(products: ProductRow[]): Promise<void>;
+  /** Lưu ảnh và trả về link công khai (chỉ có ở Supabase Storage). */
+  uploadImage?(path: string, bytes: Uint8Array, contentType: string): Promise<string>;
   /** Lời nhắn liên hệ (Supabase có bảng riêng; kho khác lưu dạng danh sách JSON). */
   contacts?: ContactStore;
 }

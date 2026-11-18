@@ -159,6 +159,22 @@
   }
 }
 
+/* Điện thoại: logo co lại để không đẩy nút menu ra ngoài */
+@media (max-width: 600px) {
+  .logo {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.15;
+    font-size: 1.1rem;
+    gap: 6px;
+  }
+
+  .logo-icon {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 1100px) {
   .nav-desktop {
     display: none;

@@ -6,6 +6,7 @@ import { createTimeline, stagger } from 'animejs';
 import { SeoMetaService } from '../../core/seo-meta.service';
 import { setPageTitle } from '../../core/shop-title.strategy';
 import { newsPath } from '../../models/news';
+import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { NewsService } from '../../services/news.service';
 import { SettingsService } from '../../services/settings.service';
 import { MarkdownPipe } from '../../shared/markdown';
@@ -34,6 +35,8 @@ import { MarkdownPipe } from '../../shared/markdown';
             }
           </aside>
         }
+      } @else if (!catalogLoaded()) {
+        <div class="missing card-surface"><p>⏳ Đang tải bài viết…</p></div>
       } @else {
         <div class="missing card-surface">
           <h2>Không tìm thấy bài viết</h2>
@@ -59,6 +62,7 @@ export class NewsDetailPage {
 
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly news = inject(NewsService);
+  readonly catalogLoaded = inject(CatalogSyncService).loaded;
   private readonly title = inject(Title);
   private readonly settings = inject(SettingsService).settings;
   private readonly seo = inject(SeoMetaService);

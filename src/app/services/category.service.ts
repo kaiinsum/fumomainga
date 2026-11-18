@@ -13,6 +13,8 @@ export class CategoryService {
   );
 
   readonly categories = this._categories.asReadonly();
+  /** Tăng mỗi khi admin thay đổi dữ liệu → tự gửi lên máy chủ. */
+  readonly changes = signal(0);
   readonly names = computed(() => this._categories().map((c) => c.name));
 
   /** Số sản phẩm theo từng danh mục. */
@@ -82,8 +84,19 @@ export class CategoryService {
     }
   }
 
+  /** Nạp dữ liệu từ máy chủ — không tính là thay đổi của admin. */
+  hydrate(list: Category[]): void {
+    try {
+      saveJson(STORAGE_KEYS.categories, list);
+    } catch {
+      /* bỏ qua */
+    }
+    this._categories.set(list);
+  }
+
   private commit(next: Category[]): void {
     saveJson(STORAGE_KEYS.categories, next);
     this._categories.set(next);
+    this.changes.update((n) => n + 1);
   }
 }

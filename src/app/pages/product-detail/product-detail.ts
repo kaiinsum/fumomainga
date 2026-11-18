@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { setPageTitle } from '../../core/shop-title.strategy';
 import { SettingsService } from '../../services/settings.service';
 import { animate, createTimeline, stagger } from 'animejs';
+import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { ProductService } from '../../services/product.service';
 import { ProductVariant, variantsOf } from '../../models/product';
 import { CartService } from '../../services/cart.service';
@@ -25,6 +26,7 @@ export class ProductDetailPage {
 
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(ProductService);
+  readonly catalogLoaded = inject(CatalogSyncService).loaded;
   private readonly title = inject(Title);
   private readonly settings = inject(SettingsService).settings;
   private readonly cart = inject(CartService);
