@@ -8,6 +8,7 @@ import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 import { AdminInboxService } from '../inbox.service';
+import { AdminBellComponent } from './admin-bell';
 
 interface MenuItem {
   icon: string;
@@ -21,7 +22,7 @@ interface MenuItem {
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AdminBellComponent],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss',
 })
@@ -68,8 +69,18 @@ export class AdminLayout implements AfterViewInit {
   ];
 
   constructor() {
+    // Có đơn hàng / lời nhắn mới trong lúc đang mở trang quản trị → hiện thông báo nổi.
+    this.inbox.onNew = (items) => {
+      const orders = items.filter((n) => n.kind === 'order').length;
+      const msgs = items.length - orders;
+      if (orders) this.toast.ok(orders === 1 ? `🔔 ${items.find((n) => n.kind === 'order')!.title}` : `🔔 Có ${orders} đơn hàng mới chờ duyệt`);
+      if (msgs) this.toast.ok(msgs === 1 ? `🔔 ${items.find((n) => n.kind === 'contact')!.title}` : `🔔 Có ${msgs} lời nhắn mới`);
+    };
     this.inbox.start();
-    inject(DestroyRef).onDestroy(() => this.inbox.stop());
+    inject(DestroyRef).onDestroy(() => {
+      this.inbox.stop();
+      this.inbox.onNew = undefined;
+    });
     this.router.events
       .pipe(
         filter((e) => e instanceof NavigationEnd),

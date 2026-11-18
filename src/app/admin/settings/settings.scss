@@ -262,3 +262,55 @@ hr {
     height: 18px;
   }
 }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.days-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  input {
+    width: 100px;
+  }
+}
+
+.notice-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f1;
+
+  p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #646970;
+    font-size: 0.85rem;
+  }
+
+  small {
+    color: #646970;
+  }
+
+  .nk {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e7f2fd;
+    color: #135e96;
+
+    &.game {
+      background: #f1e8ff;
+      color: #6b3fbf;
+    }
+  }
+}

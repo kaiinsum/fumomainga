@@ -88,6 +88,19 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
                   <label [for]="'l-' + g.id">Lời nhắn khi khoá</label>
                   <input [id]="'l-' + g.id" maxlength="120" [placeholder]="defaultLock" [ngModel]="g.lockMsg" (ngModelChange)="set(i, 'lockMsg', $event)" />
                 </div>
+                <div class="notice-box">
+                  <b>🔔 Thông báo cho khách</b>
+                  <div class="field">
+                    <label [for]="'r-' + g.id">Ngày ra mắt</label>
+                    <input [id]="'r-' + g.id" type="date" [ngModel]="g.releasedAt || def.releasedAt" (ngModelChange)="set(i, 'releasedAt', $event || '')" />
+                    <small class="hint">Khách thấy thông báo "Minigame mới" trong {{ notifyDays }} ngày kể từ ngày này (game phải đang mở). Để trống = không thông báo.</small>
+                  </div>
+                  <div class="field">
+                    <label [for]="'n-' + g.id">Nội dung thông báo</label>
+                    <textarea [id]="'n-' + g.id" rows="2" maxlength="200" [placeholder]="g.desc || def.desc" [ngModel]="g.notice" (ngModelChange)="set(i, 'notice', $event)"></textarea>
+                    <small class="hint">Để trống = dùng mô tả ngắn.</small>
+                  </div>
+                </div>
                 <button type="button" class="link" (click)="resetText(i)">↺ Dùng lại nội dung mặc định</button>
               </div>
 
@@ -162,6 +175,8 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     .preview.locked .pv-play { background: #dcdcde; color: #50575e; }
     .extra { margin-top: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     .switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .notice-box { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: #f6f7f7; border: 1px dashed #c3c4c7; }
+    .notice-box input[type='date'] { max-width: 200px; }
     @media (max-width: 860px) { .edit { grid-template-columns: 1fr; } }
   `,
 })
@@ -171,6 +186,7 @@ export class AdminMinigames {
 
   readonly statuses = STATUS;
   readonly defaultLock = DEFAULT_LOCK_MSG;
+  readonly notifyDays = this.settingsSvc.settings().notifyDays || 14;
   readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀' };
 
   readonly draft = signal<GameSetting[]>(normalizeGameSettings(this.settingsSvc.settings().minigames));
@@ -241,7 +257,7 @@ export class AdminMinigames {
   }
 
   resetText(i: number): void {
-    this.draft.update((list) => list.map((g, j) => (j === i ? { ...g, title: '', tag: '', desc: '', lockMsg: '' } : g)));
+    this.draft.update((list) => list.map((g, j) => (j === i ? { ...g, title: '', tag: '', desc: '', lockMsg: '', releasedAt: '', notice: '' } : g)));
   }
 
   resetAll(): void {
@@ -263,6 +279,8 @@ export class AdminMinigames {
       tag: g.tag.trim(),
       desc: g.desc.trim(),
       lockMsg: g.lockMsg.trim(),
+      releasedAt: (g.releasedAt ?? '').trim(),
+      notice: (g.notice ?? '').trim(),
     }));
     const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon() };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;

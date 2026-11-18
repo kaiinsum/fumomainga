@@ -154,6 +154,13 @@
           <input type="checkbox" formControlName="featured" />
           <span class="track"></span> Nổi bật trên trang chủ
         </label>
+        <div class="notice-fields">
+          <label for="releasedAt">🔔 Ngày ra mắt</label>
+          <input id="releasedAt" type="date" formControlName="releasedAt" />
+          <small class="hint">Khách thấy thông báo "Sản phẩm mới" trong {{ notifyDays }} ngày kể từ ngày này. Để trống = ngày đăng sản phẩm.</small>
+          <label for="notice">Nội dung thông báo</label>
+          <textarea id="notice" rows="2" maxlength="200" formControlName="notice" placeholder="Để trống = dùng mô tả sản phẩm"></textarea>
+        </div>
         <div class="publish-actions">
           @if (editing()) {
             <button class="link-del" type="button" (click)="remove()">Xoá sản phẩm</button>

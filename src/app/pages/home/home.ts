@@ -13,7 +13,7 @@ import { AnimateInDirective } from '../../shared/animate-in.directive';
 
 /** Các bé fumo luân phiên làm mascot ở phần đầu trang chủ (chế độ sáng). */
 const MASCOTS = [
-  { src: 'img/mascot-1.webp', w: 450, h: 654 },
+  { src: 'img/mascot-1.webp', w: 304, h: 455 },
   { src: 'img/mascot-2.webp', w: 443, h: 480 },
   { src: 'img/mascot-3.webp', w: 425, h: 625 },
   { src: 'img/mascot-4.webp', w: 356, h: 476 },

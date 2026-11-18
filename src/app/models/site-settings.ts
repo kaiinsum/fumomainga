@@ -88,6 +88,10 @@ export interface SiteSettings {
   minigames: GameSetting[];
   /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
   minigameComingSoon: boolean;
+  // Thông báo cho khách (chuông trên thanh menu)
+  notifyEnabled: boolean;
+  /** Sản phẩm / minigame ra mắt trong bao nhiêu ngày gần đây thì hiện thông báo. */
+  notifyDays: number;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -166,4 +170,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bankName: 'Timo Digital Bank by BVBank',
   minigames: DEFAULT_GAME_SETTINGS,
   minigameComingSoon: true,
+  notifyEnabled: true,
+  notifyDays: 14,
 };

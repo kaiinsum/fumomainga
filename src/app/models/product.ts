@@ -26,6 +26,10 @@ export interface Product {
   inStock: boolean;
   featured: boolean;
   createdAt: number;
+  /** Ngày ra mắt (YYYY-MM-DD) cho thông báo "Sản phẩm mới". Trống = ngày đăng. */
+  releasedAt?: string;
+  /** Nội dung thông báo cho khách. Trống = dùng mô tả sản phẩm. */
+  notice?: string;
 }
 
 export type ProductInput = Omit<Product, 'id' | 'createdAt' | 'oldSlugs'>;

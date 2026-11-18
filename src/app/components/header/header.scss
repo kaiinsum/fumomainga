@@ -161,6 +161,17 @@
 
 /* Điện thoại: logo co lại để không đẩy nút menu ra ngoài */
 @media (max-width: 600px) {
+  .tools {
+    gap: 6px;
+  }
+
+  .theme-btn,
+  .burger {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+
   .logo {
     flex: 0 1 auto;
     min-width: 0;

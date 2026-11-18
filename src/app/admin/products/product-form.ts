@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
 import { ProductInput, ProductVariant, cheapest, discountPercent, finalPrice, onSale } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
+import { SettingsService } from '../../services/settings.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { slugify } from '../../shared/seo';
@@ -69,6 +70,9 @@ export class AdminProductForm {
     return id ? this.service.getById(id) : undefined;
   });
 
+  /** Số ngày hiện thông báo "Sản phẩm mới" cho khách (Cài đặt → Thông báo). */
+  readonly notifyDays = inject(SettingsService).settings().notifyDays || 14;
+
   readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(80)]],
     category: [this.categories()[0] ?? '', Validators.required],
@@ -77,6 +81,9 @@ export class AdminProductForm {
     tags: [''],
     inStock: [true],
     featured: [false],
+    /** Ngày ra mắt cho thông báo "Sản phẩm mới" (trống = ngày đăng). */
+    releasedAt: [''],
+    notice: [''],
   });
 
   /** Giảm giá: nhập % hoặc giá sau giảm — ô kia tự tính theo. Để trống cả hai = không giảm. */
@@ -126,6 +133,8 @@ export class AdminProductForm {
             tags: p.tags.join(', '),
             inStock: p.inStock,
             featured: p.featured,
+            releasedAt: p.releasedAt ?? '',
+            notice: p.notice ?? '',
           });
           this.images.set([...p.images]);
           this.slug.set(p.slug ?? this.service.suggestSlug(p.name, p.id));
@@ -244,6 +253,8 @@ export class AdminProductForm {
       ...v,
       name: v.name.trim(),
       description: v.description.trim(),
+      releasedAt: v.releasedAt.trim(),
+      notice: v.notice.trim(),
       // Có biến thể → giá sản phẩm = biến thể rẻ nhất (để lọc / sắp xếp / thẻ sản phẩm dùng chung).
       price: variants.length ? cheapest({ price: 0, variants }).price : Number(v.price),
       salePrice: variants.length ? (cheapest({ price: 0, variants }).salePrice ?? null) : this.validSale(),

@@ -15,6 +15,8 @@ export interface GameDef {
   title: string;
   tag: string;
   desc: string;
+  /** Ngày ra mắt mặc định (YYYY-MM-DD) — dùng cho thông báo "Minigame mới". Trống = không thông báo. */
+  releasedAt: string;
 }
 
 /** Thứ tự ở đây = thứ tự mặc định. Game mới thêm sau sẽ tự nối vào cuối danh sách của admin. */
@@ -26,6 +28,7 @@ export const GAMES: GameDef[] = [
     title: 'Gõ chữ diệt Fumo',
     tag: '⌨️ Gõ chữ · Tiếng Nhật · Mới',
     desc: 'Fumo mang chữ tiếng Nhật rơi từ trời xuống — gõ đúng cách đọc để tiêu diệt, phản đòn boss. 3 mức từ hiragana tới kanji khó!',
+    releasedAt: '2026-11-17',
   },
   {
     id: 'gacha',
@@ -34,6 +37,7 @@ export const GAMES: GameDef[] = [
     title: 'Túi mù may mắn',
     tag: '🎁 Gacha · Mới',
     desc: 'Bóc túi mù xem hôm nay số phận chọn bé thú bông nào cho bạn!',
+    releasedAt: '',
   },
   {
     id: 'touhoudle',
@@ -42,6 +46,7 @@ export const GAMES: GameDef[] = [
     title: 'Đoán nhân vật (Touhoudle)',
     tag: '🔎 Đố vui · Mỗi ngày',
     desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật mới!',
+    releasedAt: '',
   },
   {
     id: 'ninja',
@@ -50,6 +55,7 @@ export const GAMES: GameDef[] = [
     title: 'Fumo Ninja',
     tag: '🗡️ Chém fumo · Mới',
     desc: 'Vuốt để chém các bé fumo bay lên. Cẩn thận Reimu viền neon đỏ — chém trúng là thua!',
+    releasedAt: '',
   },
   {
     id: 'shmup',
@@ -58,6 +64,7 @@ export const GAMES: GameDef[] = [
     title: 'Đại chiến Mọt Vải',
     tag: '🚀 Bắn đạn · Né đạn',
     desc: 'Né mưa đạn, hạ bầy mọt vải và đánh bại Nữ hoàng Mọt.',
+    releasedAt: '',
   },
 ];
 
@@ -70,16 +77,22 @@ export interface GameSetting {
   desc: string;
   /** Lời nhắn hiện trên thẻ khi game bị khoá. */
   lockMsg: string;
+  /** Ngày ra mắt (YYYY-MM-DD) cho thông báo khách. Trống = ngày mặc định của game. */
+  releasedAt?: string;
+  /** Nội dung thông báo cho khách. Trống = dùng mô tả ngắn. */
+  notice?: string;
 }
 
 export const DEFAULT_LOCK_MSG = 'Game đang bảo trì, quay lại sau nhé!';
 
-export const DEFAULT_GAME_SETTINGS: GameSetting[] = GAMES.map((g) => ({ id: g.id, status: 'open', title: '', tag: '', desc: '', lockMsg: '' }));
+export const DEFAULT_GAME_SETTINGS: GameSetting[] = GAMES.map((g) => ({ id: g.id, status: 'open', title: '', tag: '', desc: '', lockMsg: '', releasedAt: '', notice: '' }));
 
 /** Một game đã gộp định nghĩa + cấu hình admin, theo đúng thứ tự admin xếp. */
 export interface ResolvedGame extends GameDef {
   status: GameStatus;
   lockMsg: string;
+  /** Nội dung thông báo cho khách. */
+  notice: string;
 }
 
 /** Gộp cấu hình admin với danh sách game: giữ thứ tự admin, bỏ game không còn tồn tại, nối game mới vào cuối. */
@@ -98,9 +111,11 @@ export function resolveGames(saved: GameSetting[] | undefined): ResolvedGame[] {
       desc: s.desc?.trim() || def.desc,
       status: s.status === 'locked' || s.status === 'hidden' ? s.status : 'open',
       lockMsg: s.lockMsg?.trim() || DEFAULT_LOCK_MSG,
+      releasedAt: s.releasedAt?.trim() || def.releasedAt,
+      notice: s.notice?.trim() || s.desc?.trim() || def.desc,
     });
   }
-  for (const def of GAMES) if (!seen.has(def.id)) out.push({ ...def, status: 'open', lockMsg: DEFAULT_LOCK_MSG });
+  for (const def of GAMES) if (!seen.has(def.id)) out.push({ ...def, status: 'open', lockMsg: DEFAULT_LOCK_MSG, notice: def.desc });
   return out;
 }
 
@@ -109,6 +124,15 @@ export function normalizeGameSettings(saved: GameSetting[] | undefined): GameSet
   const byId = new Map((Array.isArray(saved) ? saved : []).map((s) => [s?.id, s]));
   return resolveGames(saved).map((g) => {
     const s = byId.get(g.id);
-    return { id: g.id, status: g.status, title: s?.title ?? '', tag: s?.tag ?? '', desc: s?.desc ?? '', lockMsg: s?.lockMsg ?? '' };
+    return {
+      id: g.id,
+      status: g.status,
+      title: s?.title ?? '',
+      tag: s?.tag ?? '',
+      desc: s?.desc ?? '',
+      lockMsg: s?.lockMsg ?? '',
+      releasedAt: s?.releasedAt ?? '',
+      notice: s?.notice ?? '',
+    };
   });
 }

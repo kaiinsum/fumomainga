@@ -191,6 +191,45 @@
       </section>
     }
 
+    @case ('thong-bao') {
+      <section class="adm-box">
+        <h2>Thông báo cho khách</h2>
+        <div class="box-body">
+          <label class="check-row">
+            <input type="checkbox" [(ngModel)]="draft.notifyEnabled" />
+            <span>Hiện chuông 🔔 thông báo trên thanh menu của trang web</span>
+          </label>
+          <div class="field">
+            <label for="notifyDays">Hiện thông báo trong bao nhiêu ngày</label>
+            <div class="days-row">
+              <input id="notifyDays" type="number" min="1" max="365" [(ngModel)]="draft.notifyDays" />
+              <span>ngày kể từ ngày ra mắt</span>
+            </div>
+            <small class="hint">
+              Sản phẩm mới và minigame mới ra mắt trong số ngày này sẽ hiện trong chuông thông báo, kèm nội dung và ngày ra mắt.
+              Đặt ngày ra mắt / nội dung ở trang sửa <b>Sản phẩm</b> (khung "Xuất bản") và trang <b>Minigame</b>.
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <section class="adm-box">
+        <h2>Khách đang thấy ({{ noticePreview().length }})</h2>
+        <div class="box-body">
+          @for (n of noticePreview(); track n.key) {
+            <div class="notice-row">
+              <span class="nk" [class.game]="n.kind === 'game'">{{ n.kind === 'game' ? '🎮 Minigame mới' : '🧸 Sản phẩm mới' }}</span>
+              <b>{{ n.title }}</b>
+              <small>📅 Ra mắt {{ fmtDay(n.date) }}</small>
+              <p>{{ n.content }}</p>
+            </div>
+          } @empty {
+            <p class="hint">Không có sản phẩm / minigame nào ra mắt trong {{ draft.notifyDays || 14 }} ngày qua.</p>
+          }
+        </div>
+      </section>
+    }
+
     @case ('chinh-sach') {
       <section class="adm-box">
         <h2>Trang Chính sách</h2>
