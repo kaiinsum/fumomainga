@@ -2,10 +2,13 @@
  * /api/catalog — sản phẩm, danh mục, tin tức của shop.
  * GET: công khai — mọi máy đều thấy cùng dữ liệu admin đã lưu.
  * PUT: chỉ admin — trang admin tự gửi lên mỗi khi thêm / sửa / xoá.
- * Ảnh được tải riêng lên /api/media nên dữ liệu ở đây chỉ chứa link ảnh.
+ * POST { dataUrl }: chỉ admin — tải ảnh lên kho ảnh Supabase Storage → { url }.
+ *   (Gộp chung file để không vượt giới hạn 12 function của gói Vercel miễn phí.)
+ * Ảnh được tải riêng nên dữ liệu ở đây chỉ chứa link ảnh.
  */
+import { createHash } from 'node:crypto';
 import { parseCatalog } from './_lib/ai';
-import { HttpError, getStore, handle, readJson, requireAdmin } from './_lib/orders';
+import { HttpError, getStore, handle, json, readJson, requireAdmin } from './_lib/orders';
 
 const KEY = 'site:catalog';
 /** Vercel giới hạn thân yêu cầu ~4.5MB. */
@@ -65,4 +68,24 @@ export const PUT = handle(async (req) => {
   ]);
   if (tableError) console.error('Đồng bộ bảng products lỗi:', tableError);
   return reply({ updatedAt: catalog.updatedAt, warning: tableError ? `Đã lưu, nhưng bảng products chưa cập nhật được: ${tableError}` : '' });
+});
+
+// ---------- Tải ảnh (trước đây là /api/media) ----------
+const MAX_IMAGE_BYTES = 3_000_000;
+const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+
+export const POST = handle(async (req) => {
+  requireAdmin(req);
+  const store = getStore();
+  if (!store.uploadImage) throw new HttpError(501, 'Kho ảnh chỉ có khi dùng Supabase.');
+  const dataUrl = String((await readJson(req))['dataUrl'] ?? '');
+  const m = /^data:(image\/[a-z+]+);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+  const ext = m && IMAGE_TYPES[m[1]];
+  if (!m || !ext) throw new HttpError(400, 'Ảnh không hợp lệ (chỉ nhận JPG, PNG, WebP, GIF).');
+  const bytes = Buffer.from(m[2], 'base64');
+  if (bytes.length > MAX_IMAGE_BYTES) throw new HttpError(413, 'Ảnh quá lớn (tối đa 3MB).');
+  // Đặt tên theo nội dung → tải lại cùng một ảnh không tạo bản trùng.
+  const hash = createHash('sha256').update(bytes).digest('hex').slice(0, 24);
+  const url = await store.uploadImage(`img/${hash}.${ext}`, new Uint8Array(bytes), m[1]);
+  return json({ url });
 });

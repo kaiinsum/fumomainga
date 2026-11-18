@@ -56,6 +56,6 @@ export class TrackerService {
     if (!this.path || this.path.startsWith('/admin')) return;
     const body = JSON.stringify({ t, vid: this.vid, sid: this.sid, path: this.path, ref: t === 'view' ? this.firstRef : '' });
     if (t === 'view') this.firstRef = '';
-    fetch('/api/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => undefined);
+    fetch('/api/analytics', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => undefined);
   }
 }

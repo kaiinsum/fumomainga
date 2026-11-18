@@ -25,7 +25,7 @@ const hasDataImg = (s: string) => /data:image\/(?:jpeg|png|webp|gif);base64,/.te
 /**
  * Đồng bộ sản phẩm / danh mục / tin tức với máy chủ (/api/catalog):
  * - Mọi máy khi mở web đều tải dữ liệu admin đã lưu → khách ở máy khác cũng thấy.
- * - Admin thêm / sửa / xoá → tự tải ảnh lên kho ảnh (/api/media) rồi gửi dữ liệu lên máy chủ.
+ * - Admin thêm / sửa / xoá → tự tải ảnh lên kho ảnh (POST /api/catalog) rồi gửi dữ liệu lên máy chủ.
  * - Gửi lỗi (mất mạng...) → nhớ "còn thay đổi chưa lưu", lần sau mở admin tự gửi lại.
  */
 @Injectable({ providedIn: 'root' })
@@ -183,7 +183,7 @@ export class CatalogSyncService {
       while (i < todo.length && !unsupported) {
         const dataUrl = todo[i++];
         try {
-          const { url } = await this.api.call<{ url: string }>('POST', '/api/media', { dataUrl }, true, { timeoutMs: 30000 });
+          const { url } = await this.api.call<{ url: string }>('POST', '/api/catalog', { dataUrl }, true, { timeoutMs: 30000 });
           this.uploaded.set(dataUrl, url);
         } catch (e) {
           if (e instanceof ApiError && e.status === 501) unsupported = true;
