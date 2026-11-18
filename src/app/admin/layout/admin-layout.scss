@@ -264,3 +264,45 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(214, 54, 56, 0.55); }
   50% { box-shadow: 0 0 0 6px rgba(214, 54, 56, 0); }
 }
+
+// ---------- Điện thoại: thanh trên cùng gọn, chỉ còn biểu tượng ----------
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .brand {
+    font-size: 1.1rem;
+    white-space: nowrap;
+
+    .brand-name {
+      display: none;
+    }
+
+    small {
+      font-size: 0.8rem;
+    }
+  }
+
+  .top-actions {
+    gap: 2px;
+  }
+
+  .sync-pill {
+    max-width: none;
+    padding: 4px 9px;
+
+    .sp-txt {
+      display: none;
+    }
+  }
+
+  .top-link {
+    padding: 6px 7px;
+  }
+
+  .content {
+    padding: calc(var(--top-h) + 12px) 12px 28px;
+  }
+}

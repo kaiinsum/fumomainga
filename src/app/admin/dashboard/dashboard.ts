@@ -101,6 +101,12 @@ import { PriceTagComponent } from '../../shared/price-tag';
     .stat .ic { font-size: 1.8rem; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px;
       background: color-mix(in srgb, var(--primary) 14%, #fff); }
     .stat strong { display: block; font-size: 1.6rem; line-height: 1.1; }
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .stat { gap: 10px; padding: 12px; }
+      .stat .ic { width: 38px; height: 38px; font-size: 1.35rem; border-radius: 10px; }
+      .stat strong { font-size: 1.3rem; }
+    }
     .stat div span { color: #646970; font-size: .85rem; font-weight: 700; }
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
     .quick { flex-direction: row !important; flex-wrap: wrap; }

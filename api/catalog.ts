@@ -4,6 +4,7 @@
  * PUT: chỉ admin — trang admin tự gửi lên mỗi khi thêm / sửa / xoá.
  * Ảnh được tải riêng lên /api/media nên dữ liệu ở đây chỉ chứa link ảnh.
  */
+import { parseCatalog } from './_lib/ai';
 import { HttpError, getStore, handle, readJson, requireAdmin } from './_lib/orders';
 
 const KEY = 'site:catalog';
@@ -50,6 +51,18 @@ export const PUT = handle(async (req) => {
   if (JSON.stringify(catalog).length > MAX_BYTES) {
     throw new HttpError(413, 'Dữ liệu quá lớn (thường do ảnh chưa tải lên được kho ảnh). Hãy giảm bớt ảnh rồi thử lại.');
   }
-  await getStore().setJson(KEY, catalog);
-  return reply({ updatedAt: catalog.updatedAt });
+  const store = getStore();
+  // Lưu dữ liệu cho trang web và cập nhật bảng products (Supabase) cùng lúc.
+  // Bảng products lỗi (chưa chạy schema.sql...) thì vẫn lưu được dữ liệu web, chỉ báo cảnh báo cho admin.
+  const [, tableError] = await Promise.all([
+    store.setJson(KEY, catalog),
+    store.syncProducts
+      ? store.syncProducts(parseCatalog({ products: catalog.products }).products).then(
+          () => '',
+          (e: unknown) => (e instanceof Error ? e.message : String(e)),
+        )
+      : Promise.resolve(''),
+  ]);
+  if (tableError) console.error('Đồng bộ bảng products lỗi:', tableError);
+  return reply({ updatedAt: catalog.updatedAt, warning: tableError ? `Đã lưu, nhưng bảng products chưa cập nhật được: ${tableError}` : '' });
 });

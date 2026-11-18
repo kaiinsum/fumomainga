@@ -100,7 +100,14 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
       </table>
     </div>
   `,
-  styles: `.status-btn { background: none; border: none; padding: 0; cursor: pointer; }`,
+  styles: `
+    .status-btn { background: none; border: none; padding: 0; cursor: pointer; }
+    @media (max-width: 600px) {
+      .adm-table th:nth-child(4), .adm-table td:nth-child(4),
+      .adm-table th:nth-child(8), .adm-table td:nth-child(8) { display: none; }
+      .adm-table .empty { display: table-cell; }
+    }
+  `,
 })
 export class AdminProductsList {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;

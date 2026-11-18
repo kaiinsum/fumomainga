@@ -8,6 +8,7 @@ import { OrderOutboxService } from '../../services/order-outbox.service';
 import { SettingsService } from '../../services/settings.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { PriceTagComponent } from '../../shared/price-tag';
+import { FREE_SHIP_QTY, UpsellComponent } from './upsell';
 import { emailError, emailSuggestion, isValidVnPhone, normalizePhone, phoneError } from '../../shared/validators';
 
 /** Đơn vừa đặt, đang hiện popup QR chờ duyệt (giữ qua F5 trong cùng tab). Không gửi lên máy chủ. */
@@ -33,7 +34,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
 
 @Component({
   selector: 'app-cart',
-  imports: [FormsModule, RouterLink, VndPipe, PriceTagComponent],
+  imports: [FormsModule, RouterLink, VndPipe, PriceTagComponent, UpsellComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/">Trang chủ</a> / <span>Giỏ hàng</span></nav>
@@ -61,6 +62,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
               </div>
             }
             <div class="total">Tạm tính <strong>{{ cart.total() | vnd }}</strong></div>
+            <app-upsell />
           </section>
 
           <form class="checkout card-surface" (ngSubmit)="submit()">
@@ -103,7 +105,9 @@ const PENDING_KEY = 'fumo.checkout.pending';
             <button class="btn primary full" type="submit" [disabled]="saving()">
               {{ saving() ? '⏳ Đang gửi đơn...' : 'Đặt hàng & chuyển khoản →' }}
             </button>
-            <small class="muted">Phí ship (nếu có) shop sẽ báo khi xác nhận đơn.</small>
+            <small class="muted">
+              @if (cart.count() >= freeShipQty) { 🎉 Đơn từ {{ freeShipQty }} bé trở lên được <b>freeship</b>. } @else { Phí ship (nếu có) shop sẽ báo khi xác nhận đơn. Mua từ {{ freeShipQty }} bé được freeship. }
+            </small>
           </form>
         </div>
       } @else {
@@ -243,6 +247,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
 })
 export class CartPage {
   readonly cart = inject(CartService);
+  readonly freeShipQty = FREE_SHIP_QTY;
   readonly s = inject(SettingsService).settings;
   private readonly api = inject(OrderApiService);
   readonly outbox = inject(OrderOutboxService);

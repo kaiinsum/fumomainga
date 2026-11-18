@@ -154,11 +154,13 @@ export class CatalogSyncService {
         categories: this.categories.categories(),
         news: this.news.posts(),
       };
-      const res = await this.api.call<{ updatedAt: number }>('PUT', '/api/catalog', body, true, { timeoutMs: 30000 });
+      const res = await this.api.call<{ updatedAt: number; warning?: string }>('PUT', '/api/catalog', body, true, { timeoutMs: 30000 });
       this.lastSaved.set(res.updatedAt);
       this.setDirty(false);
       this.remoteEmpty = false;
       this.state.set('saved');
+      // Dữ liệu web đã lưu; chỉ bảng products (Supabase) gặp vấn đề → hiện khi rê chuột lên nút trạng thái.
+      this.message.set(res.warning ?? '');
     } catch (e) {
       this.fail(e instanceof Error ? e.message : 'Không gửi được lên máy chủ.');
     }

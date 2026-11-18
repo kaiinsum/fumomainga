@@ -141,12 +141,10 @@ $d: 'app-public-layout.dark.dark';
     white-space: nowrap;
 
     /* Font mono rộng hơn → thu gọn để 7 mục menu nằm trên một dòng */
-    @media (max-width: 1440px) {
-      padding: 8px 9px;
-      font-size: 0.88rem;
-    }
+    padding: 7px 8px;
+    font-size: 0.84rem;
 
-    @media (max-width: 1240px) {
+    @media (max-width: 1300px) {
       padding: 6px 6px;
       font-size: 0.82rem;
       letter-spacing: -0.03em;

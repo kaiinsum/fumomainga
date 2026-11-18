@@ -256,3 +256,105 @@
     }
   }
 }
+
+// ---------- Điện thoại: thu nhỏ toàn bộ trang quản trị cho vừa khung ----------
+@media (max-width: 600px) {
+  // Cỡ chữ gốc nhỏ lại → mọi kích thước tính theo rem trong admin cùng thu nhỏ (trang khách không bị ảnh hưởng).
+  html:has(.adm-shell) {
+    font-size: 14px;
+  }
+
+  .adm-shell {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .adm-head {
+    gap: 8px;
+    margin-bottom: 14px;
+
+    h1 {
+      font-size: 1.3rem;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      font-size: 0.82rem;
+    }
+  }
+
+  .adm-notice {
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 0.88rem;
+  }
+
+  .adm-box {
+    > h2,
+    > .box-title {
+      padding: 10px 12px;
+      font-size: 0.95rem;
+    }
+
+    > .box-body {
+      padding: 12px;
+      gap: 10px;
+    }
+  }
+
+  .adm-toolbar {
+    gap: 6px;
+
+    input,
+    select {
+      padding: 6px 10px;
+      font-size: 0.88rem;
+      min-width: 0;
+    }
+
+    input[type='search'],
+    input[type='text'] {
+      flex: 1 1 140px;
+    }
+  }
+
+  .adm-tabs {
+    gap: 2px;
+    margin-bottom: 12px;
+
+    button,
+    a {
+      padding: 6px 9px;
+      font-size: 0.85rem;
+    }
+  }
+
+  .adm-table {
+    font-size: 0.85rem;
+
+    th,
+    td {
+      padding: 7px 6px;
+    }
+
+    th {
+      font-size: 0.75rem;
+    }
+
+    .thumb {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .title-input {
+    font-size: 1.15rem;
+  }
+
+  // Ô nhập: giữ 16px để iPhone không tự phóng to khi bấm vào
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

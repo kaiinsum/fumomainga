@@ -18,6 +18,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Chừa khoảng giữa logo – menu – các nút */
+  gap: 24px;
 }
 
 .logo {
@@ -38,10 +40,11 @@
 
 .nav-desktop {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 
   a {
-    padding: 8px 16px;
+    padding: 7px 10px;
+    font-size: 0.92rem;
     border-radius: 999px;
     font-weight: 800;
     color: var(--muted);
@@ -144,14 +147,18 @@
 }
 
 /* 7 mục menu: thu gọn khoảng cách trên màn hình vừa */
-@media (max-width: 1240px) {
+@media (max-width: 1300px) {
+  .bar {
+    gap: 14px;
+  }
+
   .nav-desktop {
-    gap: 0;
+    gap: 4px;
   }
 
   .nav-desktop a {
-    padding: 8px 9px;
-    font-size: 0.9rem;
+    padding: 7px 8px;
+    font-size: 0.85rem;
   }
 
   .logo {
@@ -161,6 +168,10 @@
 
 /* Điện thoại: logo co lại để không đẩy nút menu ra ngoài */
 @media (max-width: 600px) {
+  .bar {
+    gap: 8px;
+  }
+
   .tools {
     gap: 6px;
   }
@@ -186,7 +197,7 @@
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1150px) {
   .nav-desktop {
     display: none;
   }

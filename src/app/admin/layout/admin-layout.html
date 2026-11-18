@@ -1,7 +1,7 @@
 <div class="adm-shell" [class.side-open]="sidebarOpen()">
   <header class="topbar">
     <button class="burger" type="button" (click)="toggleSidebar()" aria-label="Mở menu quản trị">☰</button>
-    <a routerLink="/admin" class="brand">{{ settings().logoEmoji }} {{ settings().shopName }} <small>Quản trị</small></a>
+    <a routerLink="/admin" class="brand">{{ settings().logoEmoji }} <span class="brand-name">{{ settings().shopName }}</span> <small>Quản trị</small></a>
     <div class="top-actions">
       <button
         type="button"
@@ -12,10 +12,10 @@
         [disabled]="sync.state() === 'saving'"
       >
         @switch (sync.state()) {
-          @case ('saving') { <span class="spin">⟳</span> {{ sync.message() || 'Đang lưu lên máy chủ…' }} }
-          @case ('error') { ⚠ Chưa lưu lên máy chủ — bấm để thử lại }
+          @case ('saving') { <span class="spin">⟳</span><span class="sp-txt"> {{ sync.message() || 'Đang lưu lên máy chủ…' }}</span> }
+          @case ('error') { ⚠<span class="sp-txt"> Chưa lưu lên máy chủ — bấm để thử lại</span> }
           @default {
-            @if (sync.dirty()) { ⟳ Sắp lưu lên máy chủ… } @else { ☁ Đã lưu lên máy chủ }
+            @if (sync.dirty()) { ⟳<span class="sp-txt"> Sắp lưu lên máy chủ…</span> } @else if (sync.message()) { ⚠<span class="sp-txt"> Đã lưu · bảng products lỗi</span> } @else { ☁<span class="sp-txt"> Đã lưu lên máy chủ</span> }
           }
         }
       </button>
