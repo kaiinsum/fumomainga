@@ -209,7 +209,7 @@ export class UpsellComponent {
   readonly suggestions = computed(() => {
     const ids = this.cartIds();
     return this.products
-      .products()
+      .shop()
       .filter((p) => p.inStock)
       .sort((a, b) => +ids.has(a.id) - +ids.has(b.id) || +b.featured - +a.featured || b.createdAt - a.createdAt)
       .slice(0, 12);

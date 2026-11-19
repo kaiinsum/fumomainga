@@ -9,8 +9,8 @@ import { ProductService } from '../../services/product.service';
 import { PriceTagComponent } from '../../shared/price-tag';
 import { AdminToastService } from '../toast.service';
 
-type Tab = 'all' | 'in' | 'out' | 'featured';
-type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
+type Tab = 'all' | 'in' | 'out' | 'featured' | 'hidden';
+type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature' | 'hide' | 'show';
 
 @Component({
   selector: 'app-admin-products-list',
@@ -37,6 +37,8 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
         <option value="out">Đánh dấu hết hàng</option>
         <option value="feature">Đặt nổi bật</option>
         <option value="unfeature">Bỏ nổi bật</option>
+        <option value="hide">Ẩn khỏi cửa hàng</option>
+        <option value="show">Hiện lại trên cửa hàng</option>
         <option value="delete">Xoá</option>
       </select>
       <button class="btn ghost small" type="button" [disabled]="!bulk || !selected().size" (click)="applyBulk()">
@@ -65,16 +67,18 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
             <th>Giá</th>
             <th>Kho</th>
             <th title="Nổi bật">★</th>
+            <th title="Ẩn / hiện trên cửa hàng">Hiển thị</th>
             <th>Ngày đăng</th>
           </tr>
         </thead>
         <tbody>
           @for (p of rows(); track p.id) {
-            <tr [attr.data-row]="p.id">
+            <tr [attr.data-row]="p.id" [class.is-hidden]="p.hidden">
               <td><input type="checkbox" [checked]="selected().has(p.id)" (change)="toggleOne(p.id)" /></td>
               <td><img class="thumb" [src]="p.images[0]" [alt]="p.name" /></td>
               <td class="title-cell">
                 <a [routerLink]="['/admin/san-pham', p.id]">{{ p.name }}</a>
+                @if (p.hidden) { <span class="hid-tag">Đang ẩn</span> }
                 <div class="row-actions">
                   <a [routerLink]="['/admin/san-pham', p.id]">Sửa</a>
                   <a [href]="'/san-pham/' + (p.slug || p.id)" target="_blank" rel="noopener">Xem</a>
@@ -91,10 +95,16 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
               <td>
                 <button type="button" class="star-btn" [class.on]="p.featured" (click)="toggleFeatured(p, $event)">★</button>
               </td>
+              <td>
+                <button type="button" class="eye-btn" [class.off]="p.hidden" (click)="toggleHidden(p)"
+                  [title]="p.hidden ? 'Đang ẩn — bấm để hiện lại' : 'Đang hiện — bấm để ẩn'">
+                  {{ p.hidden ? '🙈 Ẩn' : '👁 Hiện' }}
+                </button>
+              </td>
               <td>{{ p.createdAt | date: 'dd/MM/yyyy' }}</td>
             </tr>
           } @empty {
-            <tr><td colspan="8" class="empty">Không có sản phẩm nào.</td></tr>
+            <tr><td colspan="9" class="empty">Không có sản phẩm nào.</td></tr>
           }
         </tbody>
       </table>
@@ -102,9 +112,16 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature';
   `,
   styles: `
     .status-btn { background: none; border: none; padding: 0; cursor: pointer; }
+    .eye-btn { border: 1px solid #c3c4c7; background: #fff; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: .8rem;
+      font-weight: 700; color: #2271b1; cursor: pointer; white-space: nowrap; }
+    .eye-btn:hover { border-color: #2271b1; }
+    .eye-btn.off { background: #f0f0f1; color: #646970; border-style: dashed; }
+    tr.is-hidden td:not(:first-child):not(:nth-child(8)) { opacity: .5; }
+    .hid-tag { display: inline-block; margin-left: 6px; font-size: .7rem; font-weight: 800; color: #fff; background: #8c8f94; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
     @media (max-width: 600px) {
       .adm-table th:nth-child(4), .adm-table td:nth-child(4),
-      .adm-table th:nth-child(8), .adm-table td:nth-child(8) { display: none; }
+      .adm-table th:nth-child(9), .adm-table td:nth-child(9) { display: none; }
+      .eye-btn { padding: 3px 7px; font-size: .72rem; }
       .adm-table .empty { display: table-cell; }
     }
   `,
@@ -134,6 +151,7 @@ export class AdminProductsList {
       { key: 'in' as Tab, label: 'Còn hàng', count: all.filter((p) => p.inStock).length },
       { key: 'out' as Tab, label: 'Hết hàng', count: all.filter((p) => !p.inStock).length },
       { key: 'featured' as Tab, label: 'Nổi bật', count: all.filter((p) => p.featured).length },
+      { key: 'hidden' as Tab, label: 'Đang ẩn', count: all.filter((p) => p.hidden).length },
     ];
   });
 
@@ -144,7 +162,7 @@ export class AdminProductsList {
     return [...this.service.products()]
       .filter(
         (p) =>
-          (tab === 'all' || (tab === 'in' && p.inStock) || (tab === 'out' && !p.inStock) || (tab === 'featured' && p.featured)) &&
+          (tab === 'all' || (tab === 'in' && p.inStock) || (tab === 'out' && !p.inStock) || (tab === 'featured' && p.featured) || (tab === 'hidden' && p.hidden)) &&
           (!cat || p.category === cat) &&
           (!term || p.name.toLowerCase().includes(term)),
       )
@@ -191,6 +209,10 @@ export class AdminProductsList {
     this.toast.run(() => this.service.update(p.id, { featured: !p.featured }), p.featured ? 'Đã bỏ nổi bật' : 'Đã đặt nổi bật');
   }
 
+  toggleHidden(p: Product): void {
+    this.toast.run(() => this.service.update(p.id, { hidden: !p.hidden }), p.hidden ? `Đã hiện lại "${p.name}"` : `Đã ẩn "${p.name}" khỏi cửa hàng`);
+  }
+
   remove(p: Product): void {
     if (!confirm(`Xoá sản phẩm "${p.name}"?`)) return;
     this.fadeRows([p.id], () => void this.toast.run(() => this.service.remove(p.id), 'Đã xoá sản phẩm'));
@@ -208,6 +230,8 @@ export class AdminProductsList {
         out: { inStock: false },
         feature: { featured: true },
         unfeature: { featured: false },
+        hide: { hidden: true },
+        show: { hidden: false },
       }[this.bulk];
       this.toast.run(() => ids.forEach((id) => this.service.update(id, patch)), `Đã cập nhật ${ids.length} sản phẩm`);
     }

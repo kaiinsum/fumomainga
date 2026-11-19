@@ -41,12 +41,15 @@ export class ProductService {
   /** Tăng mỗi khi admin thay đổi dữ liệu (không tính lần nạp từ máy chủ) → tự gửi lên máy chủ. */
   readonly changes = signal(0);
 
+  /** Tất cả sản phẩm (kể cả đang ẩn) — dùng cho trang admin. */
   readonly products = this._products.asReadonly();
-  readonly featured = computed(() => this._products().filter((p) => p.featured));
+  /** Sản phẩm khách được thấy (bỏ sản phẩm admin đã ẩn). */
+  readonly shop = computed(() => this._products().filter((p) => !p.hidden));
+  readonly featured = computed(() => this.shop().filter((p) => p.featured));
   readonly allTags = computed(() =>
-    [...new Set(this._products().flatMap((p) => p.tags))].sort((a, b) => a.localeCompare(b, 'vi')),
+    [...new Set(this.shop().flatMap((p) => p.tags))].sort((a, b) => a.localeCompare(b, 'vi')),
   );
-  readonly maxPrice = computed(() => Math.max(0, ...this._products().map((p) => p.price)));
+  readonly maxPrice = computed(() => Math.max(0, ...this.shop().map((p) => p.price)));
 
   getById(id: string): Product | undefined {
     return this._products().find((p) => p.id === id);

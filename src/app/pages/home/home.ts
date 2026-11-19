@@ -141,7 +141,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   readonly stats = [
-    { label: 'Sản phẩm', target: () => this.service.products().length, value: signal(0) },
+    { label: 'Sản phẩm', target: () => this.service.shop().length, value: signal(0) },
     { label: 'Danh mục', target: () => this.categorySvc.categories().length, value: signal(0) },
     { label: 'Khách hàng vui vẻ', target: () => 1200, value: signal(0) },
   ];

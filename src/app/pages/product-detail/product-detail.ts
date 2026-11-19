@@ -53,14 +53,18 @@ export class ProductDetailPage {
     setTimeout(() => this.added.set(false), 1800);
   }
 
-  readonly product = computed(() => this.service.find(this.id()));
+  /** Sản phẩm admin đã ẩn → coi như không tồn tại. */
+  readonly product = computed(() => {
+    const p = this.service.find(this.id());
+    return p && !p.hidden ? p : undefined;
+  });
   readonly activeIndex = signal(0);
   readonly activeImage = computed(() => this.product()?.images[this.activeIndex()] ?? '');
   readonly related = computed(() => {
     const p = this.product();
     if (!p) return [];
     return this.service
-      .products()
+      .shop()
       .filter((x) => x.id !== p.id && (x.category === p.category || x.tags.some((t) => p.tags.includes(t))))
       .slice(0, 4);
   });

@@ -20,7 +20,7 @@ export class CategoryService {
   /** Số sản phẩm theo từng danh mục. */
   readonly counts = computed(() => {
     const map = new Map<string, number>();
-    for (const p of this.products.products()) map.set(p.category, (map.get(p.category) ?? 0) + 1);
+    for (const p of this.products.shop()) map.set(p.category, (map.get(p.category) ?? 0) + 1);
     return map;
   });
 

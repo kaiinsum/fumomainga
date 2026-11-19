@@ -25,6 +25,8 @@ export interface Product {
   variants?: ProductVariant[];
   inStock: boolean;
   featured: boolean;
+  /** Admin ẩn sản phẩm: khách không thấy ở bất kỳ đâu (link trực tiếp cũng không mở). */
+  hidden?: boolean;
   createdAt: number;
   /** Ngày ra mắt (YYYY-MM-DD) cho thông báo "Sản phẩm mới". Trống = ngày đăng. */
   releasedAt?: string;

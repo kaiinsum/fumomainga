@@ -209,7 +209,7 @@ const WIN_INDEX = 54;
   `,
 })
 export class GachaPage {
-  private readonly products = inject(ProductService).products;
+  private readonly products = inject(ProductService).shop;
   private readonly cart = inject(CartService);
 
   readonly winIndex = WIN_INDEX;

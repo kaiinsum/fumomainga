@@ -17,7 +17,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
   imports: [RouterLink, PriceTagComponent],
   template: `
     @let p = product();
-    <a class="card" [routerLink]="['/san-pham', p.slug || p.id]">
+    <a class="card" [class.feat]="p.featured && p.inStock" [class.out]="!p.inStock" [routerLink]="['/san-pham', p.slug || p.id]">
       <div class="thumb">
         <img [src]="p.images[0]" [alt]="p.name" loading="lazy" />
         @if (!p.inStock) {
@@ -25,7 +25,10 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
         } @else if (onSale(p)) {
           <span class="badge sale">Giảm {{ discountPercent(p) }}%</span>
         } @else if (p.featured) {
-          <span class="badge">Nổi bật</span>
+          <span class="badge feat-badge">★ Nổi bật</span>
+        }
+        @if (p.featured && p.inStock && onSale(p)) {
+          <span class="star" title="Nổi bật" aria-label="Nổi bật">★</span>
         }
       </div>
       <div class="info">
@@ -55,6 +58,35 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
       box-shadow: 0 22px 44px -8px color-mix(in srgb, var(--primary) 38%, transparent);
     }
     .card:focus-visible { box-shadow: 0 0 0 3px var(--primary); }
+
+    /* Sản phẩm nổi bật: viền gradient chạy vòng + phát sáng */
+    .card.feat {
+      border: 3px solid transparent;
+      background:
+        linear-gradient(var(--surface), var(--surface)) padding-box,
+        conic-gradient(from var(--feat-ang, 0deg), var(--primary), #ffc94d, #ff7eb3, #8f7bff, var(--primary)) border-box;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent),
+        0 10px 28px -6px color-mix(in srgb, #ffb020 40%, transparent),
+        0 6px 22px color-mix(in srgb, var(--primary) 28%, transparent);
+      animation: feat-spin 5s linear infinite;
+    }
+    .card.feat.lift {
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent),
+        0 24px 48px -8px color-mix(in srgb, #ffb020 45%, transparent);
+    }
+    @keyframes feat-spin { to { --feat-ang: 360deg; } }
+    :host-context(html.lite) .card.feat { animation: none; }
+    .feat-badge { background: linear-gradient(135deg, #ffb020, #ff6fa5); color: #fff; box-shadow: 0 3px 10px rgba(255, 140, 60, .35); }
+    .star { position: absolute; top: 10px; right: 10px; z-index: 1; width: 28px; height: 28px; display: grid; place-items: center;
+      border-radius: 50%; background: linear-gradient(135deg, #ffb020, #ff6fa5); color: #fff; font-size: .9rem;
+      box-shadow: 0 3px 10px rgba(255, 140, 60, .35); }
+
+    /* Hết hàng: ảnh trắng đen + mờ */
+    .card.out .thumb img { filter: grayscale(1) contrast(.9); opacity: .55; transition: filter .45s ease, opacity .45s ease; }
+    .card.out.lift .thumb img { filter: grayscale(.6); opacity: .8; }
+    .card.out .info { opacity: .65; }
+    .card.out { box-shadow: none; }
+    .card.out .badge.out { background: rgba(30, 30, 30, .78); color: #fff; border-color: transparent; }
 
     .thumb { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--surface-2); }
     .thumb img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
@@ -96,6 +128,8 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
     @media (max-width: 600px) {
       .card { border-radius: 14px; }
       .badge { top: 7px; left: 7px; font-size: .62rem; padding: 2px 7px; }
+      .star { top: 6px; right: 6px; width: 22px; height: 22px; font-size: .72rem; }
+      .card.feat { border-width: 2px; }
       .info { padding: 8px 10px 10px; }
       .cat { font-size: .66rem; }
       h3 { font-size: .86rem; line-height: 1.3; margin: 2px 0 6px; }
@@ -106,6 +140,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
 
     @media (prefers-reduced-motion: reduce) {
       .card, .thumb::after, .go, h3 { transition: none; }
+      .card.feat { animation: none; }
     }
   `,
 })

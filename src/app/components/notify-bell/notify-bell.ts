@@ -120,7 +120,7 @@ function readSeen(): string[] {
 export class NotifyBellComponent {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly settings = inject(SettingsService).settings;
-  private readonly products = inject(ProductService).products;
+  private readonly products = inject(ProductService).shop;
 
   readonly open = signal(false);
   private readonly seen = signal<string[]>(readSeen());

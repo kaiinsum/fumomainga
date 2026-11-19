@@ -155,6 +155,13 @@
           <input type="checkbox" formControlName="featured" />
           <span class="track"></span> Nổi bật trên trang chủ
         </label>
+        <label class="switch">
+          <input type="checkbox" formControlName="hidden" />
+          <span class="track"></span> 🙈 Ẩn khỏi cửa hàng
+        </label>
+        @if (form.controls.hidden.value) {
+          <small class="hint hide-hint">Khách sẽ không thấy sản phẩm này ở bất kỳ đâu (kể cả mở link trực tiếp).</small>
+        }
         <div class="notice-fields">
           <label for="releasedAt">🔔 Ngày ra mắt</label>
           <input id="releasedAt" type="date" formControlName="releasedAt" />

@@ -9,7 +9,10 @@ import { ProductService } from '../../services/product.service';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { VndPipe } from '../../shared/vnd.pipe';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
+
+/** Ảnh fumo (nền trong suốt, lấy từ minigame) cho dòng "hết sản phẩm rồi". */
+const END_FUMOS = ['cirno', 'reimu', 'flandre', 'koishi', 'remilia', 'yuyuko', 'yukari', 'meiling', 'teto'].map((n) => `/fumo-ninja/${n}.webp`);
 
 @Component({
   selector: 'app-products',
@@ -40,7 +43,8 @@ export class ProductsPage {
   readonly inStockOnly = signal(false);
   readonly sort = signal<SortKey>('newest');
   readonly view = signal<'grid' | 'list'>('grid');
-  readonly visible = signal(PAGE_SIZE);
+  /** Trang đang xem (bắt đầu từ 1). */
+  readonly page = signal(1);
   readonly filtersOpen = signal(false);
 
   readonly effectivePriceMax = computed(() => this.priceMax() ?? this.maxPrice());
@@ -52,7 +56,7 @@ export class ProductsPage {
     const max = this.effectivePriceMax();
     const stock = this.inStockOnly();
 
-    const list = this.service.products().filter(
+    const list = this.service.shop().filter(
       (p) =>
         (!term || this.normalize(`${p.name} ${p.description} ${p.tags.join(' ')}`).includes(term)) &&
         (!cats.size || cats.has(p.category)) &&
@@ -70,7 +74,28 @@ export class ProductsPage {
     return [...list].sort(sorters[this.sort()]);
   });
 
-  readonly shown = computed(() => this.filtered().slice(0, this.visible()));
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filtered().length / PAGE_SIZE)));
+  /** Trang hợp lệ (bộ lọc làm ít kết quả đi thì không vượt quá trang cuối). */
+  readonly current = computed(() => Math.min(this.page(), this.pageCount()));
+  readonly shown = computed(() => this.filtered().slice((this.current() - 1) * PAGE_SIZE, this.current() * PAGE_SIZE));
+  readonly isLast = computed(() => this.current() === this.pageCount());
+  /** Nút số trang: 1 … 4 5 6 … 12 (0 = dấu …). */
+  readonly pages = computed(() => {
+    const n = this.pageCount();
+    const c = this.current();
+    if (n <= 7) return Array.from({ length: n }, (_, i) => i + 1);
+    const set = [...new Set([1, n, c - 1, c, c + 1, ...(c <= 3 ? [2, 3, 4] : []), ...(c >= n - 2 ? [n - 3, n - 2, n - 1] : [])])]
+      .filter((x) => x >= 1 && x <= n)
+      .sort((a, b) => a - b);
+    const out: number[] = [];
+    set.forEach((x, i) => {
+      if (i && x - set[i - 1] > 1) out.push(0);
+      out.push(x);
+    });
+    return out;
+  });
+  /** Fumo ngẫu nhiên ở cuối danh sách. */
+  readonly endFumo = END_FUMOS[Math.floor(Math.random() * END_FUMOS.length)];
 
   readonly activeCount = computed(
     () =>
@@ -89,8 +114,19 @@ export class ProductsPage {
         const cat = params.get('danhMuc');
         this.selectedCats.set(new Set(cat ? [cat] : []));
         this.search.set(params.get('q') ?? '');
-        this.visible.set(PAGE_SIZE);
+        this.page.set(1);
       });
+
+    // Đổi bộ lọc / sắp xếp → về trang 1.
+    effect(() => {
+      this.search();
+      this.selectedCats();
+      this.selectedTags();
+      this.priceMax();
+      this.inStockOnly();
+      this.sort();
+      untracked(() => this.page.set(1));
+    });
 
     // Kết quả lọc / kiểu hiển thị thay đổi → chỉ tạo hiệu ứng cho thẻ MỚI xuất hiện.
     // (Trước đây cả lưới chạy lại hiệu ứng mỗi lần kéo thanh giá → các thẻ nhảy lên xuống liên tục.)
@@ -133,16 +169,23 @@ export class ProductsPage {
       next.has(value) ? next.delete(value) : next.add(value);
       return next;
     });
-    this.visible.set(PAGE_SIZE);
+    this.page.set(1);
   }
 
   setPrice(value: number): void {
     this.priceMax.set(value >= this.maxPrice() ? null : value);
   }
 
-  loadMore(): void {
-    const from = this.visible();
-    this.visible.update((v) => v + PAGE_SIZE);
+  /** Chuyển trang → cuộn lên đầu danh sách. */
+  goPage(n: number): void {
+    const next = Math.min(Math.max(1, n), this.pageCount());
+    if (next === this.current()) return;
+    this.page.set(next);
+    const top = this.host.querySelector('.content');
+    if (top) {
+      const y = top.getBoundingClientRect().top + scrollY - 90;
+      if (scrollY > y) scrollTo({ top: Math.max(0, y), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
   }
 
   reset(): void {
@@ -152,7 +195,7 @@ export class ProductsPage {
     this.priceMax.set(null);
     this.inStockOnly.set(false);
     this.sort.set('newest');
-    this.visible.set(PAGE_SIZE);
+    this.page.set(1);
   }
 
   toggleFilters(): void {

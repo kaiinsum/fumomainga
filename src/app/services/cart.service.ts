@@ -38,7 +38,7 @@ export class CartService {
     const out: CartItem[] = [];
     for (const l of this._lines()) {
       const product = this.products.getById(l.id);
-      if (!product) continue;
+      if (!product || product.hidden) continue;
       const vs = variantsOf(product);
       let variant: ProductVariant | undefined;
       if (vs.length) {

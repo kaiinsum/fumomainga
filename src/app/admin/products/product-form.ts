@@ -81,6 +81,8 @@ export class AdminProductForm {
     tags: [''],
     inStock: [true],
     featured: [false],
+    /** Ẩn khỏi cửa hàng (khách không thấy). */
+    hidden: [false],
     /** Ngày ra mắt cho thông báo "Sản phẩm mới" (trống = ngày đăng). */
     releasedAt: [''],
     notice: [''],
@@ -133,6 +135,7 @@ export class AdminProductForm {
             tags: p.tags.join(', '),
             inStock: p.inStock,
             featured: p.featured,
+            hidden: !!p.hidden,
             releasedAt: p.releasedAt ?? '',
             notice: p.notice ?? '',
           });

@@ -27,6 +27,8 @@ export interface CatalogProduct {
   variants: { name: string; price: number; salePrice: number | null }[];
   inStock: boolean;
   featured: boolean;
+  /** Admin ẩn khỏi cửa hàng → trợ lý AI không giới thiệu. */
+  hidden?: boolean;
   tags: string[];
   description: string;
 }
@@ -81,6 +83,7 @@ export function parseCatalog(body: Record<string, unknown>): CatalogSnapshot {
         }).filter((v) => v.name),
         inStock: p['inStock'] === true,
         featured: p['featured'] === true,
+        hidden: p['hidden'] === true,
         tags: Array.isArray(p['tags']) ? p['tags'].map((t) => str(t, 30)).filter(Boolean).slice(0, 10) : [],
         description: str(p['description'], 400),
       };
@@ -101,7 +104,7 @@ const vnd = (n: number) => n.toLocaleString('vi-VN') + 'đ';
 
 /** Bảng sản phẩm + số liệu tính sẵn (để AI không phải tự đếm / so sánh, tránh sai). */
 export function catalogToPrompt(c: CatalogSnapshot): string {
-  const ps = c.products;
+  const ps = c.products.filter((p) => !p.hidden);
   if (!ps.length) return 'Website hiện chưa có sản phẩm nào.';
   const inStock = ps.filter((p) => p.inStock);
   const out = ps.filter((p) => !p.inStock);

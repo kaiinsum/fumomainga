@@ -309,6 +309,7 @@ export class AdminAiAssistant {
           variants: (p.variants ?? []).map((v) => ({ name: v.name, price: v.price, salePrice: onSale(v) ? v.salePrice : null })),
           inStock: p.inStock,
           featured: p.featured,
+          hidden: !!p.hidden,
           tags: p.tags,
           description: p.description,
         })),

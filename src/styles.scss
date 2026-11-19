@@ -1,6 +1,13 @@
 @use 'admin';
 @use 'dark';
 
+/* Góc xoay viền gradient của thẻ sản phẩm nổi bật (product-card). */
+@property --feat-ang {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 /* Các ô nhập, nút, select dùng chung font của trang (trình duyệt mặc định không kế thừa). */
 button,
 input,

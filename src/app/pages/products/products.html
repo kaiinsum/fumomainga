@@ -25,7 +25,7 @@
         type="search"
         placeholder="Tên, mô tả, thẻ..."
         [ngModel]="search()"
-        (ngModelChange)="search.set($event); visible.set(8)"
+        (ngModelChange)="search.set($event)"
       />
     </div>
 
@@ -90,12 +90,29 @@
           <app-product-card [product]="p" [attr.data-id]="p.id" />
         }
       </div>
-      @if (shown().length < filtered().length) {
-        <div class="more">
-          <button class="btn ghost" type="button" (click)="loadMore()">
-            Tải thêm ({{ filtered().length - shown().length }})
-          </button>
+      @if (isLast()) {
+        <div class="end card-surface">
+          <img [src]="endFumo" alt="" width="120" height="120" />
+          <div>
+            <p>Hết sản phẩm rồi, quay lại trang đầu nhé!</p>
+            @if (pageCount() > 1) {
+              <button class="btn primary small" type="button" (click)="goPage(1)">⏮ Về trang đầu</button>
+            }
+          </div>
         </div>
+      }
+      @if (pageCount() > 1) {
+        <nav class="pager" aria-label="Phân trang">
+          <button type="button" class="pg arrow" [disabled]="current() === 1" (click)="goPage(current() - 1)" aria-label="Trang trước">‹</button>
+          @for (n of pages(); track $index) {
+            @if (n) {
+              <button type="button" class="pg" [class.on]="n === current()" [attr.aria-current]="n === current() ? 'page' : null" (click)="goPage(n)">{{ n }}</button>
+            } @else {
+              <span class="dots">…</span>
+            }
+          }
+          <button type="button" class="pg arrow" [disabled]="isLast()" (click)="goPage(current() + 1)" aria-label="Trang sau">›</button>
+        </nav>
       }
     } @else {
       <div class="empty card-surface">
