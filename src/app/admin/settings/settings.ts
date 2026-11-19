@@ -180,12 +180,14 @@ export class AdminSettings implements OnDestroy {
   async changePassword(): Promise<void> {
     if (this.newPw.length < 6) return this.toast.err('Mật khẩu mới tối thiểu 6 ký tự.');
     if (this.newPw !== this.newPw2) return this.toast.err('Mật khẩu nhập lại không khớp.');
-    if (await this.auth.changePassword(this.oldPw, this.newPw)) {
-      this.oldPw = this.newPw = this.newPw2 = '';
-      this.toast.ok('Đã đổi mật khẩu');
-    } else {
-      this.toast.err('Mật khẩu hiện tại không đúng.');
-    }
+    const res = await this.auth.changePassword(this.oldPw, this.newPw);
+    if (res.error) return this.toast.err(res.error);
+    this.oldPw = this.newPw = this.newPw2 = '';
+    this.toast.ok(
+      res.localOnly
+        ? 'Đã đổi mật khẩu trên trình duyệt này (chưa kết nối được máy chủ).'
+        : 'Đã đổi mật khẩu cho mọi máy — mật khẩu cũ không đăng nhập được nữa, các máy khác sẽ bị đăng xuất.',
+    );
   }
 
   // ---------- Sao lưu ----------

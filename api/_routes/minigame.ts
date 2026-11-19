@@ -32,13 +32,13 @@ async function codeFor(day: string): Promise<string> {
 const normalize = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const day = today();
   return json({ day, code: await codeFor(day), expiresAt: endOfDay() });
 });
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const day = today();
   await getStore().setJson(saltKey(day), randomBytes(8).toString('hex'));
   return json({ day, code: await codeFor(day), expiresAt: endOfDay() });

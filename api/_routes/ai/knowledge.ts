@@ -6,7 +6,7 @@ import { KNOWLEDGE_KEY, MAX_KNOWLEDGE_CHARS, SavedKnowledge, readKnowledgeFile }
 import { HttpError, getStore, handle, json, readJson, requireAdmin } from '../../_lib/orders';
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const saved = await getStore().getJson<SavedKnowledge>(KNOWLEDGE_KEY);
   return saved
     ? json({ ...saved, source: 'admin' })
@@ -14,7 +14,7 @@ export const GET = handle(async (req) => {
 });
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const body = await readJson(req);
   const text = typeof body['text'] === 'string' ? body['text'].replace(/\r\n/g, '\n').trim() : '';
   if (text.length < 20) throw new HttpError(400, 'Nội dung kiến thức quá ngắn.');
@@ -28,7 +28,7 @@ export const PUT = handle(async (req) => {
 });
 
 export const DELETE = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   await getStore().delKey(KNOWLEDGE_KEY);
   return json({ text: readKnowledgeFile(), fileName: 'kien-thuc.md', updatedAt: null, source: 'default' });
 });

@@ -3,7 +3,7 @@
  * Thư mục bắt đầu bằng "_" nên Vercel không biến file này thành một API riêng.
  */
 import { Redis } from '@upstash/redis';
-import { randomInt, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from 'node:crypto';
 import { ProductRow, supabaseStore } from './supabase-store';
 import { AnalyticsStore, Maintenance, memoryAnalytics, memoryMaintenance } from './analytics';
 
@@ -267,19 +267,88 @@ export async function rateLimit(req: Request, name: string, max: number, windowS
   if (n > max) throw new HttpError(429, 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.');
 }
 
-/** Khoá quản trị: biến môi trường ADMIN_API_KEY, gửi qua header x-admin-key. */
+const safeEq = (x: string, y: string) => {
+  const a = Buffer.from(x);
+  const b = Buffer.from(y);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+
+// ---------- Mật khẩu admin (lưu trên máy chủ) + phiên đăng nhập ----------
+/** Mật khẩu admin đã đổi: lưu băm scrypt trong app_kv. Chưa đổi lần nào → mật khẩu = ADMIN_API_KEY. */
+const PASSWORD_KEY = 'admin:password';
+interface SavedPassword {
+  salt: string;
+  hash: string;
+  /** Tăng mỗi lần đổi mật khẩu → mọi phiên đăng nhập cũ hết hiệu lực. */
+  ver: number;
+  changedAt: number;
+}
+/** Phiên đăng nhập admin hết hạn sau 30 ngày. */
+const TOKEN_TTL = 30 * 86_400_000;
+const TOKEN_PREFIX = 't1.';
+
+const scrypt = (pw: string, salt: string) => scryptSync(pw, salt, 64).toString('hex');
+const sign = (payload: string) => createHmac('sha256', process.env['ADMIN_API_KEY'] ?? '').update(payload).digest('base64url');
+
+async function savedPassword(): Promise<SavedPassword | null> {
+  return getStore().getJson<SavedPassword>(PASSWORD_KEY);
+}
+
+/** Mật khẩu đúng không (theo mật khẩu đã lưu trên máy chủ; chưa đổi lần nào thì so với ADMIN_API_KEY). */
+export async function checkAdminPassword(pw: string): Promise<boolean> {
+  const saved = await savedPassword();
+  if (saved) return safeEq(scrypt(pw, saved.salt), saved.hash);
+  const key = process.env['ADMIN_API_KEY'];
+  return !!key && safeEq(pw, key);
+}
+
+/** Đổi mật khẩu: lưu băm mới, tăng phiên bản (đăng xuất mọi máy khác). Trả về phiên đăng nhập mới. */
+export async function setAdminPassword(pw: string): Promise<string> {
+  const ver = ((await savedPassword())?.ver ?? 0) + 1;
+  const salt = randomBytes(16).toString('hex');
+  await getStore().setJson(PASSWORD_KEY, { salt, hash: scrypt(pw, salt), ver, changedAt: Date.now() } satisfies SavedPassword);
+  return makeAdminToken(ver);
+}
+
+export async function adminTokenForLogin(): Promise<string> {
+  return makeAdminToken((await savedPassword())?.ver ?? 0);
+}
+
+function makeAdminToken(ver: number): string {
+  const payload = `${TOKEN_PREFIX}${Date.now() + TOKEN_TTL}.${ver}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+/** Phiên đăng nhập hợp lệ (đúng chữ ký, chưa hết hạn) → phiên bản mật khẩu lúc đăng nhập; sai → null. */
+function readAdminToken(token: string): number | null {
+  if (!token.startsWith(TOKEN_PREFIX)) return null;
+  const i = token.lastIndexOf('.');
+  const payload = token.slice(0, i);
+  if (!safeEq(token.slice(i + 1), sign(payload))) return null;
+  const [exp, ver] = payload.slice(TOKEN_PREFIX.length).split('.').map(Number);
+  return exp > Date.now() && Number.isInteger(ver) ? ver : null;
+}
+
+/**
+ * Quyền quản trị: header x-admin-key = ADMIN_API_KEY, hoặc phiên đăng nhập có chữ ký hợp lệ
+ * (kiểm tra nhanh, chưa so phiên bản mật khẩu — requireAdmin mới so).
+ */
 export function isAdmin(req: Request): boolean {
   const expected = process.env['ADMIN_API_KEY'];
   const given = req.headers.get('x-admin-key') ?? '';
   if (!expected) return false;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return safeEq(given, expected) || readAdminToken(given) !== null;
 }
 
-export function requireAdmin(req: Request): void {
-  if (!process.env['ADMIN_API_KEY']) throw new HttpError(503, 'Chưa cấu hình ADMIN_API_KEY trên máy chủ.');
-  if (!isAdmin(req)) throw new HttpError(401, 'Mã quản trị không đúng.');
+export async function requireAdmin(req: Request): Promise<void> {
+  const expected = process.env['ADMIN_API_KEY'];
+  if (!expected) throw new HttpError(503, 'Chưa cấu hình ADMIN_API_KEY trên máy chủ.');
+  const given = req.headers.get('x-admin-key') ?? '';
+  if (safeEq(given, expected)) return;
+  const ver = readAdminToken(given);
+  if (ver === null) throw new HttpError(401, 'Mã quản trị không đúng.');
+  // Đã đổi mật khẩu sau lần đăng nhập này → phiên cũ hết hiệu lực.
+  if (ver !== ((await savedPassword())?.ver ?? 0)) throw new HttpError(401, 'Phiên đăng nhập đã hết hiệu lực (mật khẩu đã đổi). Vui lòng đăng nhập lại.');
 }
 
 // ---------- Kiểm tra dữ liệu ----------

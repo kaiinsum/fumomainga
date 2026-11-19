@@ -10,7 +10,7 @@ const idOf = (req: Request) => {
 };
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const body = await readJson(req);
   const status = body['status'];
   if (status !== undefined && status !== 'new' && status !== 'done') throw new HttpError(400, 'Trạng thái không hợp lệ.');
@@ -21,7 +21,7 @@ export const PUT = handle(async (req) => {
 });
 
 export const DELETE = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   await getContacts().remove(idOf(req));
   return json({ ok: true });
 });

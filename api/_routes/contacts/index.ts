@@ -22,6 +22,6 @@ export const POST = handle(async (req) => {
 });
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   return json({ contacts: await getContacts().list() });
 });

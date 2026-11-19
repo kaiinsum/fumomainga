@@ -19,7 +19,8 @@ import {
 } from '../../_lib/orders';
 
 export const POST = handle(async (req) => {
-  const admin = isAdmin(req);
+  // Phiên đăng nhập cũ (mật khẩu đã đổi) không được quyền admin.
+  const admin = isAdmin(req) && (await requireAdmin(req).then(() => true, () => false));
   const body = await readJson(req);
   const items = parseItems(body['items']);
   const customer = parseCustomer(body['customer']);
@@ -53,6 +54,6 @@ export const POST = handle(async (req) => {
 });
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   return json({ orders: await getStore().list() });
 });

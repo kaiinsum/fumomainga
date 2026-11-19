@@ -18,7 +18,7 @@ import {
 const codeOf = (req: Request) => normalizeCode(decodeURIComponent(new URL(req.url).pathname.split('/').pop() ?? ''));
 
 async function load(req: Request) {
-  requireAdmin(req);
+  await requireAdmin(req);
   const order = await getStore().get(codeOf(req));
   if (!order) throw new HttpError(404, 'Không tìm thấy đơn hàng.');
   return order;

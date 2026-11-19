@@ -23,6 +23,7 @@ import * as orderConfirm from './_routes/orders/confirm';
 import * as orders from './_routes/orders/index';
 import * as orderLookup from './_routes/orders/lookup';
 import * as settings from './_routes/settings';
+import * as adminAuth from './_routes/admin-auth';
 
 type Handler = (req: Request) => Promise<Response>;
 type Module = Partial<Record<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', Handler>>;
@@ -31,6 +32,7 @@ type Module = Partial<Record<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', Handle
 const ROUTES: [RegExp, Module][] = [
   [/^chat$/, chat],
   [/^settings$/, settings],
+  [/^admin\/(login|password)$/, adminAuth],
   [/^catalog$/, catalog],
   [/^analytics$/, analytics],
   [/^minigame$/, minigame],

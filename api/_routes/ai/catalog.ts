@@ -11,12 +11,12 @@ const summary = (c: CatalogSnapshot | null) =>
     : { syncedAt: null, products: 0, inStock: 0, news: 0 };
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   return json(summary(await getStore().getJson<CatalogSnapshot>(CATALOG_KEY)));
 });
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const snapshot = parseCatalog(await readJson(req));
   const store = getStore();
   // Ghi bản tóm tắt cho AI và bảng products (Supabase) cùng lúc.

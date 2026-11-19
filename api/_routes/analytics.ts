@@ -59,7 +59,7 @@ function cleanupOptions(req: Request) {
  *  ?days=N (cũ) → chỉ xoá lượt truy cập cũ hơn N ngày.
  */
 export const DELETE = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   if (new URL(req.url).searchParams.has('cleanup')) {
     const m = getStore().maintenance;
     if (!m) throw new HttpError(501, 'Dọn dữ liệu chỉ có khi dùng Supabase.');
@@ -77,7 +77,7 @@ export const DELETE = handle(async (req) => {
 });
 
 export const GET = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   // ?storage=1 → chỉ trả dung lượng (nhẹ, dùng cho chuông thông báo admin).
   if (new URL(req.url).searchParams.has('storage')) return json(await storageInfo());
   // ?cleanup=1&days=N → xem trước sẽ xoá bao nhiêu (chưa xoá gì).

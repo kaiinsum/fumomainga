@@ -43,7 +43,7 @@ export const GET = handle(async (req) => {
 });
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const body = await readJson(req);
   const list = (k: string) => {
     const v = body[k];
@@ -75,7 +75,7 @@ const MAX_IMAGE_BYTES = 3_000_000;
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
 export const POST = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const store = getStore();
   if (!store.uploadImage) throw new HttpError(501, 'Kho ảnh chỉ có khi dùng Supabase.');
   const dataUrl = String((await readJson(req))['dataUrl'] ?? '');

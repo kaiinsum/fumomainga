@@ -27,7 +27,7 @@ export const GET = handle(async () => {
 });
 
 export const PUT = handle(async (req) => {
-  requireAdmin(req);
+  await requireAdmin(req);
   const body = await readJson(req);
   const settings = body['settings'];
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new HttpError(400, 'Cài đặt không hợp lệ.');

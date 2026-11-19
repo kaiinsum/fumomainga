@@ -38,11 +38,6 @@ export class OrderApiService {
     return this.call('POST', '/api/orders', { customer, items, code }, false, { keepalive: true, timeoutMs: 30000 });
   }
 
-  /** Dùng khi admin đăng nhập: nếu chưa có mã quản trị thì thử dùng luôn mật khẩu admin. */
-  rememberLoginKey(password: string): void {
-    if (!this.adminKey()) this.setAdminKey(password);
-  }
-
   lookup(code: string, phone: string): Promise<{ order: PublicOrder }> {
     return this.call('POST', '/api/orders/lookup', { code, phone });
   }
@@ -90,6 +85,11 @@ export class OrderApiService {
       clearTimeout(timer);
     }
     const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
+    if (admin && res.status === 401 && this.adminKey().startsWith('t1.')) {
+      // Phiên đăng nhập cũ (mật khẩu đã đổi ở máy khác / hết hạn) → xoá và đưa về trang đăng nhập.
+      this.setAdminKey('');
+      dispatchEvent(new Event('fumo:admin-expired'));
+    }
     if (!res.ok || !data) {
       const fallback = res.status === 404 && !data ? 'Máy chủ đơn hàng chưa sẵn sàng (chỉ chạy khi deploy trên Vercel).' : 'Có lỗi xảy ra, vui lòng thử lại.';
       throw new ApiError(data?.error || fallback, res.status);
