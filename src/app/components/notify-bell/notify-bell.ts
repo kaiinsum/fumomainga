@@ -5,6 +5,8 @@ import { filter } from 'rxjs';
 import { CustomerNotice, buildNotices, toDay } from '../../models/notifications';
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
+import { SeasonService } from '../../services/season.service';
+import { seasonRange } from '../../models/seasons';
 
 const SEEN_KEY = 'fumo.notify.seen';
 
@@ -48,17 +50,17 @@ function readSeen(): string[] {
             <ul>
               @for (n of items(); track n.key) {
                 <li [class.new]="fresh().has(n.key)">
-                  <a [routerLink]="n.link" (click)="open.set(false)">
+                  <a [routerLink]="n.kind === 'season' ? null : n.link" [attr.tabindex]="n.kind === 'season' ? 0 : null" [attr.role]="n.kind === 'season' ? 'button' : null" (click)="pick(n.kind, $event)">
                     @if (n.image) {
                       <img [src]="n.image" alt="" loading="lazy" />
                     } @else {
-                      <span class="ico" aria-hidden="true">{{ n.kind === 'game' ? '🎮' : '🧸' }}</span>
+                      <span class="ico" aria-hidden="true">{{ n.kind === 'season' ? n.icon : n.kind === 'game' ? '🎮' : '🧸' }}</span>
                     }
                     <span class="txt">
-                      <span class="kind" [class.game]="n.kind === 'game'">{{ n.kind === 'game' ? 'Minigame mới' : 'Sản phẩm mới' }}</span>
+                      <span class="kind" [class.game]="n.kind === 'game'" [class.season]="n.kind === 'season'">{{ n.kind === 'season' ? 'Chủ đề dịp lễ' : n.kind === 'game' ? 'Minigame mới' : 'Sản phẩm mới' }}</span>
                       <b>{{ n.title }}</b>
                       @if (n.content) { <span class="content">{{ n.content }}</span> }
-                      <time [attr.datetime]="iso(n.date)">📅 Ra mắt {{ fmt(n.date) }} · {{ ago(n.date) }}</time>
+                      <time [attr.datetime]="iso(n.date)">📅 {{ n.kind === 'season' ? 'Từ' : 'Ra mắt' }} {{ fmt(n.date) }} · {{ ago(n.date) }}</time>
                     </span>
                   </a>
                 </li>
@@ -104,6 +106,7 @@ function readSeen(): string[] {
     .ico { display: grid; place-items: center; font-size: 1.6rem; }
     .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; line-height: 1.35; }
     .kind { align-self: flex-start; font-size: .68rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--primary-100); color: var(--primary-dark); }
+    .kind.season { background: color-mix(in srgb, #ff7a00 18%, transparent); color: #d35f00; }
     .kind.game { background: color-mix(in srgb, #b06bff 18%, transparent); color: #8a4fd8; }
     b { font-size: .93rem; }
     .content { font-size: .82rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -129,7 +132,27 @@ export class NotifyBellComponent {
 
   readonly enabled = computed(() => this.settings().notifyEnabled !== false);
   readonly days = computed(() => Math.max(1, Math.min(365, Math.round(this.settings().notifyDays || 14))));
-  readonly items = computed<CustomerNotice[]>(() => buildNotices(this.products(), this.settings().minigames, this.days()));
+  private readonly season = inject(SeasonService);
+
+  /** Bấm 1 thông báo: đóng bảng; thông báo chủ đề thì mở lại thiệp chào. */
+  pick(kind: string, e: Event): void {
+    this.open.set(false);
+    if (kind === 'season') {
+      e.preventDefault();
+      this.season.open();
+    }
+  }
+  readonly items = computed<(CustomerNotice & { icon?: string })[]>(() => {
+    const list: (CustomerNotice & { icon?: string })[] = buildNotices(this.products(), this.settings().minigames, this.days());
+    // Chủ đề dịp lễ đang bật → thông báo đầu danh sách, bấm vào mở lại thiệp chào.
+    const s = this.season.active();
+    if (s) {
+      const r = seasonRange(s.id, new Date().getFullYear());
+      const date = Math.min(Date.now(), Math.max(r.start, this.settings().seasonChangedAt || 0) || Date.now());
+      list.unshift({ key: `s:${s.id}:${new Date(r.start).getFullYear()}`, kind: 'season', title: s.title, content: s.message, date, link: '', icon: s.icon });
+    }
+    return list;
+  });
   readonly unread = computed(() => {
     const seen = new Set(this.seen());
     return this.items().filter((n) => !seen.has(n.key)).length;

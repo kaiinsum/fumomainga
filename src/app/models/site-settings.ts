@@ -90,6 +90,10 @@ export interface SiteSettings {
   minigameComingSoon: boolean;
   /** Số trò được chơi miễn phí mỗi ngày (0 = mở tất cả). Có code trong ngày thì mở hết. */
   minigameDailyFree: number;
+  /** Chủ đề dịp lễ: '' = tắt · 'auto' = tự động theo lịch · id chủ đề (xem models/seasons.ts). */
+  seasonTheme?: string;
+  /** Lúc admin bật / đổi chủ đề (cho thông báo khách). */
+  seasonChangedAt?: number;
   /** Admin bấm "Random lại" trong ngày `day` lần thứ n → đổi bộ trò miễn phí hôm nay. */
   minigameRoll?: { day: string; n: number };
   // Thông báo cho khách (chuông trên thanh menu)

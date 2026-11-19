@@ -6,20 +6,25 @@ import { ThemeService } from '../services/theme.service';
 import { OrderOutboxService } from '../services/order-outbox.service';
 import { SkyBackgroundComponent } from '../components/sky-bg/sky-bg';
 import { FloatBubblesComponent } from '../components/float-bubbles/float-bubbles';
+import { SeasonFxComponent } from '../components/season/season-fx';
+import { SeasonPopupComponent } from '../components/season/season-popup';
+import { SeasonService } from '../services/season.service';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
     <app-sky-bg [theme]="theme.theme()" />
+    <app-season-fx />
     <app-header />
     <main class="main">
       <router-outlet />
     </main>
     <app-footer />
     <app-float-bubbles />
+    <app-season-popup />
   `,
   styles: `
     /* isolation: tạo lớp xếp chồng riêng để nền động (z-index -1) nằm trên nền trang nhưng dưới mọi nội dung. */
@@ -35,6 +40,11 @@ export class PublicLayout implements OnDestroy {
   constructor() {
     // Gửi lại các đơn chưa lưu được ở lần trước (mạng yếu / khách chuyển app ngân hàng).
     inject(OrderOutboxService).start();
+    // Có chủ đề dịp lễ → hiện thiệp chào lần đầu vào web (mỗi phiên 1 lần, trừ khi khách chọn không hiện lại).
+    const season = inject(SeasonService);
+    effect(() => {
+      if (season.active()) setTimeout(() => season.maybeShow(), 600);
+    });
     // Thanh cuộn, ô nhập mặc định của trình duyệt theo đúng chế độ sáng/tối.
     // Nền body cũng tối để khi cuộn quá mép trang không lộ nền sáng.
     effect(() => {

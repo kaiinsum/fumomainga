@@ -5,7 +5,7 @@ import { GameSetting, resolveGames } from './minigames';
 export interface CustomerNotice {
   /** Khoá ổn định để nhớ "đã xem" (đổi ngày ra mắt → coi như thông báo mới). */
   key: string;
-  kind: 'product' | 'game';
+  kind: 'product' | 'game' | 'season';
   title: string;
   content: string;
   /** Ngày ra mắt (00:00 giờ máy khách). */
