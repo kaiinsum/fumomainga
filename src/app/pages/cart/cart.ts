@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Customer, EMPTY_CUSTOMER } from '../../models/order';
@@ -62,7 +62,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
               </div>
             }
             <div class="total">Tạm tính <strong>{{ cart.total() | vnd }}</strong></div>
-            <app-upsell />
+            <app-upsell #upsell />
           </section>
 
           <form class="checkout card-surface" (ngSubmit)="submit()">
@@ -248,6 +248,9 @@ const PENDING_KEY = 'fumo.checkout.pending';
 export class CartPage {
   readonly cart = inject(CartService);
   readonly freeShipQty = FREE_SHIP_QTY;
+  private readonly upsell = viewChild<UpsellComponent>('upsell');
+  /** Đã mời mua thêm ở lần bấm thanh toán này chưa (chỉ hỏi 1 lần mỗi lần mở giỏ hàng). */
+  private upsellAsked = false;
   readonly s = inject(SettingsService).settings;
   private readonly api = inject(OrderApiService);
   readonly outbox = inject(OrderOutboxService);
@@ -308,6 +311,12 @@ export class CartPage {
     if (first) {
       this.error.set('Vui lòng kiểm tra lại: ' + first);
       return;
+    }
+    // Lần đầu bấm thanh toán → mời mua thêm ("Rước thêm bé nữa nhé?"); khách chọn "thanh toán luôn" thì đi tiếp.
+    if (!this.upsellAsked) {
+      this.upsellAsked = true;
+      this.upsell()?.openPopup(() => void this.submit());
+      if (this.upsell()) return;
     }
     const code = newOrderCode();
     const total = this.cart.total();

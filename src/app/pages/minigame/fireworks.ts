@@ -1,3 +1,4 @@
+import { perf } from '../../core/perf';
 import { sfx } from '../../shared/sfx';
 
 /**
@@ -26,7 +27,7 @@ interface Spark {
 
 export function startFireworks(canvas: HTMLCanvasElement, durationMs: number, onDone: () => void): () => void {
   const ctx = canvas.getContext('2d')!;
-  const dpr = Math.min(2, devicePixelRatio || 1);
+  const dpr = perf.lite ? 1 : Math.min(2, devicePixelRatio || 1);
   const w = (canvas.width = Math.round(innerWidth * dpr));
   const h = (canvas.height = Math.round(innerHeight * dpr));
   const rockets: Rocket[] = [];
@@ -51,7 +52,8 @@ export function startFireworks(canvas: HTMLCanvasElement, durationMs: number, on
 
   const explode = (r: Rocket) => {
     sfx.play('boom');
-    const n = 70 + Math.floor(Math.random() * 40);
+    // Chế độ nhẹ: ít tia hơn.
+    const n = perf.lite ? 35 + Math.floor(Math.random() * 15) : 70 + Math.floor(Math.random() * 40);
     const power = (2.5 + Math.random() * 2.5) * dpr;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.1;

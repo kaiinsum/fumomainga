@@ -92,16 +92,30 @@ export class ProductsPage {
         this.visible.set(PAGE_SIZE);
       });
 
-    // Mỗi khi kết quả lọc / kiểu hiển thị thay đổi -> chạy hiệu ứng stagger cho lưới.
+    // Kết quả lọc / kiểu hiển thị thay đổi → chỉ tạo hiệu ứng cho thẻ MỚI xuất hiện.
+    // (Trước đây cả lưới chạy lại hiệu ứng mỗi lần kéo thanh giá → các thẻ nhảy lên xuống liên tục.)
+    let lastView = this.view();
     effect(() => {
-      this.filtered();
-      this.view();
-      untracked(() => requestAnimationFrame(() => this.animateGrid()));
+      this.shown();
+      const view = this.view();
+      untracked(() =>
+        requestAnimationFrame(() => {
+          const all = view !== lastView;
+          lastView = view;
+          this.animateGrid(0, all);
+        }),
+      );
     });
   }
 
-  private animateGrid(from = 0): void {
-    const items = Array.from(this.host.querySelectorAll<HTMLElement>('.results > *')).slice(from);
+  /** id các thẻ đang hiện (để biết thẻ nào mới). */
+  private shownIds = new Set<string>();
+
+  private animateGrid(from = 0, all = false): void {
+    const cards = Array.from(this.host.querySelectorAll<HTMLElement>('.results > *'));
+    const ids = new Set(cards.map((c) => c.dataset['id'] ?? ''));
+    const items = cards.slice(from).filter((c) => all || !this.shownIds.has(c.dataset['id'] ?? ''));
+    this.shownIds = ids;
     if (!items.length) return;
     animate(items, {
       opacity: [0, 1],
@@ -129,7 +143,6 @@ export class ProductsPage {
   loadMore(): void {
     const from = this.visible();
     this.visible.update((v) => v + PAGE_SIZE);
-    requestAnimationFrame(() => this.animateGrid(from));
   }
 
   reset(): void {

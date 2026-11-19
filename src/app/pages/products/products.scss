@@ -28,6 +28,12 @@
   display: none;
 }
 
+/* Giữ vùng kết quả đủ cao: lọc ra ít sản phẩm thì trang không bị co lại đột ngột (tránh nhảy vị trí cuộn). */
+.content {
+  min-height: calc(100vh - var(--header-h) - 40px);
+  min-width: 0;
+}
+
 .filters {
   position: sticky;
   top: calc(var(--header-h) + 16px);

@@ -272,3 +272,76 @@ h3 {
     scroll-behavior: auto;
   }
 }
+
+/* =====================================================================
+ * CHẾ ĐỘ NHẸ (html.lite) — điện thoại / máy cấu hình thấp (xem app/core/perf.ts).
+ * Giữ nguyên bố cục & màu sắc, chỉ bỏ các hiệu ứng tốn GPU: làm mờ kính, đốm màu blur chuyển động,
+ * animation trang trí lặp vô hạn. Máy cấu hình bình thường không bị ảnh hưởng.
+ * ===================================================================== */
+html.lite {
+  /* Làm mờ kính (backdrop-filter) rất nặng khi cuộn → nền gần đặc thay thế. */
+  .header {
+    backdrop-filter: none !important;
+    background: color-mix(in srgb, var(--surface) 95%, transparent) !important;
+  }
+
+  [class*='overlay'],
+  .ms-card,
+  .round {
+    backdrop-filter: none !important;
+  }
+
+  /* Trang chủ — nền "Sản phẩm nổi bật": đứng yên, bớt lớp phủ. */
+  .fb-grid,
+  .fb-blob,
+  .fb-spot,
+  .fb-ring,
+  .fb-star {
+    animation: none !important;
+  }
+
+  .fb-blob {
+    filter: blur(28px) !important;
+  }
+
+  .fb-spot,
+  .fb-ring {
+    display: none !important;
+  }
+
+  .fb-star {
+    opacity: 0.45 !important;
+  }
+
+  .featured .grid > * {
+    filter: none !important;
+  }
+
+  /* Trang Giới thiệu — tiêu đề neon, đèn rọi, nhân vật: giữ dáng, bỏ chuyển động lặp. */
+  .nt-main,
+  .nt-shop,
+  .beam,
+  .halo,
+  .spark,
+  .figure img {
+    animation-iteration-count: 1 !important;
+  }
+
+  .beam {
+    filter: none !important;
+  }
+
+  .figure img {
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.15)) !important;
+  }
+
+  /* Trang Mini game — minh hoạ trên thẻ game đứng yên cho tới khi rê chuột / chạm. */
+  .art * {
+    animation-play-state: paused !important;
+  }
+
+  .card:hover .art *,
+  .card:focus-visible .art * {
+    animation-play-state: running !important;
+  }
+}

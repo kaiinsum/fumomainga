@@ -87,7 +87,7 @@
     @if (shown().length) {
       <div class="results" [class.list]="view() === 'list'">
         @for (p of shown(); track p.id) {
-          <app-product-card [product]="p" />
+          <app-product-card [product]="p" [attr.data-id]="p.id" />
         }
       </div>
       @if (shown().length < filtered().length) {

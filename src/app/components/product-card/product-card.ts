@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AnimatableObject, AnimatableProperty, animate, createAnimatable, spring } from 'animejs';
 import { Product, discountPercent, onSale } from '../../models/product';
 import { PriceTagComponent } from '../../shared/price-tag';
+import { perf } from '../../core/perf';
 
 /** Độ nghiêng tối đa (độ) và độ lệch ảnh (px) khi rê chuột. */
 const TILT = 9;
@@ -154,7 +155,7 @@ export class ProductCardComponent implements AfterViewInit, OnDestroy {
     // Lắng nghe trực tiếp (không qua Angular) để không chạy change detection mỗi lần di chuột.
     on('pointerenter', (e) => e.pointerType === 'mouse' && this.enter());
     on('pointerleave', (e) => e.pointerType === 'mouse' && this.leave());
-    if (canHover && !reduced) on('pointermove', (e) => this.move(e));
+    if (canHover && !reduced && !perf.lite) on('pointermove', (e) => this.move(e));
     this.card.addEventListener('focus', this.focusIn);
     this.card.addEventListener('blur', this.focusOut);
     this.cleanup.push(() => {

@@ -298,6 +298,8 @@ export class GachaPage {
     this.result.set(null);
     this.strip.set([]);
     this.pendingWinner = null;
+    // Bóc túi khác → cuộn lên đầu trang gacha để thấy túi đang quay.
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     this.open();
   }
 

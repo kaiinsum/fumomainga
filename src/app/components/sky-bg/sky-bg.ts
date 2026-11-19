@@ -1,5 +1,6 @@
 import { Component, DestroyRef, ElementRef, NgZone, afterNextRender, effect, inject, input } from '@angular/core';
 import { Theme } from '../../services/theme.service';
+import { perf } from '../../core/perf';
 
 interface Bubble {
   x: number;
@@ -154,6 +155,7 @@ export class SkyBackgroundComponent {
       removeEventListener('resize', this.onResize);
       removeEventListener('scroll', this.onScroll);
       removeEventListener('wheel', this.onWheel);
+      this.offPerf?.();
     });
   }
 
@@ -164,7 +166,23 @@ export class SkyBackgroundComponent {
     this.resize();
     this.build();
     let last = performance.now();
+    // Đổi sang chế độ nhẹ giữa chừng (đo thấy máy giật) → dựng lại cảnh với ít hạt hơn.
+    this.offPerf = perf.onChange(() => {
+      this.resize();
+      this.build();
+    });
     const loop = (now: number) => {
+      // Tab bị ẩn: không vẽ gì (tiết kiệm pin / CPU).
+      if (document.hidden) {
+        last = now;
+        this.raf = requestAnimationFrame(loop);
+        return;
+      }
+      // Chế độ nhẹ: ~30 khung hình/giây.
+      if (perf.lite && now - last < 30) {
+        this.raf = requestAnimationFrame(loop);
+        return;
+      }
       const dt = Math.min(50, now - last) / 16.67; // 1 = một khung hình ở 60fps
       last = now;
       this.time += dt;
@@ -202,8 +220,11 @@ export class SkyBackgroundComponent {
     }
   };
 
+  private offPerf?: () => void;
+
   private resize(): void {
-    this.dpr = Math.min(2, devicePixelRatio || 1);
+    // Chế độ nhẹ: vẽ ở độ phân giải thường (màn hình Retina vẽ gấp 4 lần số điểm ảnh).
+    this.dpr = perf.lite ? 1 : Math.min(2, devicePixelRatio || 1);
     this.w = innerWidth;
     this.h = innerHeight;
     this.canvas.width = Math.round(this.w * this.dpr);
@@ -218,13 +239,14 @@ export class SkyBackgroundComponent {
     requestAnimationFrame(() => (this.primary = this.readPrimary()));
     this.sparks = [];
     this.loadSprites();
-    const area = (this.w * this.h) / (1280 * 800);
+    // Chế độ nhẹ: một nửa số bong bóng / sao.
+    const area = ((this.w * this.h) / (1280 * 800)) * (perf.lite ? 0.5 : 1);
     if (this.theme() === 'light') {
-      const n = Math.round(Math.max(10, Math.min(34, 24 * area)));
+      const n = Math.round(Math.max(perf.lite ? 6 : 10, Math.min(34, 24 * area)));
       this.bubbles = Array.from({ length: n }, () => this.newBubble(rand(0, this.h + 100)));
     } else {
       const skyH = this.h * 2;
-      const n = Math.round(Math.max(80, Math.min(320, 220 * area)));
+      const n = Math.round(Math.max(perf.lite ? 50 : 80, Math.min(320, 220 * area)));
       this.stars = Array.from({ length: n }, () => ({
         x: rand(0, this.w),
         y: rand(0, skyH),

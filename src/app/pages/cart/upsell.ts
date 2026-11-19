@@ -60,6 +60,9 @@ export const FREE_SHIP_QTY = 2;
                 </button>
               }
             </div>
+            @if (checkout) {
+              <button type="button" class="skip" (click)="proceed()">Không, thanh toán luôn →</button>
+            }
           } @else {
             <div class="pick-head">
               <button type="button" class="back" (click)="view.set('choose')">← Quay lại</button>
@@ -91,7 +94,11 @@ export const FREE_SHIP_QTY = 2;
             </ul>
             <div class="pick-foot">
               <a routerLink="/san-pham" (click)="close()">Xem tất cả sản phẩm →</a>
-              <button type="button" class="btn primary small" (click)="close()">Xong, về giỏ hàng</button>
+              @if (checkout) {
+                <button type="button" class="btn primary small" (click)="proceed()">Thanh toán →</button>
+              } @else {
+                <button type="button" class="btn primary small" (click)="close()">Xong, về giỏ hàng</button>
+              }
             </div>
           }
         </div>
@@ -120,7 +127,7 @@ export const FREE_SHIP_QTY = 2;
     }
     .freeship > span:first-child { font-size: 1.5rem; }
     .freeship > span:nth-child(2) { flex: 1; min-width: 180px; }
-    .freeship small { color: var(--muted); }
+    .freeship small { display: block; margin-top: 2px; color: var(--muted); }
     .more { border: 1px solid var(--border); background: var(--surface); color: var(--primary-dark); font: inherit; font-weight: 700; font-size: .85rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
     .more:hover { border-color: var(--primary); }
 
@@ -140,6 +147,8 @@ export const FREE_SHIP_QTY = 2;
     .choice.luck { background: linear-gradient(160deg, color-mix(in srgb, #b06bff 14%, var(--surface)), color-mix(in srgb, #ff8fab 14%, var(--surface))); }
     .choice.luck:hover:not(:disabled) { border-color: #b06bff; box-shadow: 0 12px 26px rgba(176,107,255,.3); }
     .choice:disabled { opacity: .55; cursor: not-allowed; }
+    .skip { margin-top: 14px; border: 0; background: none; font: inherit; font-weight: 700; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+    .skip:hover { color: var(--primary-dark); }
     .c-ico { font-size: 2.4rem; }
     .choice:hover:not(:disabled) .c-ico { animation: beg .8s ease; }
     .choice b { font-size: 1.05rem; }
@@ -206,13 +215,26 @@ export class UpsellComponent {
       .slice(0, 12);
   });
 
-  openPopup(): void {
+  /** Đặt khi popup mở từ nút thanh toán: bấm "thanh toán luôn" sẽ gọi hàm này. */
+  checkout: (() => void) | null = null;
+
+  /** Mở popup. Truyền `onCheckout` khi mở từ nút thanh toán (hiện thêm lựa chọn "thanh toán luôn"). */
+  openPopup(onCheckout?: () => void): void {
+    this.checkout = onCheckout ?? null;
     this.view.set('choose');
     this.open.set(true);
   }
 
   close(): void {
     this.open.set(false);
+    this.checkout = null;
+  }
+
+  /** Bỏ qua mua thêm → tiếp tục thanh toán. */
+  proceed(): void {
+    const go = this.checkout;
+    this.close();
+    go?.();
   }
 
   tryLuck(path: string): void {

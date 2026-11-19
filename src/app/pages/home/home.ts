@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, computed, effect, inje
 import { ThemeService } from '../../services/theme.service';
 import { RouterLink } from '@angular/router';
 import { JSAnimation, animate, createTimeline, stagger } from 'animejs';
+import { perf } from '../../core/perf';
 import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { newsPath } from '../../models/news';
@@ -170,8 +171,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
         ease: 'outElastic(1, .6)',
       }, '-=900');
 
-    // Bong bóng trôi lơ lửng (lặp vô hạn).
-    q('.bubble').forEach((el, i) => {
+    // Bong bóng trôi lơ lửng (lặp vô hạn) — chế độ nhẹ thì để đứng yên.
+    if (!perf.lite) q('.bubble').forEach((el, i) => {
       this.loops.push(
         animate(el, {
           translateY: [0, -30 - i * 6],
@@ -189,6 +190,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   /** Mascot lơ lửng — chạy lại mỗi khi quay về giao diện sáng (mascot được render lại). */
   private startMascotFloat(): void {
     this.mascotLoop?.pause();
+    if (perf.lite) return;
     const emoji = this.host.querySelector('.mascot-emoji');
     if (!emoji) return;
     this.mascotLoop = animate(emoji, {
