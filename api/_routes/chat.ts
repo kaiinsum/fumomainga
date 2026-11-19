@@ -8,12 +8,12 @@
  * Có cả hai thì ưu tiên Gemini.
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { ApiError as GeminiApiError, GoogleGenAI } from '@google/genai';
+import { ApiError as GeminiApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { catalogToPrompt, loadAiContext } from '../_lib/ai';
 
 const MODEL = 'claude-opus-5-5';
 /** Gemini (gói miễn phí của Google AI Studio). Đổi model bằng biến GEMINI_MODEL nếu cần. */
-const GEMINI_MODEL = process.env['GEMINI_MODEL'] || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env['GEMINI_MODEL'] || 'gemini-3.8-flash';
 const MAX_TURNS = 12; // chỉ gửi 12 tin gần nhất
 const MAX_CHARS = 1000; // mỗi tin của khách tối đa 1000 ký tự
 
@@ -100,10 +100,13 @@ async function askGemini(apiKey: string, system: string, messages: ChatTurn[]): 
       contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
       config: {
         systemInstruction: system,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
         temperature: 0.5,
-        // Bản Flash: tắt "suy nghĩ" cho nhanh và tiết kiệm hạn mức miễn phí.
-        ...(GEMINI_MODEL.includes('flash') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        // Bản Flash: bớt "suy nghĩ" cho nhanh và tiết kiệm hạn mức miễn phí.
+        // Gemini 2.5 tắt hẳn bằng thinkingBudget 0; Gemini 3 trở lên dùng mức suy nghĩ thấp.
+        ...(GEMINI_MODEL.includes('flash')
+          ? { thinkingConfig: GEMINI_MODEL.includes('2.5') ? { thinkingBudget: 0 } : { thinkingLevel: ThinkingLevel.LOW } }
+          : {}),
       },
     });
     const reply = (res.text ?? '').trim();
