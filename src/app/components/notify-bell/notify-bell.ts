@@ -7,6 +7,7 @@ import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { SeasonService } from '../../services/season.service';
 import { activeAnnouncements } from '../announce-toast/announce-toast';
+import { announceModalOpen } from '../announce-toast/announce-modal';
 
 const SEEN_KEY = 'fumo.notify.seen';
 
@@ -50,7 +51,7 @@ function readSeen(): string[] {
             <ul>
               @for (n of items(); track n.key) {
                 <li [class.new]="fresh().has(n.key)">
-                  <a [routerLink]="n.kind === 'season' || !n.link || n.link.startsWith('http') ? null : n.link" [attr.tabindex]="n.kind === 'season' ? 0 : null" [attr.role]="n.kind === 'season' ? 'button' : null" (click)="pick(n.kind, $event, n.link)">
+                  <a [routerLink]="n.kind === 'season' || !n.link || n.link.startsWith('http') || n.link.startsWith('modal:') ? null : n.link" [attr.tabindex]="n.kind === 'season' ? 0 : null" [attr.role]="n.kind === 'season' ? 'button' : null" (click)="pick(n.kind, $event, n.link)">
                     @if (n.image) {
                       <img [src]="n.image" alt="" loading="lazy" />
                     } @else {
@@ -141,6 +142,9 @@ export class NotifyBellComponent {
     if (kind === 'season') {
       e.preventDefault();
       this.season.open();
+    } else if (link.startsWith('modal:')) {
+      e.preventDefault();
+      announceModalOpen.set(link.slice(6));
     } else if (link.startsWith('http')) {
       e.preventDefault();
       window.open(link, '_blank', 'noopener');
@@ -157,7 +161,9 @@ export class NotifyBellComponent {
     }
     // Thông báo hệ thống admin gửi — luôn ở đầu.
     const sys = activeAnnouncements(this.settings().announcements).map((a) => ({
-      key: `a:${a.id}`, kind: 'system' as const, title: a.title, content: a.content, date: a.createdAt, link: a.link ?? '', icon: a.icon,
+      key: `a:${a.id}`, kind: 'system' as const, title: a.title, content: a.content, date: a.createdAt, icon: a.icon,
+      // Thông báo dạng modal: bấm trong chuông → mở lại modal.
+      link: a.type === 'modal' ? `modal:${a.id}` : (a.link ?? ''),
     }));
     list.unshift(...sys);
     return list;

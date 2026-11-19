@@ -157,6 +157,9 @@ export class JpTypingGame {
 
   score = 0;
   lives = START_LIVES;
+  /** Thông số admin chỉnh (xem models/game-params.ts). */
+  params: Record<string, number> = {};
+  private p = (k: string, d: number) => this.params[k] ?? d;
   private combo = 0;
   private bestCombo = 0;
   private killed = 0;
@@ -208,7 +211,7 @@ export class JpTypingGame {
     this.flash = 0;
     this.shake = 0;
     this.score = 0;
-    this.lives = START_LIVES;
+    this.lives = Math.round(this.p('lives', START_LIVES));
     this.combo = 0;
     this.bestCombo = 0;
     this.killed = 0;
@@ -339,7 +342,7 @@ export class JpTypingGame {
     for (const f of this.fallers) {
       f.t += dt;
       if (f.dying) continue;
-      f.y += cfg.fall * speedMul * f.sp * slow * dt;
+      f.y += cfg.fall * (this.p('fall', 100) / 100) * speedMul * f.sp * slow * dt;
       f.x += Math.sin(f.t * 1.3 + f.id) * 12 * dt;
       if (f.y >= GROUND - 8) this.groundHit(f);
     }
@@ -537,7 +540,7 @@ export class JpTypingGame {
 
   private bossAttack(b: Boss, speedMul: number): void {
     const cfg = LEVELS[this.level];
-    const v = cfg.fall * 1.25 * Math.sqrt(speedMul);
+    const v = cfg.fall * (this.p('fall', 100) / 100) * 1.25 * Math.sqrt(speedMul);
     const mk = (vx: number, vy: number, dx = 0) =>
       this.shots.push({ id: ++this.seq, word: this.pickWord(9), kind: b.def.atk, x: b.x + dx, y: b.y + 50, vx, vy, t: 0, back: false, color: b.def.color });
     if (b.def.atk === 'icicle') mk(0, v * 1.1);
@@ -983,7 +986,7 @@ export class JpTypingGame {
     g.textAlign = 'right';
     g.font = `22px ${TEXT_FONT}`;
     let hearts = '';
-    for (let i = 0; i < MAX_LIVES; i++) hearts += i < this.lives ? '♥' : i < START_LIVES ? '♡' : '';
+    for (let i = 0; i < MAX_LIVES; i++) hearts += i < this.lives ? '♥' : i < this.p('lives', START_LIVES) ? '♡' : '';
     g.strokeText(hearts, -14, 12);
     g.fillStyle = '#ff5d8f';
     g.fillText(hearts, -14, 12);

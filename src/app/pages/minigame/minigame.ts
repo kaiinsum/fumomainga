@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gameParams } from '../../models/game-params';
+import { SettingsService } from '../../services/settings.service';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -181,6 +183,8 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
 export class MiniGamePage implements AfterViewInit {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   private readonly zone = inject(NgZone);
+  /** Thông số game admin chỉnh. */
+  private readonly gp = inject(SettingsService).settings;
   private game?: DanmakuGame;
 
   readonly w = W;
@@ -219,6 +223,7 @@ export class MiniGamePage implements AfterViewInit {
   start(diff: Difficulty): void {
     this.lastDiff = diff;
     this.result.set(null);
+    if (this.game) this.game.params = gameParams(this.gp().gameParams, 'shmup');
     this.zone.runOutsideAngular(() => this.game?.start(diff));
     this.canvas().nativeElement.focus();
   }

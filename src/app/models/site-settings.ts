@@ -51,6 +51,13 @@ export interface Announcement {
   createdAt: number;
   /** Hết hạn (ms) — trống = không hết hạn. */
   expiresAt?: number;
+  /** 'toast' (mặc định): khung nhỏ góc màn hình · 'modal': hộp lớn giữa màn hình như thiệp dịp lễ. */
+  type?: 'toast' | 'modal';
+  /** Modal: ảnh minh hoạ (link). */
+  image?: string;
+  /** Modal: nút chính / nút phụ (nút phụ không bắt buộc). Không có link = nút đóng. */
+  btn1?: { text: string; link?: string };
+  btn2?: { text: string; link?: string };
 }
 
 export interface SiteSettings {
@@ -111,6 +118,8 @@ export interface SiteSettings {
   seasonOverrides?: import('./seasons').SeasonOverrides;
   /** Dịp lễ admin tự thêm. */
   customSeasons?: import('./seasons').CustomSeason[];
+  /** Thông số riêng từng minigame (xem models/game-params.ts). */
+  gameParams?: Record<string, Record<string, number>>;
   /** Thông báo hệ thống admin gửi cho khách (hiện trong chuông + thông báo nổi). */
   announcements?: Announcement[];
   /** Admin bấm "Random lại" trong ngày `day` lần thứ n → đổi bộ trò miễn phí hôm nay. */

@@ -82,8 +82,9 @@ async function route(req: Request): Promise<Response> {
   const admin = isAdmin(req);
   if (!admin) {
     const ip = clientIp(req);
-    // IP bị admin chặn → từ chối mọi API (trừ khi đang đăng nhập admin hợp lệ).
-    const blocked = await isBlocked(ip);
+    // IP bị admin chặn → từ chối mọi API, TRỪ trang đăng nhập admin (vẫn giới hạn 10 lần / 10 phút):
+    // lỡ IP của chính admin bị chặn (dùng chung mạng 4G với kẻ spam...) vẫn đăng nhập được để bỏ chặn.
+    const blocked = path === 'admin/login' ? null : await isBlocked(ip);
     if (blocked) return reply({ error: 'Địa chỉ IP của bạn đã bị chặn. Nếu nhầm lẫn, vui lòng liên hệ shop qua Facebook / điện thoại.' }, 403);
     const all = memLimit(`all:${ip}`, GLOBAL_RULE.max, GLOBAL_RULE.windowMs);
     if (!all.ok) {

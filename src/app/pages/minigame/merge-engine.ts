@@ -83,6 +83,9 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class MergeGame {
   state: MergeState = 'title';
+  /** Thông số admin chỉnh (xem models/game-params.ts). */
+  params: Record<string, number> = {};
+  private p = (k: string, d: number) => this.params[k] ?? d;
   private readonly ctx: CanvasRenderingContext2D;
   private readonly imgs: HTMLImageElement[] = [];
   private sprites: (HTMLCanvasElement | null)[] = [];
@@ -254,7 +257,7 @@ export class MergeGame {
     this.bodies.push(this.body(this.current, this.clampAim(this.current), DROP_Y, 0, 0));
     this.current = this.next;
     this.next = this.randTier();
-    this.cooldown = 0.55;
+    this.cooldown = this.p('cooldown', 0.55);
     sfx.play('whoosh');
     void t;
   }
@@ -269,7 +272,7 @@ export class MergeGame {
     const h = dt / SUBSTEPS;
     for (let s = 0; s < SUBSTEPS; s++) {
       for (const b of this.bodies) {
-        b.vy += GRAVITY * h;
+        b.vy += GRAVITY * (this.p('gravity', 100) / 100) * h;
         b.x += b.vx * h;
         b.y += b.vy * h;
         b.rot += (b.vx / b.r) * h * 0.6;
@@ -353,9 +356,10 @@ export class MergeGame {
     this.merges++;
     if (t === TIERS.length - 1) {
       // 2 bé lớn nhất → nổ tung, ăn thưởng.
-      this.score += TOP_BONUS;
+      const bonus = this.p('topBonus', TOP_BONUS);
+      this.score += bonus;
       this.burst(x, y, TIERS[t].color, 40);
-      this.pops.push({ x, y, text: `🎉 +${TOP_BONUS}`, life: 1.4, color: '#ffd23f' });
+      this.pops.push({ x, y, text: `🎉 +${bonus}`, life: 1.4, color: '#ffd23f' });
       this.shake = 14;
       sfx.play('win');
       return;
@@ -412,7 +416,7 @@ export class MergeGame {
       // Vượt vạch đỏ (bé đã thả hơn 1,2 giây) quá 2 giây → thua.
       const over = this.bodies.some((b) => this.time - b.born > 1.2 && b.y - b.r < DANGER_Y && Math.abs(b.vy) < 400);
       this.dangerT = over ? this.dangerT + dt : Math.max(0, this.dangerT - dt * 2);
-      if (this.dangerT > 2) this.gameOver();
+      if (this.dangerT > this.p('dangerTime', 2)) this.gameOver();
     }
     for (const b of this.bodies) b.pop = Math.max(0, b.pop - dt * 4);
     for (const p of this.parts) {
@@ -527,7 +531,7 @@ export class MergeGame {
       x.textAlign = 'center';
       x.fillStyle = '#e0233f';
       x.font = `900 20px ${FONT}`;
-      x.fillText(`⚠ Sắp tràn hộp! ${Math.max(0, 2 - this.dangerT).toFixed(1)}s`, W / 2, DANGER_Y - 18);
+      x.fillText(`⚠ Sắp tràn hộp! ${Math.max(0, this.p('dangerTime', 2) - this.dangerT).toFixed(1)}s`, W / 2, DANGER_Y - 18);
     }
   }
 

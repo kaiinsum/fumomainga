@@ -110,6 +110,9 @@ export class NinjaGame {
   private last = 0;
   private acc = 0;
 
+  /** Thông số admin chỉnh (xem models/game-params.ts). */
+  params: Record<string, number> = {};
+  private p = (k: string, d: number) => this.params[k] ?? d;
   private items: Item[] = [];
   private halves: Half[] = [];
   private particles: Particle[] = [];
@@ -212,7 +215,7 @@ export class NinjaGame {
 
   private update(): void {
     const playing = this.state === 'playing' && !this.overAt;
-    const speed = playing ? 1 + Math.min(0.9, (this.level - 1) * 0.07) : 1;
+    const speed = (playing ? 1 + Math.min(0.9, (this.level - 1) * 0.07) : 1) * (playing ? this.p('speed', 100) / 100 : 1);
     const g = 0.32 * speed * speed;
 
     if (playing) {
@@ -267,7 +270,7 @@ export class NinjaGame {
   private spawnWave(): void {
     const lv = this.level;
     const count = Math.min(7, 1 + Math.floor(Math.random() * Math.min(lv + 1, 5)) + (lv >= 6 ? 1 : 0));
-    const bombChance = Math.min(0.32, 0.06 + lv * 0.03);
+    const bombChance = Math.min(0.6, Math.min(0.32, 0.06 + lv * 0.03) * (this.p('bombRate', 100) / 100));
     for (let i = 0; i < count; i++) {
       const isBomb = Math.random() < bombChance && i < 2;
       this.toss(isBomb ? BOMB : KINDS[Math.floor(Math.random() * KINDS.length)], i * 6);
@@ -290,7 +293,7 @@ export class NinjaGame {
     this.misses++;
     this.popups.push({ x: Math.max(30, Math.min(W - 30, it.x)), y: H - 30, text: '✕', color: '#ff4d6d', life: 0 });
     sfx.play('miss');
-    if (this.misses >= MAX_MISSES) this.gameOver('miss');
+    if (this.misses >= this.p('lives', MAX_MISSES)) this.gameOver('miss');
   }
 
   private gameOver(reason: NinjaResult['reason']): void {
@@ -566,7 +569,7 @@ export class NinjaGame {
     g.scale(u, u);
     g.textAlign = 'right';
     g.font = `900 30px ${GAME_FONT}`;
-    for (let i = 0; i < MAX_MISSES; i++) {
+    for (let i = 0; i < this.p('lives', MAX_MISSES); i++) {
       g.fillStyle = i < this.misses ? '#ff4d6d' : 'rgba(255,255,255,.25)';
       g.fillText('✕', -18 - i * 34, 14);
     }

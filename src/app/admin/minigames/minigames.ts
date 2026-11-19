@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ALWAYS_FREE_ID, DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, dailyFreeIds, dailyPool, normalizeGameSettings, resolveGames, rollFor, vnToday } from '../../models/minigames';
 import { OrderApiService } from '../../services/order-api.service';
+import { GAME_PARAMS } from '../../models/game-params';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 
@@ -170,6 +171,59 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
                 </div>
               </div>
             </div>
+
+            @if (paramDefs[g.id] || lbGames.includes(g.id)) {
+              <div class="extra-grid">
+                <!-- Thông số riêng của game -->
+                @if (paramDefs[g.id]; as defs) {
+                  <div class="xbox">
+                    <b class="xtitle">⚙️ Thông số trò chơi</b>
+                    @for (d of defs; track d.key) {
+                      <div class="param">
+                        <label [for]="'p-' + g.id + d.key">{{ d.label }}</label>
+                        <div class="p-row">
+                          <input type="range" [min]="d.min" [max]="d.max" [step]="d.step" [value]="paramVal(g.id, d.key, d.def)"
+                            (input)="setParam(g.id, d.key, +$any($event.target).value)" [attr.aria-label]="d.label" />
+                          <input class="p-num" [id]="'p-' + g.id + d.key" type="number" [min]="d.min" [max]="d.max" [step]="d.step"
+                            [value]="paramVal(g.id, d.key, d.def)" (change)="setParam(g.id, d.key, +$any($event.target).value)" />
+                          <span class="unit">{{ d.unit }}</span>
+                        </div>
+                        <small class="hint">Mặc định {{ d.def }}{{ d.unit ? ' ' + d.unit : '' }}{{ d.hint ? ' · ' + d.hint : '' }}</small>
+                      </div>
+                    }
+                    <button type="button" class="link" (click)="resetParams(g.id)">↺ Về thông số mặc định</button>
+                    <small class="hint">Bấm <b>Lưu thay đổi</b> ở đầu trang để áp dụng cho khách (ván mới).</small>
+                  </div>
+                }
+                <!-- Bảng xếp hạng: xoá dòng / xoá cả bảng -->
+                @if (lbGames.includes(g.id)) {
+                  <div class="xbox">
+                    <b class="xtitle">🏆 Bảng xếp hạng top 5
+                      <button type="button" class="mini-btn" (click)="loadLb(g.id)" title="Tải lại">↻</button>
+                    </b>
+                    @if (lb()[g.id]; as rows) {
+                      @if (!rows.length) {
+                        <p class="hint">Chưa có ai trên bảng.</p>
+                      } @else {
+                        <ol class="lb">
+                          @for (e of rows; track e.at; let k = $index) {
+                            <li>
+                              <span class="rk">{{ k + 1 }}</span>
+                              <span class="nm" [title]="e.name">{{ e.name }}</span>
+                              <b>{{ e.score.toLocaleString('vi-VN') }}</b>
+                              <button type="button" class="del-x" (click)="removeLb(g.id, e)" [disabled]="lbBusy()" title="Xoá dòng này">🗑</button>
+                            </li>
+                          }
+                        </ol>
+                        <button type="button" class="link danger" (click)="clearLb(g.id)" [disabled]="lbBusy()">🗑 Xoá toàn bộ bảng xếp hạng</button>
+                      }
+                    } @else {
+                      <p class="hint">{{ lbErr()[g.id] || 'Đang tải…' }}</p>
+                    }
+                  </div>
+                }
+              </div>
+            }
           }
         </li>
       }
@@ -250,6 +304,24 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     .code-err { color: #d63638; }
     .free-chk { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 700; color: #1f6f37; white-space: nowrap; cursor: pointer; }
     @media (max-width: 860px) { .daily-body { grid-template-columns: 1fr; } }
+    .extra-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 16px 16px; }
+    .xbox { display: grid; gap: 10px; align-content: start; padding: 12px; border-radius: 10px; background: #f6f7f7; border: 1px solid #dcdcde; }
+    .xtitle { display: flex; align-items: center; gap: 6px; font-size: .92rem; }
+    .param label { font-weight: 700; font-size: .84rem; }
+    .p-row { display: flex; align-items: center; gap: 8px; }
+    .p-row input[type=range] { flex: 1; min-width: 0; accent-color: #2271b1; }
+    .p-num { width: 76px; font: inherit; padding: 5px 8px; border: 1px solid #c3c4c7; border-radius: 6px; }
+    .unit { font-size: .78rem; color: #646970; min-width: 36px; }
+    .lb { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    .lb li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 30px; align-items: center; gap: 8px; padding: 5px 8px; background: #fff; border-radius: 8px; border: 1px solid #e5e5e5; font-size: .86rem; }
+    .lb .rk { font-weight: 900; color: #646970; text-align: center; }
+    .lb .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .lb b { font-variant-numeric: tabular-nums; }
+    .del-x { border: 0; background: none; cursor: pointer; font-size: .95rem; border-radius: 6px; padding: 2px; }
+    .del-x:hover { background: #fcf0f1; }
+    .mini-btn { margin-left: auto; border: 1px solid #c3c4c7; background: #fff; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; }
+    .link.danger { color: #b32d2e; }
+    @media (max-width: 860px) { .extra-grid { grid-template-columns: 1fr; } }
     .notice-box { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: #f6f7f7; border: 1px dashed #c3c4c7; }
     .notice-box input[type='date'] { max-width: 200px; }
     @media (max-width: 860px) { .edit { grid-template-columns: 1fr; } }
@@ -322,7 +394,8 @@ export class AdminMinigames {
       JSON.stringify(this.draft()) !== JSON.stringify(normalizeGameSettings(s.minigames)) ||
       this.comingSoon() !== (s.minigameComingSoon ?? true) ||
       this.dailyFree() !== (s.minigameDailyFree ?? 0) ||
-      JSON.stringify(this.roll() ?? null) !== JSON.stringify(s.minigameRoll ?? null)
+      JSON.stringify(this.roll() ?? null) !== JSON.stringify(s.minigameRoll ?? null) ||
+      JSON.stringify(this.params()) !== JSON.stringify(s.gameParams ?? {})
     );
   });
 
@@ -374,6 +447,78 @@ export class AdminMinigames {
 
   toggleOpen(id: string): void {
     this.openId.update((cur) => (cur === id ? null : id));
+    if (this.openId() === id && this.lbGames.includes(id)) void this.loadLb(id);
+  }
+
+  // ---------- Thông số từng game ----------
+  readonly paramDefs = GAME_PARAMS;
+  readonly params = signal<Record<string, Record<string, number>>>(structuredClone(this.settingsSvc.settings().gameParams ?? {}));
+
+  paramVal(game: string, key: string, def: number): number {
+    return this.params()[game]?.[key] ?? def;
+  }
+
+  setParam(game: string, key: string, value: number): void {
+    const d = GAME_PARAMS[game]?.find((x) => x.key === key);
+    if (!d || !Number.isFinite(value)) return;
+    const v = Math.min(d.max, Math.max(d.min, value));
+    this.params.update((all) => {
+      const g = { ...(all[game] ?? {}) };
+      // Bằng mặc định → bỏ khỏi cài đặt cho gọn.
+      if (v === d.def) delete g[key];
+      else g[key] = v;
+      const next = { ...all, [game]: g };
+      if (!Object.keys(g).length) delete next[game];
+      return next;
+    });
+  }
+
+  resetParams(game: string): void {
+    this.params.update((all) => {
+      const next = { ...all };
+      delete next[game];
+      return next;
+    });
+  }
+
+  // ---------- Bảng xếp hạng ----------
+  readonly lbGames = ['merge', 'crush', 'jp-type', 'ninja', 'shmup'];
+  readonly lb = signal<Record<string, { name: string; score: number; at: number }[]>>({});
+  readonly lbErr = signal<Record<string, string>>({});
+  readonly lbBusy = signal(false);
+
+  async loadLb(game: string): Promise<void> {
+    try {
+      const res = await fetch(`/api/leaderboard?game=${encodeURIComponent(game)}&fresh=${Date.now()}`);
+      const data = (await res.json().catch(() => null)) as { top?: { name: string; score: number; at: number }[] } | null;
+      if (!res.ok || !data?.top) throw new Error();
+      this.lb.update((m) => ({ ...m, [game]: data.top! }));
+    } catch {
+      this.lbErr.update((m) => ({ ...m, [game]: 'Bảng xếp hạng chỉ có khi web chạy trên máy chủ.' }));
+    }
+  }
+
+  async removeLb(game: string, e: { name: string; score: number; at: number }): Promise<void> {
+    if (!confirm(`Xoá "${e.name}" (${e.score.toLocaleString('vi-VN')} điểm) khỏi bảng xếp hạng?`)) return;
+    await this.lbDelete(game, `&at=${e.at}`, `Đã xoá ${e.name} khỏi bảng xếp hạng`);
+  }
+
+  async clearLb(game: string): Promise<void> {
+    if (!confirm(`Xoá TOÀN BỘ bảng xếp hạng của "${this.defOf(game).title}"? Không khôi phục được.`)) return;
+    await this.lbDelete(game, '&all=1', 'Đã xoá toàn bộ bảng xếp hạng');
+  }
+
+  private async lbDelete(game: string, q: string, msg: string): Promise<void> {
+    this.lbBusy.set(true);
+    try {
+      const r = await this.api.call<{ top: { name: string; score: number; at: number }[] }>('DELETE', `/api/leaderboard?game=${encodeURIComponent(game)}${q}`, undefined, true);
+      this.lb.update((m) => ({ ...m, [game]: r.top }));
+      this.toast.ok(msg);
+    } catch (e) {
+      this.toast.err(e instanceof Error ? e.message : 'Không xoá được.');
+    } finally {
+      this.lbBusy.set(false);
+    }
   }
 
   move(i: number, dir: -1 | 1): void {
@@ -427,6 +572,7 @@ export class AdminMinigames {
     this.comingSoon.set(s.minigameComingSoon ?? true);
     this.dailyFree.set(s.minigameDailyFree ?? 0);
     this.roll.set(s.minigameRoll);
+    this.params.set(structuredClone(s.gameParams ?? {}));
   }
 
   async save(): Promise<void> {
@@ -440,7 +586,7 @@ export class AdminMinigames {
       notice: (g.notice ?? '').trim(),
     }));
     const daily = Math.max(0, Math.round(this.dailyFree() || 0));
-    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll() };
+    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll(), gameParams: this.params() };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;
     this.draft.set(normalizeGameSettings(clean));
     this.saving.set(true);

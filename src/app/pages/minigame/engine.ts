@@ -146,6 +146,8 @@ export class DanmakuGame {
   private bossDefeatedAt = 0;
   private score = 0;
   private hi = 0;
+  /** Thông số admin chỉnh (xem models/game-params.ts). */
+  params: Record<string, number> = {};
   private lives = 3;
   private bombs = 3;
   private graze = 0;
@@ -200,8 +202,8 @@ export class DanmakuGame {
     this.boss = null;
     this.bossDefeatedAt = 0;
     this.score = 0;
-    this.lives = this.pick(5, 3, 2);
-    this.bombs = this.pick(3, 3, 2);
+    this.lives = this.pick(5, 3, 2) + Math.round(this.params['lives'] ?? 0);
+    this.bombs = this.pick(3, 3, 2) + Math.round(this.params['bombs'] ?? 0);
     this.graze = 0;
     this.bombFx = 0;
     this.script = this.buildScript();

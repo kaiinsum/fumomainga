@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gameParams } from '../../models/game-params';
+import { SettingsService } from '../../services/settings.service';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -96,6 +98,8 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
 export class FumoNinjaPage implements AfterViewInit {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   private readonly zone = inject(NgZone);
+  /** Thông số game admin chỉnh. */
+  private readonly gp = inject(SettingsService).settings;
   private game?: NinjaGame;
 
   readonly ratio = `${W} / ${H}`;
@@ -124,6 +128,7 @@ export class FumoNinjaPage implements AfterViewInit {
 
   start(): void {
     this.result.set(null);
+    if (this.game) this.game.params = gameParams(this.gp().gameParams, 'ninja');
     this.zone.runOutsideAngular(() => this.game?.start());
   }
 }

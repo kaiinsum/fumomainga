@@ -295,8 +295,13 @@ export async function readJson(req: Request): Promise<Record<string, unknown>> {
   throw new HttpError(400, 'Dữ liệu gửi lên không hợp lệ.');
 }
 
+/**
+ * IP thật của khách. Trên Vercel: 'x-vercel-forwarded-for' / 'x-real-ip' do Vercel tự gắn và ghi đè,
+ * khách không giả được. 'x-forwarded-for' chỉ dùng khi chạy thử ở máy.
+ */
 export function clientIp(req: Request): string {
-  return (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  const first = (h: string) => (req.headers.get(h) ?? '').split(',')[0].trim();
+  return first('x-vercel-forwarded-for') || first('x-real-ip') || first('x-forwarded-for') || 'unknown';
 }
 
 export async function rateLimit(req: Request, name: string, max: number, windowSec: number): Promise<void> {

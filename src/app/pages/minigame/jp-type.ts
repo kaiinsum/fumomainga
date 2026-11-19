@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, WritableSignal, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gameParams } from '../../models/game-params';
+import { SettingsService } from '../../services/settings.service';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -260,6 +262,8 @@ export class JpTypePage implements AfterViewInit {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('inp');
   private readonly zone = inject(NgZone);
+  /** Thông số game admin chỉnh. */
+  private readonly gp = inject(SettingsService).settings;
   private game?: JpTypingGame;
   private typoTimer?: ReturnType<typeof setTimeout>;
   private hitTimer?: ReturnType<typeof setTimeout>;
@@ -312,6 +316,7 @@ export class JpTypePage implements AfterViewInit {
     this.lastLevel = level;
     this.result.set(null);
     this.input().nativeElement.value = '';
+    if (this.game) this.game.params = gameParams(this.gp().gameParams, 'jp-type');
     this.zone.runOutsideAngular(() => this.game?.start(level));
     // Ô gõ chỉ bật sau khi trạng thái đổi sang "playing".
     setTimeout(() => this.focusInput());

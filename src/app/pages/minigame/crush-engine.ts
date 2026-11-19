@@ -216,6 +216,9 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class CrushGame {
   state: CrushState = 'title';
+  /** Thông số admin chỉnh (xem models/game-params.ts). */
+  params: Record<string, number> = {};
+  private p = (k: string, d: number) => this.params[k] ?? d;
   private readonly ctx: CanvasRenderingContext2D;
   private readonly imgs = new Map<string, HTMLImageElement>();
   /** Ảnh ô fumo dựng sẵn (nền + glow + ảnh) — vẽ nhanh mỗi khung hình. */
@@ -307,7 +310,7 @@ export class CrushGame {
     this.score = 0;
     this.kills = 0;
     this.bosses = 0;
-    this.hp = this.maxHp = 100;
+    this.hp = this.maxHp = this.p('shrineHp', 100);
     this.chapter = 0;
     this.loop = 0;
     this.enemies = [];
@@ -720,7 +723,7 @@ export class CrushGame {
   }
 
   private dmgMul(): number {
-    return (1 + 0.3 * (this.combo - 1)) * (1 + 0.35 * this.loop);
+    return (1 + 0.3 * (this.combo - 1)) * (1 + 0.35 * this.loop) * (this.p('damage', 100) / 100);
   }
 
   private attack(n: number, color: string, sx: number, sy: number): void {
@@ -859,7 +862,7 @@ export class CrushGame {
       y: GROUND_Y - (pick === 'fairy' || pick === 'bat' ? rand(50, 110) : 0),
       hp: base.hp * lvl,
       max: base.hp * lvl,
-      speed: base.sp * (1 + 0.08 * this.chapter + 0.12 * this.loop) * rand(0.85, 1.15),
+      speed: base.sp * (1 + 0.08 * this.chapter + 0.12 * this.loop) * rand(0.85, 1.15) * (this.p('enemySpeed', 100) / 100),
       atk: 4 + this.chapter * 1.5 + this.loop * 3,
       cd: 0,
       r: base.r,
@@ -870,7 +873,7 @@ export class CrushGame {
 
   private spawnBoss(): void {
     const ch = CHAPTERS[this.chapter];
-    const hp = 420 * (1 + this.chapter * 0.7) * (1 + this.loop * 0.9);
+    const hp = 420 * (1 + this.chapter * 0.7) * (1 + this.loop * 0.9) * (this.p('bossHp', 100) / 100);
     this.enemies.push({
       kind: 'boss',
       x: W + 90,

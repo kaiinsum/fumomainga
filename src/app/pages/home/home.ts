@@ -49,9 +49,36 @@ export class HomePage implements AfterViewInit, OnDestroy {
   );
   readonly featured = computed(() => this.service.featured().slice(0, 4));
   private readonly categorySvc = inject(CategoryService);
-  readonly categories = computed(() =>
-    this.categorySvc.categories().map((c) => ({ ...c, count: this.categorySvc.counts().get(c.name) ?? 0 })),
-  );
+  readonly categories = computed(() => {
+    const shop = this.service.shop();
+    return this.categorySvc.categories().map((c) => ({
+      ...c,
+      count: this.categorySvc.counts().get(c.name) ?? 0,
+      // 3 sản phẩm tiêu biểu: nổi bật → còn hàng → mới nhất.
+      picks: shop
+        .filter((p) => p.category === c.name && p.images[0])
+        .sort((a, b) => +b.featured - +a.featured || +b.inStock - +a.inStock || b.createdAt - a.createdAt)
+        .slice(0, 3),
+    }));
+  });
+
+  // ---------- Rê chuột vào danh mục: xem nhanh sản phẩm ----------
+  readonly peekCat = signal<string | null>(null);
+  readonly peekIdx = signal(0);
+  private peekTimer?: ReturnType<typeof setInterval>;
+
+  startPeek(name: string): void {
+    if (this.peekCat() === name) return;
+    clearInterval(this.peekTimer);
+    this.peekCat.set(name);
+    this.peekIdx.set(0);
+    this.peekTimer = setInterval(() => this.peekIdx.update((i) => i + 1), 1600);
+  }
+
+  stopPeek(): void {
+    clearInterval(this.peekTimer);
+    this.peekCat.set(null);
+  }
 
   readonly isDark = computed(() => this.theme.theme() === 'dark');
   private mascotLoop?: JSAnimation;
@@ -234,6 +261,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.peekTimer);
     this.loops.forEach((a) => a.pause());
     this.mascotLoop?.pause();
     clearInterval(this.mascotTimer);

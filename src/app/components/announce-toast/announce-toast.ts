@@ -56,7 +56,9 @@ export class AnnounceToastComponent {
   private readonly settings = inject(SettingsService).settings;
   private readonly router = inject(Router);
   private readonly seen = signal(readSeen());
-  readonly current = computed(() => activeAnnouncements(this.settings().announcements).find((a) => !this.seen().includes(a.id)));
+  readonly current = computed(() =>
+    activeAnnouncements(this.settings().announcements).find((a) => a.type !== 'modal' && !this.seen().includes(a.id)),
+  );
 
   dismiss(a: Announcement): void {
     const next = [...this.seen(), a.id].slice(-50);

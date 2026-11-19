@@ -42,6 +42,14 @@ export interface Suspect {
 
 export const validIp = (ip: string) => /^[0-9a-fA-F:.]{3,45}$/.test(ip) && /[.:]/.test(ip);
 
+/** IP an toàn (biến môi trường ADMIN_SAFE_IPS, cách nhau bằng dấu phẩy) — không bao giờ bị chặn. */
+export function safeIps(): Set<string> {
+  return new Set((process.env['ADMIN_SAFE_IPS'] ?? '').split(',').map((s) => s.trim()).filter(Boolean));
+}
+
+/** Công tắc khẩn cấp: BLOCKLIST_OFF=1 trên Vercel → tạm bỏ qua toàn bộ danh sách chặn. */
+const blocklistOff = () => /^(1|true|yes|on)$/i.test(process.env['BLOCKLIST_OFF'] ?? '');
+
 let cache: { at: number; map: Map<string, BlockedIp> } | null = null;
 
 /** Danh sách IP đang bị chặn (đã bỏ mục hết hạn). */
@@ -55,7 +63,7 @@ export async function blocklist(fresh = false): Promise<BlockedIp[]> {
 
 /** IP có đang bị chặn không (bộ nhớ đệm 20 giây; lỗi database thì không chặn). */
 export async function isBlocked(ip: string): Promise<BlockedIp | null> {
-  if (!ip || ip === 'unknown') return null;
+  if (!ip || ip === 'unknown' || blocklistOff() || safeIps().has(ip)) return null;
   const now = Date.now();
   if (!cache || now - cache.at > 20_000) {
     try {
@@ -75,6 +83,12 @@ export async function blockIp(ip: string, reason: string, hours: number): Promis
   await getStore().setJson(BLOCK_KEY, next);
   cache = { at: Date.now(), map: new Map(next.map((b) => [b.ip, b])) };
   return next;
+}
+
+export async function unblockAll(): Promise<BlockedIp[]> {
+  await getStore().setJson(BLOCK_KEY, []);
+  cache = { at: Date.now(), map: new Map() };
+  return [];
 }
 
 export async function unblockIp(ip: string): Promise<BlockedIp[]> {

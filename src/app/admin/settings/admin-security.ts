@@ -87,9 +87,13 @@ interface Suspect {
         </form>
         @if (tried() && !validIp(ip)) { <p class="field-err">IP không hợp lệ (IPv4 dạng 1.2.3.4 hoặc IPv6).</p> }
         @if (myIp()) { <p class="hint">IP của bạn hiện tại: <code>{{ myIp() }}</code> (không thể tự chặn).</p> }
+        @if (safe().length) { <p class="hint">🛡 IP an toàn (không bao giờ bị chặn): @for (s of safe(); track s) { <code>{{ s }}</code> } </p> }
+        @if (off()) { <p class="err">⚠ Đang bật BLOCKLIST_OFF trên Vercel — danh sách chặn tạm thời KHÔNG có hiệu lực.</p> }
         <p class="hint">IP bị chặn không đặt hàng, gửi liên hệ, chat AI hay đăng nhập admin được. Muốn chặn cả việc xem trang web, thêm IP vào <b>Vercel → Firewall</b>.</p>
 
-        <h3>Đang chặn ({{ blocked().length }})</h3>
+        <h3>Đang chặn ({{ blocked().length }})
+          @if (blocked().length > 1) { <button type="button" class="unblock all" (click)="unblockAll()" [disabled]="busy()">Bỏ chặn tất cả</button> }
+        </h3>
         @if (!blocked().length) {
           <p class="hint">Chưa chặn IP nào.</p>
         } @else {
@@ -131,6 +135,7 @@ interface Suspect {
     .blocked li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid #dcdcde; border-radius: 8px; }
     .reason { flex: 1; min-width: 140px; }
     .blocked small { color: #646970; }
+    h3 .all { margin-left: 8px; font-weight: 700; }
     .unblock { border: 1px solid #c3c4c7; background: #fff; border-radius: 6px; padding: 4px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
     @media (max-width: 600px) { .adm-table th:nth-child(4), .adm-table td:nth-child(4) { display: none; } }
   `,
@@ -141,6 +146,8 @@ export class AdminSecurityComponent {
   readonly suspects = signal<Suspect[]>([]);
   readonly blocked = signal<BlockedIp[]>([]);
   readonly myIp = signal('');
+  readonly safe = signal<string[]>([]);
+  readonly off = signal(false);
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
@@ -161,7 +168,9 @@ export class AdminSecurityComponent {
     this.loading.set(true);
     this.error.set('');
     try {
-      const r = await this.api.call<{ blocked: BlockedIp[]; suspects: Suspect[]; myIp: string }>('GET', '/api/admin/security', undefined, true);
+      const r = await this.api.call<{ blocked: BlockedIp[]; suspects: Suspect[]; myIp: string; safeIps?: string[]; blocklistOff?: boolean }>('GET', '/api/admin/security', undefined, true);
+      this.safe.set(r.safeIps ?? []);
+      this.off.set(!!r.blocklistOff);
       this.blocked.set(r.blocked);
       this.suspects.set(r.suspects);
       this.myIp.set(r.myIp === 'unknown' ? '' : r.myIp);
@@ -186,6 +195,11 @@ export class AdminSecurityComponent {
   async block(ip: string, reason: string, hours: number): Promise<boolean> {
     if (!confirm(`Chặn IP ${ip}${hours ? ` trong ${hours >= 24 ? hours / 24 + ' ngày' : hours + ' giờ'}` : ' vĩnh viễn'}?`)) return false;
     return this.act({ action: 'block', ip, reason, hours }, `🚫 Đã chặn ${ip}`);
+  }
+
+  unblockAll(): void {
+    if (!confirm(`Bỏ chặn tất cả ${this.blocked().length} IP?`)) return;
+    void this.act({ action: 'unblock-all' }, 'Đã bỏ chặn tất cả IP');
   }
 
   unblock(ip: string): void {

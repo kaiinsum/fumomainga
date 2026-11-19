@@ -80,15 +80,40 @@
       @for (c of categories(); track c.name; let i = $index) {
         <a
           class="cat card-surface"
+          [class.peeking]="peekCat() === c.name && c.picks.length > 0"
           routerLink="/san-pham"
           [queryParams]="{ danhMuc: c.name }"
           appAnimateIn="zoom"
           [animDelay]="i * 90"
-          (mouseenter)="bounce($event)"
+          (mouseenter)="bounce($event); startPeek(c.name)"
+          (mouseleave)="stopPeek()"
+          (focus)="startPeek(c.name)"
+          (blur)="stopPeek()"
         >
-          <span class="icon">{{ c.icon }}</span>
-          <strong>{{ c.name }}</strong>
-          <small>{{ c.count }} sản phẩm</small>
+          <span class="cat-main">
+            <span class="icon">{{ c.icon }}</span>
+            <strong>{{ c.name }}</strong>
+            <small>{{ c.count }} sản phẩm</small>
+          </span>
+          @if (c.picks.length) {
+            <!-- Rê chuột: vài sản phẩm tiêu biểu của danh mục, chuyển qua lại mờ dần -->
+            <span class="peek" aria-hidden="true">
+              @for (p of c.picks; track p.id; let j = $index) {
+                <span class="peek-item" [class.on]="peekCat() === c.name && peekIdx() % c.picks.length === j">
+                  <img [src]="p.images[0]" alt="" loading="lazy" />
+                  <span class="peek-info">
+                    <span class="peek-cat">{{ c.icon }} {{ c.name }}</span>
+                    <b>{{ p.name }}</b>
+                  </span>
+                </span>
+              }
+              @if (c.picks.length > 1) {
+                <span class="peek-dots">
+                  @for (p of c.picks; track p.id; let j = $index) { <i [class.on]="peekIdx() % c.picks.length === j"></i> }
+                </span>
+              }
+            </span>
+          }
         </a>
       }
     </div>

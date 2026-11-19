@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gameParams } from '../../models/game-params';
+import { SettingsService } from '../../services/settings.service';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -115,6 +117,8 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
 export class FumoCrushPage implements AfterViewInit {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   private readonly zone = inject(NgZone);
+  /** Thông số game admin chỉnh. */
+  private readonly gp = inject(SettingsService).settings;
   private game?: CrushGame;
 
   readonly ratio = `${W} / ${H}`;
@@ -145,6 +149,7 @@ export class FumoCrushPage implements AfterViewInit {
     this.result.set(null);
     // Đưa cả khung chơi vào giữa màn hình.
     this.canvas().nativeElement.parentElement?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (this.game) this.game.params = gameParams(this.gp().gameParams, 'crush');
     this.zone.runOutsideAngular(() => this.game?.start());
   }
 }

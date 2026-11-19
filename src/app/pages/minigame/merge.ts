@@ -1,5 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { gameParams } from '../../models/game-params';
+import { SettingsService } from '../../services/settings.service';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -97,6 +99,8 @@ import { H, MergeGame, MergeResult, MergeState, TIERS, W } from './merge-engine'
 export class MergeFumoPage implements AfterViewInit {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   private readonly zone = inject(NgZone);
+  /** Thông số game admin chỉnh. */
+  private readonly gp = inject(SettingsService).settings;
   private game?: MergeGame;
 
   readonly ratio = `${W} / ${H}`;
@@ -125,6 +129,7 @@ export class MergeFumoPage implements AfterViewInit {
   start(): void {
     this.result.set(null);
     this.canvas().nativeElement.parentElement?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (this.game) this.game.params = gameParams(this.gp().gameParams, 'merge');
     this.zone.runOutsideAngular(() => this.game?.start());
   }
 }
