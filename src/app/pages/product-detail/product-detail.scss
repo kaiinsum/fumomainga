@@ -266,3 +266,19 @@
     }
   }
 }
+
+/* Biến thể có ảnh riêng: hiện ảnh nhỏ trong nút chọn phân loại */
+.variants button.has-img {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.v-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}

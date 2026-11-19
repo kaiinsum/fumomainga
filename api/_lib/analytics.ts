@@ -43,6 +43,20 @@ export interface AnalyticsStore {
   storage(): Promise<StorageInfo>;
   /** Xoá lượt xem cũ hơn mốc thời gian → số dòng đã xoá. */
   purge(before: number): Promise<number>;
+  /** Cộng lượt chơi / số giây chơi minigame của 1 khách trong 1 ngày (YYYY-MM-DD giờ VN). */
+  game(day: string, game: string, vid: string, plays: number, seconds: number): Promise<void>;
+  /** Thống kê từng minigame từ ngày `fromDay` (null = mọi lúc). */
+  games(fromDay: string | null): Promise<GameStat[]>;
+  /** Lượt xem các trang bắt đầu bằng `prefix` (vd. '/san-pham/'). */
+  pages(from: number | null, prefix: string, limit: number): Promise<{ path: string; views: number; visitors: number }[]>;
+}
+
+export interface GameStat {
+  /** Đường dẫn game sau /mini-game/ (vd. 'fumo-ninja'). */
+  game: string;
+  players: number;
+  plays: number;
+  seconds: number;
 }
 
 export interface StorageInfo {
@@ -74,6 +88,7 @@ export function truncVN(t: number, unit: TimeUnit): number {
 export function memoryAnalytics(): AnalyticsStore {
   const views: PageView[] = [];
   const online = new Map<string, OnlineVisitor>();
+  const gameRows = new Map<string, { day: string; game: string; vid: string; plays: number; seconds: number }>();
   const since = (from: number | null) => views.filter((v) => from === null || v.at >= from);
   return {
     async view(v) {
@@ -115,6 +130,36 @@ export function memoryAnalytics(): AnalyticsStore {
     },
     async latest(limit) {
       return [...views].sort((a, b) => b.at - a.at).slice(0, limit);
+    },
+    async game(day, game, vid, plays, seconds) {
+      const k = `${day}|${game}|${vid}`;
+      const r = gameRows.get(k) ?? { day, game, vid, plays: 0, seconds: 0 };
+      r.plays += plays;
+      r.seconds += seconds;
+      gameRows.set(k, r);
+    },
+    async games(fromDay) {
+      const map = new Map<string, { vids: Set<string>; plays: number; seconds: number }>();
+      for (const r of gameRows.values()) {
+        if (fromDay && r.day < fromDay) continue;
+        const b = map.get(r.game) ?? { vids: new Set<string>(), plays: 0, seconds: 0 };
+        b.vids.add(r.vid);
+        b.plays += r.plays;
+        b.seconds += r.seconds;
+        map.set(r.game, b);
+      }
+      return [...map.entries()].map(([game, b]) => ({ game, players: b.vids.size, plays: b.plays, seconds: b.seconds })).sort((a, b) => b.seconds - a.seconds);
+    },
+    async pages(from, prefix, limit) {
+      const map = new Map<string, { views: number; vids: Set<string> }>();
+      for (const v of since(from)) {
+        if (!v.path.startsWith(prefix)) continue;
+        const b = map.get(v.path) ?? { views: 0, vids: new Set<string>() };
+        b.views++;
+        b.vids.add(v.vid);
+        map.set(v.path, b);
+      }
+      return [...map.entries()].map(([path, b]) => ({ path, views: b.views, visitors: b.vids.size })).sort((a, b) => b.views - a.views).slice(0, limit);
     },
     async cleanup(before) {
       for (const [k, o] of online) if (o.lastSeen < before) online.delete(k);

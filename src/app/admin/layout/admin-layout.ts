@@ -62,10 +62,12 @@ export class AdminLayout implements AfterViewInit {
       ],
     },
     { icon: '📈', label: 'Thống kê', path: '/admin/thong-ke' },
+    { icon: '📊', label: 'Phân tích', path: '/admin/phan-tich' },
     { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang', badge: 'orders' },
     { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
     { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
     { icon: '🎉', label: 'Chủ đề dịp lễ', path: '/admin/chu-de' },
+    { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },
     { icon: '🤖', label: 'Trợ lý AI', path: '/admin/tro-ly-ai' },
     { icon: '⚙️', label: 'Cài đặt', path: '/admin/cai-dat' },
   ];

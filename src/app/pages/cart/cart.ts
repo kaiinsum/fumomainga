@@ -46,7 +46,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
           <section class="lines card-surface">
             @for (l of cart.items(); track l.key) {
               <div class="line">
-                <img [src]="l.product.images[0]" [alt]="l.product.name" />
+                <img [src]="l.variant?.image || l.product.images[0]" [alt]="l.product.name" />
                 <div class="line-info">
                   <a [routerLink]="['/san-pham', l.product.slug || l.product.id]">{{ l.product.name }}</a>
                   @if (l.variant) { <span class="variant">{{ l.variant.name }}</span> }

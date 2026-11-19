@@ -176,6 +176,17 @@ interface GameCard {
           }
         }
         <span class="shine"></span>
+        @if (g.lockMsg || g.needCode) {
+          <!-- Dây xích chéo + ổ khoá -->
+          <span class="chains" [class.code]="g.needCode" aria-hidden="true">
+            <i class="chain c1"></i><i class="chain c2"></i>
+            <svg class="padlock" viewBox="0 0 48 56">
+              <path d="M12 24V16a12 12 0 0 1 24 0v8" fill="none" stroke="#cfd6de" stroke-width="6" stroke-linecap="round"/>
+              <rect x="4" y="22" width="40" height="32" rx="7" fill="#f4b400" stroke="#9a6b00" stroke-width="2.5"/>
+              <circle cx="24" cy="35" r="4.5" fill="#5a3d00"/><rect x="22" y="37" width="4" height="9" rx="2" fill="#5a3d00"/>
+            </svg>
+          </span>
+        }
       </div>
       <div class="info">
         <span class="tag">{{ g.tag }}</span>
@@ -264,6 +275,17 @@ interface GameCard {
       border-color: var(--primary); box-shadow: 0 24px 50px -10px color-mix(in srgb, var(--primary) 55%, transparent), 0 0 0 4px var(--primary-100);
     }
     .card.locked { cursor: not-allowed; }
+    /* Dây xích bắt chéo + ổ khoá trên ảnh thẻ game bị khoá / cần code */
+    .chains { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; display: grid; place-items: center; }
+    .chain { position: absolute; left: -15%; width: 130%; height: 20px; top: calc(50% - 10px);
+      background: radial-gradient(ellipse 11px 7px at center, transparent 52%, #c3cbd3 54%, #8a939c 72%, transparent 74%) 0 0 / 24px 20px repeat-x;
+      filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .55)); }
+    .chain.c1 { transform: rotate(28deg); }
+    .chain.c2 { transform: rotate(-28deg); }
+    .padlock { position: relative; width: 58px; height: 68px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); }
+    .chains.code .padlock rect { fill: #ffd23f; }
+    a.card:hover .chains, a.card:focus-visible .chains, button.card:hover .chains { opacity: .9; }
+    @media (max-width: 600px) { .padlock { width: 46px; height: 54px; } .chain { height: 16px; background-size: 20px 16px; } }
     button.card { font: inherit; color: inherit; text-align: left; padding: 0; cursor: pointer; }
     .need-code .play { background: #ffb800; color: #3a2a00; }
     .free-badge { align-self: flex-start; font-size: .72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, #3fcf74 20%, var(--surface)); color: #1f8a4c; }
@@ -447,7 +469,9 @@ export class MiniGameHubPage implements AfterViewInit {
     if (this.settings().minigameComingSoon) {
       list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '' });
     }
-    return list;
+    // Trò đang chơi được lên trước, trò cần code / bị khoá dồn ra sau (trong mỗi nhóm giữ thứ tự admin xếp).
+    const rank = (g: GameCard) => (g.id === 'soon' ? 3 : !g.path ? 2 : g.needCode ? 1 : 0);
+    return list.map((g, i) => ({ g, i })).sort((a, b) => rank(a.g) - rank(b.g) || a.i - b.i).map((x) => x.g);
   });
   /** Tên các trò miễn phí hôm nay (theo thứ tự trên trang). */
   readonly freeTitles = computed(() => this.games().filter((g) => g.freeToday).map((g) => g.title));

@@ -6,7 +6,7 @@ import { CustomerNotice, buildNotices, toDay } from '../../models/notifications'
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { SeasonService } from '../../services/season.service';
-import { seasonRange } from '../../models/seasons';
+import { activeAnnouncements } from '../announce-toast/announce-toast';
 
 const SEEN_KEY = 'fumo.notify.seen';
 
@@ -50,17 +50,17 @@ function readSeen(): string[] {
             <ul>
               @for (n of items(); track n.key) {
                 <li [class.new]="fresh().has(n.key)">
-                  <a [routerLink]="n.kind === 'season' ? null : n.link" [attr.tabindex]="n.kind === 'season' ? 0 : null" [attr.role]="n.kind === 'season' ? 'button' : null" (click)="pick(n.kind, $event)">
+                  <a [routerLink]="n.kind === 'season' || !n.link || n.link.startsWith('http') ? null : n.link" [attr.tabindex]="n.kind === 'season' ? 0 : null" [attr.role]="n.kind === 'season' ? 'button' : null" (click)="pick(n.kind, $event, n.link)">
                     @if (n.image) {
                       <img [src]="n.image" alt="" loading="lazy" />
                     } @else {
-                      <span class="ico" aria-hidden="true">{{ n.kind === 'season' ? n.icon : n.kind === 'game' ? '🎮' : '🧸' }}</span>
+                      <span class="ico" aria-hidden="true">{{ n.kind === 'season' || n.kind === 'system' ? n.icon : n.kind === 'game' ? '🎮' : '🧸' }}</span>
                     }
                     <span class="txt">
-                      <span class="kind" [class.game]="n.kind === 'game'" [class.season]="n.kind === 'season'">{{ n.kind === 'season' ? 'Chủ đề dịp lễ' : n.kind === 'game' ? 'Minigame mới' : 'Sản phẩm mới' }}</span>
+                      <span class="kind" [class.game]="n.kind === 'game'" [class.season]="n.kind === 'season'" [class.system]="n.kind === 'system'">{{ n.kind === 'system' ? 'Thông báo từ shop' : n.kind === 'season' ? 'Chủ đề dịp lễ' : n.kind === 'game' ? 'Minigame mới' : 'Sản phẩm mới' }}</span>
                       <b>{{ n.title }}</b>
                       @if (n.content) { <span class="content">{{ n.content }}</span> }
-                      <time [attr.datetime]="iso(n.date)">📅 {{ n.kind === 'season' ? 'Từ' : 'Ra mắt' }} {{ fmt(n.date) }} · {{ ago(n.date) }}</time>
+                      <time [attr.datetime]="iso(n.date)">📅 {{ n.kind === 'season' ? 'Từ' : n.kind === 'system' ? 'Gửi' : 'Ra mắt' }} {{ fmt(n.date) }} · {{ ago(n.date) }}</time>
                     </span>
                   </a>
                 </li>
@@ -106,6 +106,7 @@ function readSeen(): string[] {
     .ico { display: grid; place-items: center; font-size: 1.6rem; }
     .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; line-height: 1.35; }
     .kind { align-self: flex-start; font-size: .68rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--primary-100); color: var(--primary-dark); }
+    .kind.system { background: color-mix(in srgb, #d63638 14%, transparent); color: #c0292b; }
     .kind.season { background: color-mix(in srgb, #ff7a00 18%, transparent); color: #d35f00; }
     .kind.game { background: color-mix(in srgb, #b06bff 18%, transparent); color: #8a4fd8; }
     b { font-size: .93rem; }
@@ -135,11 +136,14 @@ export class NotifyBellComponent {
   private readonly season = inject(SeasonService);
 
   /** Bấm 1 thông báo: đóng bảng; thông báo chủ đề thì mở lại thiệp chào. */
-  pick(kind: string, e: Event): void {
+  pick(kind: string, e: Event, link = ''): void {
     this.open.set(false);
     if (kind === 'season') {
       e.preventDefault();
       this.season.open();
+    } else if (link.startsWith('http')) {
+      e.preventDefault();
+      window.open(link, '_blank', 'noopener');
     }
   }
   readonly items = computed<(CustomerNotice & { icon?: string })[]>(() => {
@@ -147,10 +151,15 @@ export class NotifyBellComponent {
     // Chủ đề dịp lễ đang bật → thông báo đầu danh sách, bấm vào mở lại thiệp chào.
     const s = this.season.active();
     if (s) {
-      const r = seasonRange(s.id, new Date().getFullYear());
+      const r = this.season.range(s.id);
       const date = Math.min(Date.now(), Math.max(r.start, this.settings().seasonChangedAt || 0) || Date.now());
       list.unshift({ key: `s:${s.id}:${new Date(r.start).getFullYear()}`, kind: 'season', title: s.title, content: s.message, date, link: '', icon: s.icon });
     }
+    // Thông báo hệ thống admin gửi — luôn ở đầu.
+    const sys = activeAnnouncements(this.settings().announcements).map((a) => ({
+      key: `a:${a.id}`, kind: 'system' as const, title: a.title, content: a.content, date: a.createdAt, link: a.link ?? '', icon: a.icon,
+    }));
+    list.unshift(...sys);
     return list;
   });
   readonly unread = computed(() => {

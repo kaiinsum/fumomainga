@@ -232,3 +232,55 @@ as $$
          (select min(at) from public.page_views);
 $$;
 revoke all on function public.analytics_storage() from public, anon, authenticated;
+
+
+-- ============ Phân tích minigame (thời gian chơi, số người chơi) ============
+-- Mỗi dòng = 1 khách (vid) chơi 1 game trong 1 ngày (giờ VN): số lượt vào + tổng số giây chơi.
+create table if not exists public.game_stats (
+  day date not null,
+  game text not null,
+  vid text not null,
+  plays integer not null default 0,
+  seconds integer not null default 0,
+  primary key (day, game, vid)
+);
+alter table public.game_stats enable row level security;
+
+create or replace function public.game_track(p_day date, p_game text, p_vid text, p_plays integer, p_seconds integer)
+returns void
+language sql
+as $$
+  insert into public.game_stats (day, game, vid, plays, seconds)
+  values (p_day, p_game, p_vid, p_plays, p_seconds)
+  on conflict (day, game, vid) do update
+    set plays = public.game_stats.plays + excluded.plays,
+        seconds = public.game_stats.seconds + excluded.seconds;
+$$;
+
+create or replace function public.analytics_games(p_from date)
+returns table (game text, players bigint, plays bigint, seconds bigint)
+language sql stable
+as $$
+  select game, count(distinct vid), coalesce(sum(plays), 0), coalesce(sum(seconds), 0)
+  from public.game_stats
+  where p_from is null or day >= p_from
+  group by game
+  order by 4 desc;
+$$;
+
+-- Lượt xem theo đầu đường dẫn (vd. /san-pham/ → lượt xem từng sản phẩm).
+create or replace function public.analytics_pages_prefix(p_from timestamptz, p_prefix text, p_limit integer)
+returns table (path text, views bigint, visitors bigint)
+language sql stable
+as $$
+  select path, count(*), count(distinct vid)
+  from public.page_views
+  where (p_from is null or at >= p_from) and path like p_prefix || '%'
+  group by 1
+  order by 2 desc
+  limit p_limit;
+$$;
+
+revoke all on function public.game_track(date, text, text, integer, integer) from public, anon, authenticated;
+revoke all on function public.analytics_games(date) from public, anon, authenticated;
+revoke all on function public.analytics_pages_prefix(timestamptz, text, integer) from public, anon, authenticated;

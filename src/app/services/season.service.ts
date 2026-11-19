@@ -1,12 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { SeasonDef, activeSeason, seasonRange } from '../models/seasons';
+import { SeasonDef, SeasonId, activeSeason, seasonRange, setCustomSeasons } from '../models/seasons';
 import { SettingsService } from './settings.service';
 
 const HIDE_KEY = 'fumo.season.hide';
 const SHOWN_KEY = 'fumo.season.shown';
 
 /** Khoá "không hiện lại" theo chủ đề + năm (năm sau tới dịp lại hiện). */
-const keyOf = (s: SeasonDef) => `${s.id}:${new Date(seasonRange(s.id, new Date().getFullYear()).start).getFullYear()}`;
+const keyOf = (s: SeasonDef) => `${s.id}:${new Date().getFullYear()}`;
 
 function readList(storage: Storage | undefined, key: string): string[] {
   try {
@@ -24,7 +24,16 @@ export class SeasonService {
   /** Cập nhật mỗi 30 phút để chế độ "tự động theo lịch" tự đổi khi sang ngày. */
   private readonly tick = signal(Date.now());
 
-  readonly active = computed<SeasonDef | undefined>(() => activeSeason(this.settings().seasonTheme, this.tick()));
+  readonly active = computed<SeasonDef | undefined>(() => {
+    setCustomSeasons(this.settings().customSeasons);
+    return activeSeason(this.settings().seasonTheme, this.tick(), this.settings().seasonOverrides);
+  });
+
+  /** Ngày diễn ra năm nay (đã tính ngày admin sửa). */
+  range(id: SeasonId): { start: number; end: number; main: number } {
+    setCustomSeasons(this.settings().customSeasons);
+    return seasonRange(id, new Date().getFullYear(), this.settings().seasonOverrides);
+  }
   readonly popupOpen = signal(false);
 
   constructor() {

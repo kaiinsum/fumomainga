@@ -59,7 +59,31 @@ export class ProductDetailPage {
     return p && !p.hidden ? p : undefined;
   });
   readonly activeIndex = signal(0);
-  readonly activeImage = computed(() => this.product()?.images[this.activeIndex()] ?? '');
+  /** Bộ ảnh: ảnh sản phẩm (ảnh đại diện đứng đầu) + ảnh riêng của các biến thể (không trùng). */
+  readonly gallery = computed(() => {
+    const p = this.product();
+    if (!p) return [] as string[];
+    const extra = this.variants().map((v) => v.image).filter((x): x is string => !!x && !p.images.includes(x));
+    return [...p.images, ...new Set(extra)];
+  });
+  readonly activeImage = computed(() => this.gallery()[this.activeIndex()] ?? this.product()?.images[0] ?? '');
+
+  /** Chọn biến thể → nếu biến thể có ảnh riêng thì hiện ảnh đó. */
+  pickVariant(v: ProductVariant): void {
+    this.variantId.set(v.id);
+    if (v.image) {
+      const i = this.gallery().indexOf(v.image);
+      if (i >= 0) this.select(i);
+    }
+  }
+
+  /** Bấm ảnh nhỏ: ảnh thuộc biến thể nào thì chọn luôn biến thể đó. */
+  pickThumb(i: number): void {
+    this.select(i);
+    const img = this.gallery()[i];
+    const v = this.variants().find((x) => x.image === img);
+    if (v) this.variantId.set(v.id);
+  }
   readonly related = computed(() => {
     const p = this.product();
     if (!p) return [];
@@ -114,8 +138,8 @@ export class ProductDetailPage {
   }
 
   step(dir: 1 | -1): void {
-    const n = this.product()?.images.length ?? 0;
-    if (n > 1) this.select((this.activeIndex() + dir + n) % n);
+    const n = this.gallery().length;
+    if (n > 1) this.pickThumb((this.activeIndex() + dir + n) % n);
   }
 
 }

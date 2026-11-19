@@ -89,6 +89,22 @@ export const GET = handle(async (req) => {
   }
   const store = getStore().analytics;
   if (!store) throw new HttpError(501, 'Thống kê chỉ có khi dùng Supabase.');
+  // ?insights=1&days=N → phân tích minigame (người chơi, thời gian chơi) + lượt xem từng sản phẩm. N = 0: mọi lúc.
+  if (new URL(req.url).searchParams.has('insights')) {
+    const days = Math.max(0, Math.min(3650, Math.round(Number(new URL(req.url).searchParams.get('days')) || 0)));
+    const fromMs = days ? truncVN(Date.now(), 'day') - (days - 1) * 86_400_000 : null;
+    const fromDay = fromMs === null ? null : new Date(fromMs + 7 * 3600_000).toISOString().slice(0, 10);
+    try {
+      const [games, productViews] = await Promise.all([store.games(fromDay), store.pages(fromMs, '/san-pham/', 200)]);
+      return json({ days, fromDay, games, productViews });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/game_stats|analytics_games|analytics_pages_prefix|does not exist|schema cache/i.test(msg)) {
+        throw new HttpError(503, 'Chưa có bảng phân tích minigame trên Supabase — hãy chạy lại file supabase/schema.sql trong SQL Editor.');
+      }
+      throw e;
+    }
+  }
   const key = new URL(req.url).searchParams.get('range') ?? 'hour';
   const range = RANGES[key] ?? RANGES['hour'];
   const now = Date.now();
@@ -155,6 +171,13 @@ export const POST = handle(async (req) => {
   const rawIp = (req.headers.get('x-real-ip') || clientIp(req)).slice(0, 64);
   const ip = rawIp === 'unknown' ? '' : rawIp;
   const ping = store.ping({ vid, path, ip, ua });
+  // Đang ở trang chơi minigame: lượt vào = 1 lượt chơi, mỗi ping (30 giây) = 30 giây chơi.
+  const gm = /^\/mini-game\/([a-z0-9-]{2,40})$/.exec(path);
+  if (gm) {
+    const day = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+    const isView = body['t'] === 'view';
+    await store.game(day, gm[1], vid, isView ? 1 : 0, isView ? 0 : 30).catch((e) => console.error('game track:', e instanceof Error ? e.message : e));
+  }
   try {
     if (body['t'] === 'view') {
       await Promise.all([

@@ -9,10 +9,11 @@ import { FloatBubblesComponent } from '../components/float-bubbles/float-bubbles
 import { SeasonFxComponent } from '../components/season/season-fx';
 import { SeasonPopupComponent } from '../components/season/season-popup';
 import { SeasonService } from '../services/season.service';
+import { AnnounceToastComponent } from '../components/announce-toast/announce-toast';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent, AnnounceToastComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
@@ -25,6 +26,7 @@ import { SeasonService } from '../services/season.service';
     <app-footer />
     <app-float-bubbles />
     <app-season-popup />
+    <app-announce-toast />
   `,
   styles: `
     /* isolation: tạo lớp xếp chồng riêng để nền động (z-index -1) nằm trên nền trang nhưng dưới mọi nội dung. */

@@ -18,6 +18,8 @@ const MAX_VARIANTS = 30;
 interface VariantDraft {
   id: string;
   name: string;
+  /** Ảnh riêng của biến thể ('' = dùng ảnh sản phẩm). */
+  image: string;
   price: number | null;
   pct: number | null;
   sale: number | null;
@@ -149,6 +151,7 @@ export class AdminProductForm {
             (p.variants ?? []).map((v) => ({
               id: v.id,
               name: v.name,
+              image: v.image ?? '',
               price: v.price,
               sale: onSale(v) ? (v.salePrice as number) : null,
               pct: onSale(v) ? discountPercent(v) : null,
@@ -304,10 +307,37 @@ export class AdminProductForm {
     const sale = first ? this.validSale() : null;
     this.variants.update((list) => [
       ...list,
-      { id: crypto.randomUUID().slice(0, 8), name: '', price, sale, pct: price ? pctFromSale(price, sale) : null },
+      { id: crypto.randomUUID().slice(0, 8), name: '', image: '', price, sale, pct: price ? pctFromSale(price, sale) : null },
     ]);
     requestAnimationFrame(() => (this.host.querySelector('.var-row:last-child .v-name') as HTMLInputElement | null)?.focus());
   }
+
+  /** Chọn ảnh riêng cho biến thể (thu nhỏ như ảnh sản phẩm). */
+  async onVariantImage(i: number, event: Event): Promise<void> {
+    const el = event.target as HTMLInputElement;
+    const file = el.files?.[0];
+    el.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      const url = await fileToResizedDataUrl(file);
+      this.variants.update((list) => list.map((v, j) => (j === i ? { ...v, image: url } : v)));
+    } catch {
+      this.toast.err('Không đọc được ảnh. Hãy thử định dạng JPG/PNG/WebP.');
+    }
+  }
+
+  /** Dùng một ảnh sản phẩm có sẵn làm ảnh biến thể. */
+  pickVariantImage(i: number, url: string): void {
+    this.variants.update((list) => list.map((v, j) => (j === i ? { ...v, image: url } : v)));
+    this.imgPicker.set(null);
+  }
+
+  clearVariantImage(i: number): void {
+    this.variants.update((list) => list.map((v, j) => (j === i ? { ...v, image: '' } : v)));
+  }
+
+  /** Biến thể đang mở bảng chọn ảnh có sẵn. */
+  readonly imgPicker = signal<number | null>(null);
 
   removeVariant(i: number): void {
     this.variants.update((list) => list.filter((_, j) => j !== i));
@@ -392,7 +422,13 @@ export class AdminProductForm {
   private toVariant(v: VariantDraft): ProductVariant {
     const price = Math.round(Number(v.price) || 0);
     const sale = empty(v.sale) ? null : Math.round(Number(v.sale));
-    return { id: v.id, name: v.name.trim().slice(0, 60), price, salePrice: sale !== null && sale >= 0 && sale < price ? sale : null };
+    return {
+      id: v.id,
+      name: v.name.trim().slice(0, 60),
+      price,
+      salePrice: sale !== null && sale >= 0 && sale < price ? sale : null,
+      ...(v.image ? { image: v.image } : {}),
+    };
   }
 
   // ---------- Giảm giá ----------

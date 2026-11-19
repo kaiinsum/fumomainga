@@ -7,6 +7,9 @@ import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminInboxService } from '../inbox.service';
 import { PriceTagComponent } from '../../shared/price-tag';
+import { OrderApiService } from '../../services/order-api.service';
+import { GAMES } from '../../models/minigames';
+import { fmtDuration } from '../insights/insights';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -43,6 +46,17 @@ import { PriceTagComponent } from '../../shared/price-tag';
         </a>
       }
     </div>
+
+    <!-- Phân tích nhanh 7 ngày: minigame + sản phẩm đặt nhiều -->
+    <section class="adm-box quick-insights">
+      <h2>📊 7 ngày qua <a routerLink="/admin/phan-tich">Xem phân tích chi tiết →</a></h2>
+      <div class="box-body qi">
+        <div class="qi-tile"><span>🎮 Người chơi minigame</span><b>{{ qi().players ?? '—' }}</b></div>
+        <div class="qi-tile"><span>⏱ Thời gian chơi</span><b>{{ qi().seconds === null ? '—' : dur(qi().seconds!) }}</b></div>
+        <div class="qi-tile"><span>🔥 Game hot nhất</span><b>{{ qi().topGame || '—' }}</b></div>
+        <div class="qi-tile"><span>🏆 Đặt nhiều nhất</span><b>{{ qi().topProduct || '—' }}</b></div>
+      </div>
+    </section>
 
     <div class="cols">
       <section class="adm-box">
@@ -88,6 +102,13 @@ import { PriceTagComponent } from '../../shared/price-tag';
     </div>
   `,
   styles: `
+    .quick-insights h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .quick-insights h2 a { font-size: .8rem; font-weight: 700; }
+    .qi { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .qi-tile { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid #dcdcde; border-radius: 10px; min-width: 0; }
+    .qi-tile span { font-size: .75rem; color: #646970; font-weight: 700; }
+    .qi-tile b { font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 800px) { .qi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .welcome { margin: -8px 0 20px; color: #50575e; }
     .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
     .inbox { margin-bottom: 18px; border-left: 4px solid #d63638; }
@@ -125,6 +146,37 @@ export class AdminDashboard implements AfterViewInit {
   private readonly newsSvc = inject(NewsService);
   readonly settings = inject(SettingsService).settings;
   readonly inbox = inject(AdminInboxService);
+
+  private readonly api = inject(OrderApiService);
+  readonly dur = fmtDuration;
+  readonly qi = signal<{ players: number | null; seconds: number | null; topGame: string; topProduct: string }>({ players: null, seconds: null, topGame: '', topProduct: '' });
+
+  constructor() {
+    void this.loadInsights();
+  }
+
+  /** Số liệu nhanh 7 ngày (lỗi / chưa có máy chủ thì để "—"). */
+  private async loadInsights(): Promise<void> {
+    const [g, o] = await Promise.all([
+      this.api.call<{ games: { game: string; players: number; seconds: number }[] }>('GET', '/api/analytics?insights=1&days=7', undefined, true).catch(() => null),
+      this.api.list().catch(() => null),
+    ]);
+    const games = g?.games ?? [];
+    const top = [...games].sort((a, b) => b.seconds - a.seconds)[0];
+    const from = Date.now() - 7 * 86_400_000;
+    const qty = new Map<string, number>();
+    for (const ord of o?.orders ?? []) {
+      if (ord.status === 'cancelled' || ord.createdAt < from) continue;
+      for (const it of ord.items) qty.set(it.id, (qty.get(it.id) ?? 0) + it.qty);
+    }
+    const best = [...qty.entries()].sort((a, b) => b[1] - a[1])[0];
+    this.qi.set({
+      players: g ? games.reduce((s, x) => s + x.players, 0) : null,
+      seconds: g ? games.reduce((s, x) => s + x.seconds, 0) : null,
+      topGame: top ? (GAMES.find((d) => d.path === '/mini-game/' + top.game)?.title ?? top.game) : '',
+      topProduct: best ? `${this.productsSvc.getById(best[0])?.name ?? 'Sản phẩm đã xoá'} (${best[1]})` : '',
+    });
+  }
 
   readonly recentProducts = computed(() =>
     [...this.productsSvc.products()].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5),

@@ -1,5 +1,5 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { SEASON_ART, seasonRange } from '../../models/seasons';
+import { SEASON_ART } from '../../models/seasons';
 import { SeasonService } from '../../services/season.service';
 
 /** Thiệp chào theo chủ đề: hiện lần đầu vào web, nền phía sau làm mờ. Mở lại bằng nút ở chân trang. */
@@ -77,7 +77,7 @@ export class SeasonPopupComponent {
   dates(): string {
     const s = this.svc.active();
     if (!s) return '';
-    const r = seasonRange(s.id, new Date().getFullYear());
+    const r = this.svc.range(s.id);
     const f = (t: number) => { const d = new Date(t); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
     return r.start === r.end - 86_400_000 + 1 ? f(r.start) : `${f(r.start)} – ${f(r.end)}`;
   }

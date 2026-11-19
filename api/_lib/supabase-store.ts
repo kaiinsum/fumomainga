@@ -196,6 +196,26 @@ export function supabaseStore(url: string, serviceKey: string) {
       check(res, 'xoá lượt xem cũ');
       return res.count ?? 0;
     },
+    async game(day, game, vid, plays, seconds) {
+      check(await db.rpc('game_track', { p_day: day, p_game: game, p_vid: vid, p_plays: plays, p_seconds: seconds }), 'ghi lượt chơi');
+    },
+    async games(fromDay) {
+      const rows = check(await db.rpc('analytics_games', { p_from: fromDay }), 'thống kê minigame') as {
+        game: string;
+        players: number;
+        plays: number;
+        seconds: number;
+      }[];
+      return rows.map((r) => ({ game: r.game, players: num(r.players), plays: num(r.plays), seconds: num(r.seconds) }));
+    },
+    async pages(from, prefix, limit) {
+      const rows = check(await db.rpc('analytics_pages_prefix', { p_from: isoOrNull(from), p_prefix: prefix, p_limit: limit }), 'lượt xem sản phẩm') as {
+        path: string;
+        views: number;
+        visitors: number;
+      }[];
+      return rows.map((r) => ({ path: r.path, views: num(r.views), visitors: num(r.visitors) }));
+    },
   };
 
   const DAY = 86_400_000;

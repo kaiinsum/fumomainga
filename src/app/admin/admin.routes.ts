@@ -30,6 +30,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./dashboard/dashboard').then((m) => m.AdminDashboard),
       },
       {
+        path: 'phan-tich',
+        title: 'Phân tích',
+        loadComponent: () => import('./insights/insights').then((m) => m.AdminInsights),
+      },
+      {
         path: 'thong-ke',
         title: 'Thống kê truy cập',
         loadComponent: () => import('./analytics/analytics').then((m) => m.AdminAnalytics),
@@ -53,6 +58,11 @@ export const ADMIN_ROUTES: Routes = [
         path: 'san-pham/:id',
         title: 'Sửa sản phẩm',
         loadComponent: () => import('./products/product-form').then((m) => m.AdminProductForm),
+      },
+      {
+        path: 'thong-bao',
+        title: 'Thông báo hệ thống',
+        loadComponent: () => import('./announce/announce').then((m) => m.AdminAnnounce),
       },
       {
         path: 'chu-de',

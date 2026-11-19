@@ -169,7 +169,10 @@ export class CatalogSyncService {
   /** Tải mọi ảnh data URL lên kho ảnh rồi thay bằng link (máy chủ không phải Supabase → giữ nguyên). */
   private async uploadImages(): Promise<void> {
     const found = new Set<string>();
-    for (const p of this.products.products()) for (const img of p.images) if (isDataImg(img)) found.add(img);
+    for (const p of this.products.products()) {
+      for (const img of p.images) if (isDataImg(img)) found.add(img);
+      for (const v of p.variants ?? []) if (v.image && isDataImg(v.image)) found.add(v.image);
+    }
     for (const n of this.news.posts()) {
       if (isDataImg(n.cover)) found.add(n.cover);
       for (const m of n.content.match(DATA_IMG) ?? []) found.add(m);
@@ -196,8 +199,16 @@ export class CatalogSyncService {
 
     const swap = (s: string) => this.uploaded.get(s) ?? s;
     const prods = this.products.products();
-    if (prods.some((p) => p.images.some((img) => this.uploaded.has(img)))) {
-      this.products.hydrate(prods.map((p) => ({ ...p, images: p.images.map(swap) })));
+    const hasUploaded = (p: (typeof prods)[0]) =>
+      p.images.some((img) => this.uploaded.has(img)) || (p.variants ?? []).some((v) => !!v.image && this.uploaded.has(v.image));
+    if (prods.some(hasUploaded)) {
+      this.products.hydrate(
+        prods.map((p) => ({
+          ...p,
+          images: p.images.map(swap),
+          ...(p.variants ? { variants: p.variants.map((v) => (v.image ? { ...v, image: swap(v.image) } : v)) } : {}),
+        })),
+      );
     }
     const posts = this.news.posts();
     if (posts.some((n) => this.uploaded.has(n.cover) || hasDataImg(n.content))) {

@@ -101,10 +101,18 @@
           </div>
 
           <div class="var-head" aria-hidden="true">
-            <span>Tên biến thể</span><span>Giá (đ)</span><span>% giảm</span><span>Giá sau giảm (đ)</span><span></span>
+            <span>Ảnh</span><span>Tên biến thể</span><span>Giá (đ)</span><span>% giảm</span><span>Giá sau giảm (đ)</span><span></span>
           </div>
           @for (v of variants(); track v.id; let i = $index; let first = $first; let last = $last) {
             <div class="var-row" [class.bad]="rowError(v) || !v.name.trim()">
+              <div class="v-img">
+                @if (v.image) {
+                  <img [src]="v.image" [alt]="'Ảnh ' + v.name" />
+                  <button type="button" class="v-img-x" title="Bỏ ảnh biến thể" (click)="clearVariantImage(i)">✕</button>
+                } @else {
+                  <button type="button" class="v-img-add" title="Thêm ảnh cho biến thể" (click)="imgPicker.set(imgPicker() === i ? null : i)">📷</button>
+                }
+              </div>
               <input class="v-name" type="text" maxlength="60" placeholder="VD: 20cm, Màu hồng..." [value]="v.name"
                 (input)="setVariant(i, 'name', $any($event.target).value)" [attr.aria-label]="'Tên biến thể ' + (i + 1)" />
               <input type="number" min="0" step="1000" [value]="v.price ?? ''" (input)="setVariant(i, 'price', $any($event.target).value)"
@@ -118,6 +126,21 @@
                 <button type="button" class="mini" title="Xuống" [disabled]="last" (click)="moveVariant(i, 1)">↓</button>
                 <button type="button" class="mini del" title="Xoá biến thể" (click)="removeVariant(i)">✕</button>
               </div>
+              @if (imgPicker() === i) {
+                <div class="v-picker">
+                  <label class="btn ghost small">
+                    ⬆ Tải ảnh lên
+                    <input type="file" accept="image/*" hidden (change)="onVariantImage(i, $event); imgPicker.set(null)" />
+                  </label>
+                  @if (images().length) {
+                    <span class="hint">hoặc chọn ảnh có sẵn:</span>
+                    @for (img of images(); track $index) {
+                      <button type="button" class="v-pick" (click)="pickVariantImage(i, img)"><img [src]="img" alt="" /></button>
+                    }
+                  }
+                  <button type="button" class="mini" (click)="imgPicker.set(null)" title="Đóng">✕</button>
+                </div>
+              }
               @if (rowError(v); as err) {
                 <span class="error v-err">{{ err }}</span>
               } @else if (v.sale !== null && v.price) {

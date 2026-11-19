@@ -1,4 +1,7 @@
-import { Component, ElementRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
 
@@ -65,7 +68,8 @@ const HISTORY_KEY = 'fumo.chat';
       </section>
     }
 
-    <div class="stack">
+    <div class="stack" [class.grouped]="grouped()">
+      @if (showLinks()) {
       @if (s().shopeeUrl && !open()) {
         <a class="bubble shopee" [href]="s().shopeeUrl" target="_blank" rel="noopener" title="Shopee" aria-label="Gian hàng Shopee">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -94,7 +98,8 @@ const HISTORY_KEY = 'fumo.chat';
           </svg>
         </a>
       }
-      @if (s().chatEnabled) {
+      }
+      @if (s().chatEnabled && (!grouped() || expanded() || open())) {
         <button type="button" class="bubble ai" [class.on]="open()" (click)="toggle()" [attr.aria-expanded]="open()" title="Hỏi trợ lý AI">
           @if (open()) { ✕ } @else {
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -107,6 +112,15 @@ const HISTORY_KEY = 'fumo.chat';
           }
         </button>
       }
+      <!-- Khi chơi game / trên điện thoại: gom các nút vào 1 nút, bấm để mở / thu gọn -->
+      @if (grouped() && !open() && hasAny()) {
+        <button type="button" class="bubble more" [class.on]="expanded()" (click)="expanded.set(!expanded())"
+          [attr.aria-expanded]="expanded()" [title]="expanded() ? 'Thu gọn' : 'Liên hệ & trợ lý AI'">
+          @if (expanded()) { ✕ } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.5h16v2H4zm0 4.5h16v2H4zm0 4.5h16v2H4z"/></svg>
+          }
+        </button>
+      }
     </div>
   `,
   styles: `
@@ -115,6 +129,15 @@ const HISTORY_KEY = 'fumo.chat';
     .bubble { position: relative; width: 52px; height: 52px; border-radius: 50%; border: none; display: grid; place-items: center;
       cursor: pointer; color: #fff; box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .2s; font-size: 1.1rem; font-weight: 800; }
     .bubble:hover { transform: translateY(-3px) scale(1.05); }
+    .more { width: 48px; height: 48px; background: color-mix(in srgb, var(--primary) 85%, #000); opacity: .92; }
+    .more.on { background: #555; }
+    .stack.grouped .bubble:not(.more) { animation: rise .22s ease-out both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.8); } }
+    @media (max-width: 600px) {
+      :host { right: 12px; bottom: 12px; }
+      .bubble { width: 46px; height: 46px; } .bubble svg { width: 23px; height: 23px; }
+      .ai { width: 50px; height: 50px; } .more { width: 44px; height: 44px; }
+    }
     .bubble svg { width: 26px; height: 26px; }
     .tiktok { background: #111; box-shadow: -2px -2px 0 #25f4ee inset, 2px 2px 0 #fe2c55 inset, 0 8px 22px rgba(0,0,0,.2); }
     .facebook { background: #1877f2; }
@@ -163,6 +186,28 @@ export class FloatBubblesComponent {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
   readonly open = signal(false);
+  /** Đang ở trang chơi game (/mini-game/...). */
+  private readonly inGame = signal(false);
+  private readonly mobile = signal(matchMedia('(max-width: 600px)').matches);
+  /** Khi chơi game hoặc trên điện thoại: các nút gom vào 1 nút để không che màn hình. */
+  readonly grouped = computed(() => this.inGame() || this.mobile());
+  readonly expanded = signal(false);
+  readonly hasAny = computed(() => !!(this.s().shopeeUrl || this.s().tiktokUrl || this.s().facebookUrl || this.s().chatEnabled));
+  readonly showLinks = computed(() => !this.grouped() || this.expanded());
+
+  constructor() {
+    const router = inject(Router);
+    const check = () => this.inGame.set(/^\/mini-game\/[^?#]+/.test(router.url));
+    check();
+    router.events.pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed()).subscribe(() => {
+      check();
+      this.expanded.set(false);
+    });
+    const mq = matchMedia('(max-width: 600px)');
+    const onMq = () => this.mobile.set(mq.matches);
+    mq.addEventListener('change', onMq);
+    inject(DestroyRef).onDestroy(() => mq.removeEventListener('change', onMq));
+  }
   readonly busy = signal(false);
   readonly error = signal('');
   readonly messages = signal<ChatMessage[]>(this.load());
@@ -172,6 +217,7 @@ export class FloatBubblesComponent {
   toggle(): void {
     this.open.update((v) => !v);
     if (this.open()) this.scrollDown();
+    else this.expanded.set(false);
   }
 
   reset(): void {

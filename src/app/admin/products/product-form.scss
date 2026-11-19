@@ -295,7 +295,7 @@
 .var-head,
 .var-row {
   display: grid;
-  grid-template-columns: minmax(120px, 2fr) minmax(90px, 1.2fr) 70px minmax(90px, 1.2fr) auto;
+  grid-template-columns: 48px minmax(120px, 2fr) minmax(90px, 1.2fr) 70px minmax(90px, 1.2fr) auto;
   gap: 8px;
   align-items: center;
 }
@@ -322,6 +322,93 @@
 
   .v-err {
     grid-column: 1 / -1;
+  }
+}
+
+/* Ảnh riêng của biến thể */
+.v-img {
+  position: relative;
+  width: 44px;
+  height: 44px;
+
+  img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #c3c4c7;
+  }
+}
+
+.v-img-add {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1.5px dashed #8c8f94;
+  background: #f6f7f7;
+  cursor: pointer;
+  font-size: 1.1rem;
+
+  &:hover {
+    border-color: #2271b1;
+    background: #f0f6fc;
+  }
+}
+
+.v-img-x {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 0;
+  background: #d63638;
+  color: #fff;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.v-picker {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f6f7f7;
+  border: 1px dashed #c3c4c7;
+
+  .v-pick {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    background: none;
+
+    &:hover {
+      border-color: #2271b1;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .mini {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #c3c4c7;
+    background: #fff;
+    cursor: pointer;
+    margin-left: auto;
   }
 }
 
@@ -360,10 +447,10 @@
   }
 
   .var-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 48px 1fr 1fr;
 
     .v-name {
-      grid-column: 1 / -1;
+      grid-column: 2 / -1;
     }
   }
 }

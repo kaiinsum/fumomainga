@@ -9,15 +9,16 @@
       <div class="gallery">
         <div class="main-img card-surface">
           <img [src]="activeImage()" [alt]="p.name" />
-          @if (p.images.length > 1) {
+          @if (gallery().length > 1) {
             <button class="nav prev" type="button" (click)="step(-1)" aria-label="Ảnh trước">‹</button>
             <button class="nav next" type="button" (click)="step(1)" aria-label="Ảnh sau">›</button>
           }
         </div>
-        @if (p.images.length > 1) {
+        @if (gallery().length > 1) {
           <div class="thumbs">
-            @for (img of p.images; track $index) {
-              <button type="button" [class.on]="$index === activeIndex()" (click)="select($index)">
+            @for (img of gallery(); track $index) {
+              <button type="button" [class.on]="$index === activeIndex()" [class.var-thumb]="$index >= p.images.length" (click)="pickThumb($index)"
+                [title]="$index >= p.images.length ? 'Ảnh phân loại' : ''">
                 <img [src]="img" [alt]="p.name + ' ' + ($index + 1)" />
               </button>
             }
@@ -33,7 +34,9 @@
           <div class="variants" role="radiogroup" aria-label="Chọn phân loại">
             <span class="v-label">Phân loại</span>
             @for (v of variants(); track v.id) {
-              <button type="button" role="radio" [attr.aria-checked]="v.id === variant()?.id" [class.on]="v.id === variant()?.id" (click)="variantId.set(v.id)">{{ v.name }}</button>
+              <button type="button" role="radio" [attr.aria-checked]="v.id === variant()?.id" [class.on]="v.id === variant()?.id" [class.has-img]="!!v.image" (click)="pickVariant(v)">
+                @if (v.image) { <img class="v-thumb" [src]="v.image" alt="" /> }{{ v.name }}
+              </button>
             }
           </div>
         }

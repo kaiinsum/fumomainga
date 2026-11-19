@@ -5,6 +5,8 @@ export interface ProductVariant {
   price: number;
   /** Giá sau giảm, null = không giảm. */
   salePrice?: number | null;
+  /** Ảnh riêng của biến thể (khách bấm chọn biến thể thì hiện ảnh này). Trống = dùng ảnh sản phẩm. */
+  image?: string;
 }
 
 export interface Product {

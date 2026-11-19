@@ -3,9 +3,25 @@
  * Chủ đề chỉ thêm hiệu ứng nền + dải màu nhỏ + lời chúc lúc mới vào web — không đổi giao diện tổng thể.
  */
 
-export type SeasonId =
+export type BuiltinSeasonId =
   | 'tet' | 'valentine' | 'women' | 'aprilfool' | 'reunification' | 'summer'
   | 'school' | 'midautumn' | 'vnwomen' | 'halloween' | 'christmas';
+/** Dịp có sẵn, hoặc dịp admin tự thêm (id bắt đầu bằng "c-"). */
+export type SeasonId = BuiltinSeasonId | `c-${string}`;
+
+/** Dịp lễ admin tự thêm. Ngày dạng MM-DD, lặp lại mỗi năm (sửa riêng từng năm bằng SeasonOverride.dates). */
+export interface CustomSeason {
+  id: `c-${string}`;
+  name: string;
+  icon: string;
+  title: string;
+  message: string;
+  colors: [string, string];
+  glyphs: string[];
+  dir: 'fall' | 'rise' | 'float';
+  start: string;
+  end: string;
+}
 
 /** Hạt hiệu ứng nền: emoji, hoặc 'img:<tên>' = hình SVG vẽ sẵn bên dưới. */
 export interface SeasonFx {
@@ -193,10 +209,111 @@ const md = (year: number, s: string) => {
   return new Date(year, m - 1, d).getTime();
 };
 
+/**
+ * Admin sửa một chủ đề: các trường để trống = dùng mặc định.
+ * `dates`: ngày bắt đầu / kết thúc riêng cho từng năm (YYYY-MM-DD) — vì Tết, Trung thu đổi ngày mỗi năm.
+ */
+export interface SeasonOverride {
+  name?: string;
+  icon?: string;
+  title?: string;
+  message?: string;
+  colors?: [string, string];
+  /** Emoji hiệu ứng nền (thay cho mặc định). */
+  glyphs?: string[];
+  /** Có dùng hình đặc biệt (cờ, lồng đèn, mặt troll) trong hiệu ứng nền / thiệp không. */
+  useArt?: boolean;
+  dates?: Record<string, { start: string; end: string }>;
+}
+export type SeasonOverrides = Partial<Record<SeasonId, SeasonOverride>>;
+
+let custom: CustomSeason[] = [];
+let customDefs: SeasonDef[] = [];
+
+/** Nạp danh sách dịp admin tự thêm (gọi mỗi khi cài đặt thay đổi). */
+export function setCustomSeasons(list: CustomSeason[] | undefined): void {
+  const next = (list ?? []).filter((c) => c && /^c-/.test(c.id));
+  if (next === custom || JSON.stringify(next) === JSON.stringify(custom)) return;
+  custom = next;
+  customDefs = custom.map((c) => ({
+    id: c.id,
+    name: c.name,
+    icon: c.icon || '🎉',
+    title: c.title,
+    message: c.message,
+    colors: c.colors?.length === 2 ? c.colors : ['#60b5ff', '#ffd23f'],
+    fx: { glyphs: c.glyphs?.length ? c.glyphs : [c.icon || '🎉'], dir: c.dir || 'fall', count: 22, size: [16, 30] },
+    when: `${fmtMd(c.start)} → ${fmtMd(c.end)} (hằng năm) · dịp tự thêm`,
+  }));
+}
+
+const fmtMd = (s: string) => {
+  const [m, d] = (s || '').split('-').map(Number);
+  return m && d ? `${d}/${m}` : '?';
+};
+
+/** Mọi dịp: có sẵn + admin tự thêm. */
+export const allSeasons = (): SeasonDef[] => [...SEASONS, ...customDefs];
+export const isCustomSeason = (id: string) => id.startsWith('c-');
+
+const DEFAULTS = new Map(SEASONS.map((s) => [s.id, s]));
+
+/** Chủ đề sau khi áp các chỉnh sửa của admin. */
+export function resolveSeason(def: SeasonDef, ov?: SeasonOverrides): SeasonDef {
+  const o = ov?.[def.id];
+  if (!o) return def;
+  const base = DEFAULTS.get(def.id as BuiltinSeasonId) ?? def;
+  const artGlyphs = base.fx.glyphs.filter((g) => g.startsWith('img:'));
+  const useArt = o.useArt ?? true;
+  const emojis = o.glyphs?.length ? o.glyphs : base.fx.glyphs.filter((g) => !g.startsWith('img:'));
+  const glyphs = [...emojis, ...(useArt ? artGlyphs : [])];
+  return {
+    ...base,
+    name: o.name?.trim() || base.name,
+    icon: o.icon?.trim() || base.icon,
+    title: o.title?.trim() || base.title,
+    message: o.message?.trim() || base.message,
+    colors: o.colors?.length === 2 ? o.colors : base.colors,
+    art: useArt ? base.art : undefined,
+    fx: { ...base.fx, glyphs: glyphs.length ? glyphs : base.fx.glyphs },
+  };
+}
+
+/** Tách chuỗi emoji người dùng nhập thành từng emoji (giữ đúng emoji ghép nhiều ký tự). */
+export function splitGlyphs(text: string): string[] {
+  const seg = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('vi', { granularity: 'grapheme' }) : null;
+  const parts = seg ? [...seg.segment(text)].map((x) => x.segment) : [...text];
+  return parts.filter((g) => g.trim() && !/^[\s,;.]+$/.test(g)).slice(0, 12);
+}
+
+const parseDay = (s: string | undefined): number => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s ?? '');
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : NaN;
+};
+
 /** Khoảng ngày diễn ra của chủ đề trong năm `year` (00:00 ngày đầu → 23:59 ngày cuối) + ngày chính. */
-export function seasonRange(id: SeasonId, year: number): { start: number; end: number; main: number } {
+export function seasonRange(id: SeasonId, year: number, ov?: SeasonOverrides): { start: number; end: number; main: number } {
+  const custom = ov?.[id]?.dates?.[String(year)];
+  if (custom) {
+    const a = parseDay(custom.start);
+    const b = parseDay(custom.end);
+    if (!isNaN(a) && !isNaN(b) && b >= a) return { start: a, end: b + DAY - 1, main: b };
+  }
+  return defaultRange(id, year);
+}
+
+function defaultRange(id: SeasonId, year: number): { start: number; end: number; main: number } {
   const fixed = (a: string, b: string, main = b) => ({ start: md(year, a), end: md(year, b) + DAY - 1, main: md(year, main) });
-  switch (id) {
+  if (isCustomSeason(id)) {
+    const c = custom.find((x) => x.id === id);
+    const ok = (s?: string) => /^\d{2}-\d{2}$/.test(s ?? '');
+    if (!c || !ok(c.start) || !ok(c.end)) return fixed('01-01', '01-01');
+    // Kết thúc trước ngày bắt đầu (vd. 28/12 → 03/01) → kết thúc ở năm sau.
+    const r = fixed(c.start, c.end);
+    if (r.end < r.start) return { start: r.start, end: md(year + 1, c.end) + DAY - 1, main: md(year + 1, c.end) };
+    return r;
+  }
+  switch (id as BuiltinSeasonId) {
     case 'tet': {
       const t = md(year, LUNAR_NEW_YEAR[year] ?? '02-01');
       return { start: t - 10 * DAY, end: t + 7 * DAY - 1, main: t };
@@ -217,25 +334,29 @@ export function seasonRange(id: SeasonId, year: number): { start: number; end: n
   }
 }
 
-export const seasonById = (id: string | undefined): SeasonDef | undefined => SEASONS.find((s) => s.id === id);
+export const seasonById = (id: string | undefined, ov?: SeasonOverrides): SeasonDef | undefined => {
+  const d = allSeasons().find((s) => s.id === id);
+  return d && resolveSeason(d, ov);
+};
 
 /** Chủ đề đang diễn ra hôm nay theo lịch (trùng nhau thì lấy dịp ngắn hơn — ví dụ Valentine trong dịp Tết). */
-export function seasonByDate(now = Date.now()): SeasonDef | undefined {
+export function seasonByDate(now = Date.now(), ov?: SeasonOverrides): SeasonDef | undefined {
   const y = new Date(now).getFullYear();
-  return SEASONS.map((s) => ({ s, r: seasonRange(s.id, y) }))
+  const hit = allSeasons().map((s) => ({ s, r: seasonRange(s.id, y, ov) }))
     .filter(({ r }) => now >= r.start && now <= r.end)
     .sort((a, b) => a.r.end - a.r.start - (b.r.end - b.r.start))[0]?.s;
+  return hit && resolveSeason(hit, ov);
 }
 
 /**
  * Chủ đề khách đang thấy. `setting`: '' = tắt · 'auto' = tự động theo lịch · id = admin bật tay.
  */
-export function activeSeason(setting: string | undefined, now = Date.now()): SeasonDef | undefined {
+export function activeSeason(setting: string | undefined, now = Date.now(), ov?: SeasonOverrides): SeasonDef | undefined {
   if (!setting) return undefined;
-  return setting === 'auto' ? seasonByDate(now) : seasonById(setting);
+  return setting === 'auto' ? seasonByDate(now, ov) : seasonById(setting, ov);
 }
 
-/** Danh sách các dịp trong năm, xếp theo ngày bắt đầu. */
-export function seasonsOfYear(year: number): { def: SeasonDef; start: number; end: number; main: number }[] {
-  return SEASONS.map((def) => ({ def, ...seasonRange(def.id, year) })).sort((a, b) => a.start - b.start);
+/** Danh sách các dịp trong năm (đã áp chỉnh sửa của admin), xếp theo ngày bắt đầu. */
+export function seasonsOfYear(year: number, ov?: SeasonOverrides): { def: SeasonDef; start: number; end: number; main: number }[] {
+  return allSeasons().map((d) => ({ def: resolveSeason(d, ov), ...seasonRange(d.id, year, ov) })).sort((a, b) => a.start - b.start);
 }

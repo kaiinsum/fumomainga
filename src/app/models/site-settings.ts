@@ -40,6 +40,19 @@ export function googleFontUrl(font: FontOption): string {
   return `https://fonts.googleapis.com/css2?family=${family}:wght@${font.weights.join(';')}&display=swap`;
 }
 
+/** Thông báo hệ thống admin gửi cho mọi khách. */
+export interface Announcement {
+  id: string;
+  icon: string;
+  title: string;
+  content: string;
+  /** Link khi bấm vào (trong web, vd. /san-pham) — trống = không có. */
+  link?: string;
+  createdAt: number;
+  /** Hết hạn (ms) — trống = không hết hạn. */
+  expiresAt?: number;
+}
+
 export interface SiteSettings {
   // Chung
   shopName: string;
@@ -94,6 +107,12 @@ export interface SiteSettings {
   seasonTheme?: string;
   /** Lúc admin bật / đổi chủ đề (cho thông báo khách). */
   seasonChangedAt?: number;
+  /** Admin sửa nội dung / ngày / màu / hiệu ứng của từng chủ đề (xem SeasonOverride). */
+  seasonOverrides?: import('./seasons').SeasonOverrides;
+  /** Dịp lễ admin tự thêm. */
+  customSeasons?: import('./seasons').CustomSeason[];
+  /** Thông báo hệ thống admin gửi cho khách (hiện trong chuông + thông báo nổi). */
+  announcements?: Announcement[];
   /** Admin bấm "Random lại" trong ngày `day` lần thứ n → đổi bộ trò miễn phí hôm nay. */
   minigameRoll?: { day: string; n: number };
   // Thông báo cho khách (chuông trên thanh menu)
