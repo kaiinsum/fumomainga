@@ -158,6 +158,14 @@ interface GameCard {
             </span>
             <span class="who">?</span>
           }
+          @case ('crush') {
+            <span class="cr-grid">
+              @for (f of crushArt; track $index) {
+                <img [class]="'cr ' + f.c" [src]="'fumo-ninja/' + f.id + '.webp'" alt="" />
+              }
+            </span>
+            <span class="cr-zap"></span>
+          }
           @case ('gacha') {
             <span class="ray"></span>
             <span class="bag"><b>?</b></span>
@@ -315,6 +323,18 @@ interface GameCard {
     .s1 { top: 30px; left: 60px; } .s2 { top: 60px; right: 55px; animation-delay: -.6s; } .s3 { bottom: 40px; left: 80px; animation-delay: -1.1s; }
 
     .art-ninja { background: linear-gradient(#3b2416, #1f130c); }
+    .art-crush { background: radial-gradient(circle at 50% 40%, #4b2a8a, #160b2e); }
+    .cr-grid { position: absolute; inset: 14px 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .cr { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; padding: 3px; border: 2px solid var(--g);
+      background: radial-gradient(circle, color-mix(in srgb, var(--g) 55%, transparent), transparent 70%); filter: drop-shadow(0 0 6px var(--g));
+      animation: cr-pop 2.4s ease-in-out infinite paused; }
+    .cr.b { --g: #2f9bff; } .cr.g { --g: #21d07a; } .cr.y { --g: #ffd21f; } .cr.r { --g: #ff3b5c; } .cr.p { --g: #a35cff; } .cr.k { --g: #ff7ad9; }
+    .cr:nth-child(5), .cr:nth-child(6), .cr:nth-child(7) { animation-name: cr-match; }
+    .cr-zap { position: absolute; left: 20px; right: 20px; top: 50%; height: 6px; border-radius: 6px; background: #fff;
+      box-shadow: 0 0 12px #ffd21f, 0 0 26px #ffd21f; opacity: 0; animation: cr-zap 2.4s ease-in-out infinite paused; }
+    @keyframes cr-pop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    @keyframes cr-match { 0%, 40% { transform: scale(1); } 52% { transform: scale(1.25); filter: brightness(2) drop-shadow(0 0 12px var(--g)); } 64%, 100% { transform: scale(1); } }
+    @keyframes cr-zap { 0%, 48% { opacity: 0; transform: scaleX(0); } 55% { opacity: 1; transform: scaleX(1); } 70%, 100% { opacity: 0; transform: scaleX(1); } }
     .nj { position: absolute; width: 92px; height: 92px; object-fit: contain; animation: nj-toss 2.4s ease-in-out infinite paused; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
     .nj.n1 { left: 24px; top: 70px; }
     .nj.n2 { left: 122px; top: 30px; animation-delay: -.8s; }
@@ -471,6 +491,11 @@ export class MiniGameHubPage implements AfterViewInit {
   readonly blockedId = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('khoa'));
 
   readonly view = signal<HubView>(readView());
+  /** Ảnh minh hoạ thẻ Fumo Crush Saga: lưới 4x2, hàng dưới có 3 bé cùng màu đang ghép. */
+  readonly crushArt = [
+    { id: 'cirno', c: 'b' }, { id: 'teto', c: 'r' }, { id: 'yukari', c: 'p' }, { id: 'meiling', c: 'g' },
+    { id: 'flandre', c: 'y' }, { id: 'flandre', c: 'y' }, { id: 'flandre', c: 'y' }, { id: 'yuyuko', c: 'k' },
+  ];
 
   setView(v: HubView): void {
     this.view.set(v);

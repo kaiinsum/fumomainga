@@ -79,6 +79,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/minigame/ninja').then((m) => m.FumoNinjaPage),
       },
       {
+        path: 'mini-game/fumo-crush-saga',
+        canActivate: [minigameGuard('crush')],
+        title: 'Fumo Crush Saga',
+        loadComponent: () => import('./pages/minigame/crush').then((m) => m.FumoCrushPage),
+      },
+      {
         path: 'mini-game/tui-mu',
         canActivate: [minigameGuard('gacha')],
         title: 'Túi mù may mắn',

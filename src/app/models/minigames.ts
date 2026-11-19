@@ -3,7 +3,7 @@
  * Cấu hình nằm trong SiteSettings → lưu lên máy chủ, mọi khách thấy giống nhau.
  */
 
-export type GameArt = 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp';
+export type GameArt = 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp' | 'crush';
 
 /** open: chơi được · locked: hiện thẻ nhưng khoá · hidden: ẩn hẳn khỏi trang Mini game. */
 export type GameStatus = 'open' | 'locked' | 'hidden';
@@ -21,6 +21,15 @@ export interface GameDef {
 
 /** Thứ tự ở đây = thứ tự mặc định. Game mới thêm sau sẽ tự nối vào cuối danh sách của admin. */
 export const GAMES: GameDef[] = [
+  {
+    id: 'crush',
+    path: '/mini-game/fumo-crush-saga',
+    art: 'crush',
+    title: 'Fumo Crush Saga',
+    tag: '💎 Ghép fumo · Thủ đền · Mới',
+    desc: 'Ghép 3 bé fumo cùng màu để chém, 4 ném bom, 5 bắn laser, 6 tung chiêu đặc biệt — bảo vệ đền Hakurei khỏi lũ yêu quái. Chơi vô tận!',
+    releasedAt: '2026-11-19',
+  },
   {
     id: 'jp-type',
     path: '/mini-game/go-chu-diet-fumo',

@@ -221,6 +221,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     .pv-art.art-gacha { background: linear-gradient(135deg, #ff9ec4, #ffd23f); }
     .pv-art.art-ninja { background: linear-gradient(#3b2416, #1f130c); }
     .pv-art.art-shmup { background: linear-gradient(#1a0f2e, #0b1630); }
+    .pv-art.art-crush { background: linear-gradient(135deg, #3b1d6e, #c2185b); }
     .pv-info { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
     .pv-info p { margin: 0; color: #646970; font-size: .82rem; }
     .pv-tag { align-self: flex-start; font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #f0f6fc; color: #2271b1; }
@@ -298,7 +299,7 @@ export class AdminMinigames {
   readonly codeBusy = signal(false);
   readonly defaultLock = DEFAULT_LOCK_MSG;
   readonly notifyDays = this.settingsSvc.settings().notifyDays || 14;
-  readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀' };
+  readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎' };
 
   readonly draft = signal<GameSetting[]>(normalizeGameSettings(this.settingsSvc.settings().minigames));
   readonly comingSoon = signal(this.settingsSvc.settings().minigameComingSoon ?? true);
