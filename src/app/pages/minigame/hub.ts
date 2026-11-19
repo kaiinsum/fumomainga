@@ -9,6 +9,15 @@ import { sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 
 const HIDE_INTRO_KEY = 'fumo.minigame.hideIntro';
+const VIEW_KEY = 'fumo.minigame.view';
+type HubView = 'scroll' | 'list';
+function readView(): HubView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'scroll';
+  } catch {
+    return 'scroll';
+  }
+}
 function readHideIntro(): boolean {
   try {
     return localStorage.getItem(HIDE_INTRO_KEY) === '1';
@@ -69,8 +78,16 @@ interface GameCard {
         <p class="blocked" role="alert">🔒 <b>{{ b.title }}</b> {{ b.status === 'hidden' ? 'hiện không mở cho người chơi.' : 'đang tạm khoá — ' + b.lockMsg }}
           <button type="button" (click)="blockedId.set(null)" aria-label="Đóng">✕</button></p>
       }
-      <div class="carousel" [class.show]="!intro()">
-        <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
+      @if (!intro()) {
+        <div class="view-switch" role="radiogroup" aria-label="Kiểu xem trò chơi">
+          <button type="button" role="radio" [attr.aria-checked]="view() === 'scroll'" [class.on]="view() === 'scroll'" (click)="setView('scroll')">↔ Cuộn ngang</button>
+          <button type="button" role="radio" [attr.aria-checked]="view() === 'list'" [class.on]="view() === 'list'" (click)="setView('list')">▦ Danh sách</button>
+        </div>
+      }
+      <div class="carousel" [class.show]="!intro()" [class.list]="view() === 'list'">
+        @if (view() === 'scroll') {
+          <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
+        }
         <div class="track" #track>
           @for (g of games(); track $index) {
             @if (g.path && g.needCode) {
@@ -88,7 +105,9 @@ interface GameCard {
             }
           }
         </div>
-        <button class="arrow right" type="button" (click)="scroll(1)" aria-label="Game sau">›</button>
+        @if (view() === 'scroll') {
+          <button class="arrow right" type="button" (click)="scroll(1)" aria-label="Game sau">›</button>
+        }
       </div>
       @if (!intro()) {
         <p class="replay"><button type="button" (click)="replayIntro()">🎆 Xem lại màn mở đầu</button></p>
@@ -207,6 +226,16 @@ interface GameCard {
       padding: 24px 60px; scroll-padding-inline: 60px; scrollbar-width: none;
     }
     .track::-webkit-scrollbar { display: none; }
+    /* Chọn kiểu xem: cuộn ngang / danh sách */
+    .view-switch { display: flex; justify-content: center; gap: 0; margin: 0 auto 4px; width: fit-content;
+      border: 1.5px solid var(--border); border-radius: 999px; padding: 3px; background: var(--surface); }
+    .view-switch button { border: 0; background: none; font: inherit; font-weight: 700; font-size: .88rem; color: var(--muted);
+      padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s; }
+    .view-switch button.on { background: var(--primary); color: var(--on-primary); }
+    .view-switch button:not(.on):hover { color: var(--primary-dark); }
+    /* Kiểu danh sách: thẻ xếp lưới, xuống dòng, không cuộn ngang */
+    .carousel.list .track { flex-wrap: wrap; justify-content: center; overflow: visible; scroll-snap-type: none; padding: 24px 0; }
+    .carousel.list .card { flex: 1 1 280px; max-width: 360px; }
     .arrow {
       position: absolute; top: 50%; z-index: 2; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%;
       border: 1.5px solid var(--border); background: var(--surface); color: var(--primary-dark); font-size: 1.6rem; line-height: 1;
@@ -322,7 +351,8 @@ interface GameCard {
     @keyframes twinkle { 50% { opacity: .2; transform: scale(.6); } }
 
     /* Màn hình cảm ứng không có hover: hiện màu sẵn. */
-    @media (max-width: 600px) { .track { padding: 24px 16px; scroll-padding-inline: 16px; } .arrow { display: none; } }
+    @media (max-width: 600px) { .track { padding: 24px 16px; scroll-padding-inline: 16px; } .arrow { display: none; }
+      .carousel.list .track { padding: 16px 0; gap: 14px; } .carousel.list .card { max-width: none; } }
     @media (hover: none) { .card:not(.locked) { filter: none; opacity: 1; transform: none; } .card:not(.locked) .art * { animation-play-state: running; } }
     @media (prefers-reduced-motion: reduce) { .art * { animation: none !important; } .card { transition: filter .3s, opacity .3s; } }
   `,
@@ -439,6 +469,17 @@ export class MiniGameHubPage implements AfterViewInit {
     return id ? resolveGames(this.settings().minigames).find((g) => g.id === id) : undefined;
   });
   readonly blockedId = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('khoa'));
+
+  readonly view = signal<HubView>(readView());
+
+  setView(v: HubView): void {
+    this.view.set(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* bỏ qua */
+    }
+  }
 
   scroll(dir: -1 | 1): void {
     const el = this.track().nativeElement;
