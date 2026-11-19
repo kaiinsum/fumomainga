@@ -26,8 +26,11 @@
   </header>
 
   <aside class="sidebar">
+    <app-admin-search (picked)="sidebarOpen.set(false)" />
+    @for (grp of groups; track grp.title) {
+    <p class="group-title">{{ grp.title }}</p>
     <ul class="side-menu">
-      @for (m of menu; track m.path) {
+      @for (m of grp.items; track m.path) {
         <li [class.open]="isActive(m.path) && !m.exact">
           <a [routerLink]="m.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!m.exact }">
             <span class="ic">{{ m.icon }}</span> {{ m.label }}
@@ -47,6 +50,7 @@
         </li>
       }
     </ul>
+    }
   </aside>
   <div class="backdrop" (click)="sidebarOpen.set(false)"></div>
 

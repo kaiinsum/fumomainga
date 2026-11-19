@@ -9,6 +9,7 @@ import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 import { AdminInboxService } from '../inbox.service';
 import { AdminBellComponent } from './admin-bell';
+import { AdminSearchComponent } from './admin-search';
 
 interface MenuItem {
   icon: string;
@@ -22,7 +23,7 @@ interface MenuItem {
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AdminBellComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AdminBellComponent, AdminSearchComponent],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss',
 })
@@ -39,38 +40,66 @@ export class AdminLayout implements AfterViewInit {
   /** Trạng thái lưu sản phẩm / tin tức lên máy chủ. */
   readonly sync = inject(CatalogSyncService);
 
-  readonly menu: MenuItem[] = [
-    { icon: '📊', label: 'Bảng tin', path: '/admin', exact: true },
+  /** Menu chia nhóm cho đỡ rối. */
+  readonly groups: { title: string; items: MenuItem[] }[] = [
     {
-      icon: '🧸',
-      label: 'Sản phẩm',
-      path: '/admin/san-pham',
-      children: [
-        { label: 'Tất cả sản phẩm', path: '/admin/san-pham', exact: true },
-        { label: 'Thêm mới', path: '/admin/san-pham/moi', exact: true },
-        { label: 'Nhập / xuất Excel', path: '/admin/san-pham/excel', exact: true },
+      title: 'Tổng quan',
+      items: [
+        { icon: '📊', label: 'Bảng tin', path: '/admin', exact: true },
+        { icon: '📈', label: 'Thống kê', path: '/admin/thong-ke' },
+        { icon: '🔍', label: 'Phân tích', path: '/admin/phan-tich' },
       ],
     },
-    { icon: '🗂️', label: 'Danh mục', path: '/admin/danh-muc' },
     {
-      icon: '📰',
-      label: 'Tin tức',
-      path: '/admin/tin-tuc',
-      children: [
-        { label: 'Tất cả bài viết', path: '/admin/tin-tuc', exact: true },
-        { label: 'Viết bài mới', path: '/admin/tin-tuc/moi', exact: true },
+      title: 'Quản lý bán hàng',
+      items: [
+        { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang', badge: 'orders' },
+        {
+          icon: '🧸',
+          label: 'Sản phẩm',
+          path: '/admin/san-pham',
+          children: [
+            { label: 'Tất cả sản phẩm', path: '/admin/san-pham', exact: true },
+            { label: 'Thêm mới', path: '/admin/san-pham/moi', exact: true },
+            { label: 'Nhập / xuất Excel', path: '/admin/san-pham/excel', exact: true },
+          ],
+        },
+        { icon: '🗂️', label: 'Danh mục', path: '/admin/danh-muc' },
       ],
     },
-    { icon: '📈', label: 'Thống kê', path: '/admin/thong-ke' },
-    { icon: '📊', label: 'Phân tích', path: '/admin/phan-tich' },
-    { icon: '🧾', label: 'Đơn hàng', path: '/admin/don-hang', badge: 'orders' },
-    { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
-    { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
-    { icon: '🎉', label: 'Chủ đề dịp lễ', path: '/admin/chu-de' },
-    { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },
-    { icon: '🤖', label: 'Trợ lý AI', path: '/admin/tro-ly-ai' },
-    { icon: '⚙️', label: 'Cài đặt', path: '/admin/cai-dat' },
+    {
+      title: 'Quản lý nội dung',
+      items: [
+        {
+          icon: '📰',
+          label: 'Tin tức',
+          path: '/admin/tin-tuc',
+          children: [
+            { label: 'Tất cả bài viết', path: '/admin/tin-tuc', exact: true },
+            { label: 'Viết bài mới', path: '/admin/tin-tuc/moi', exact: true },
+          ],
+        },
+        { icon: '🎉', label: 'Chủ đề dịp lễ', path: '/admin/chu-de' },
+      ],
+    },
+    {
+      title: 'Marketing & tương tác',
+      items: [
+        { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
+        { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },
+        { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
+      ],
+    },
+    {
+      title: 'Công cụ & hệ thống',
+      items: [
+        { icon: '🤖', label: 'Trợ lý AI', path: '/admin/tro-ly-ai' },
+        { icon: '⚙️', label: 'Cài đặt', path: '/admin/cai-dat' },
+      ],
+    },
   ];
+  /** Danh sách phẳng (dùng cho hiệu ứng / tương thích). */
+  readonly menu: MenuItem[] = this.groups.flatMap((g) => g.items);
 
   constructor() {
     // Có đơn hàng / lời nhắn mới trong lúc đang mở trang quản trị → hiện thông báo nổi.
