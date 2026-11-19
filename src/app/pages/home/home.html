@@ -96,22 +96,22 @@
             <small>{{ c.count }} sản phẩm</small>
           </span>
           @if (c.picks.length) {
-            <!-- Rê chuột: vài sản phẩm tiêu biểu của danh mục, chuyển qua lại mờ dần -->
+            <!-- Rê chuột: các sản phẩm tiêu biểu xoè ra như tay bài, lần lượt lên giữa -->
             <span class="peek" aria-hidden="true">
-              @for (p of c.picks; track p.id; let j = $index) {
-                <span class="peek-item" [class.on]="peekCat() === c.name && peekIdx() % c.picks.length === j">
-                  <img [src]="p.images[0]" alt="" loading="lazy" />
-                  <span class="peek-info">
-                    <span class="peek-cat">{{ c.icon }} {{ c.name }}</span>
-                    <b>{{ p.name }}</b>
+              <span class="peek-glow"></span>
+              <span class="fan">
+                @for (p of c.picks; track p.id; let j = $index) {
+                  @let k = fanPos(j, c.picks.length);
+                  <span class="fan-card" [class.front]="k === 0" [class.right]="k === 1" [class.left]="k === c.picks.length - 1 && k !== 0 && k !== 1">
+                    <img [src]="p.images[0]" alt="" loading="lazy" />
                   </span>
-                </span>
-              }
-              @if (c.picks.length > 1) {
-                <span class="peek-dots">
-                  @for (p of c.picks; track p.id; let j = $index) { <i [class.on]="peekIdx() % c.picks.length === j"></i> }
-                </span>
-              }
+                }
+              </span>
+              @let front = c.picks[peekIdx() % c.picks.length];
+              <span class="peek-label">
+                <b>{{ front.name }}</b>
+                <small>{{ c.icon }} {{ c.name }} · {{ c.count }} sản phẩm</small>
+              </span>
             </span>
           }
         </a>

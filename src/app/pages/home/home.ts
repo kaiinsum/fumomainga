@@ -75,6 +75,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.peekTimer = setInterval(() => this.peekIdx.update((i) => i + 1), 1600);
   }
 
+  /** Vị trí thẻ j trong tay bài: 0 = giữa, 1 = bên phải, còn lại = bên trái. */
+  fanPos(j: number, n: number): number {
+    return (((j - this.peekIdx()) % n) + n) % n;
+  }
+
   stopPeek(): void {
     clearInterval(this.peekTimer);
     this.peekCat.set(null);

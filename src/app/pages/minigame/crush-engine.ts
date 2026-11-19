@@ -36,7 +36,7 @@ export const GEMS: GemKind[] = [
   { id: 'cirno', name: 'Cirno', color: '#2f9bff' },
   { id: 'meiling', name: 'Meiling', color: '#21d07a' },
   { id: 'flandre', name: 'Flandre', color: '#ffd21f' },
-  { id: 'teto', name: 'Teto', color: '#ff3b5c' },
+  { id: 'teto', name: 'Satori', color: '#ff3b5c' },
   { id: 'yukari', name: 'Yukari', color: '#a35cff' },
   { id: 'yuyuko', name: 'Yuyuko', color: '#ff7ad9' },
 ];

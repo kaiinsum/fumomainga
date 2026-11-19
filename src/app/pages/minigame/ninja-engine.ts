@@ -26,7 +26,7 @@ export const KINDS: Kind[] = [
   { id: 'cirno', name: 'Cirno', points: 9, color: '#4a86d9' },
   { id: 'meiling', name: 'Meiling', points: 5, color: '#3a9a5f' },
   { id: 'yuyuko', name: 'Yuyuko', points: 8, color: '#f19ac4' },
-  { id: 'teto', name: 'Teto', points: 10, color: '#e0566f' },
+  { id: 'teto', name: 'Satori', points: 10, color: '#e0566f' },
   { id: 'remilia', name: 'Remilia', points: 12, color: '#f3a6c0' },
   { id: 'flandre', name: 'Flandre', points: 12, color: '#f1c84b' },
   { id: 'koishi', name: 'Koishi', points: 15, color: '#7bc59a' },

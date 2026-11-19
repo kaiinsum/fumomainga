@@ -33,7 +33,7 @@ export const TIERS: Tier[] = [
   { id: 'cirno', name: 'Cirno', r: 22, color: '#2f9bff', points: 2 },
   { id: 'meiling', name: 'Meiling', r: 30, color: '#21d07a', points: 6 },
   { id: 'yuyuko', name: 'Yuyuko', r: 39, color: '#ff7ad9', points: 12 },
-  { id: 'teto', name: 'Teto', r: 49, color: '#ff3b5c', points: 20 },
+  { id: 'teto', name: 'Satori', r: 49, color: '#ff3b5c', points: 20 },
   { id: 'flandre', name: 'Flandre', r: 60, color: '#ffd21f', points: 30 },
   { id: 'koishi', name: 'Koishi', r: 72, color: '#5fe39b', points: 42 },
   { id: 'yukari', name: 'Yukari', r: 86, color: '#a35cff', points: 56 },
