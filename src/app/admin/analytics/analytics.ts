@@ -1,4 +1,4 @@
-import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { OrderApiService } from '../../services/order-api.service';
 
@@ -309,9 +309,10 @@ export function device(ua: string): string {
     }
 
     <!-- Bảng dọn dữ liệu: xem trước → chọn → xác nhận xoá -->
+    <!-- <dialog> gốc của trình duyệt: luôn nằm trên cùng, giữa màn hình (không bị khung trang làm lệch) -->
+    <dialog #cleanDlg class="cl-dialog" aria-labelledby="cl-title" (cancel)="$event.preventDefault(); closeCleanup()" (click)="onDialogClick($event)">
     @if (cleanOpen()) {
-      <div class="cl-backdrop" (click)="closeCleanup()">
-        <div class="cl-modal" role="dialog" aria-modal="true" aria-labelledby="cl-title" (click)="$event.stopPropagation()">
+        <div class="cl-modal">
           <h2 id="cl-title">🧹 Dọn dữ liệu không dùng</h2>
 
           @if (cleanResult(); as r) {
@@ -331,8 +332,8 @@ export function device(ua: string): string {
             <p class="cl-intro">Chọn loại dữ liệu cần xoá. <b>Đơn hàng, khách hàng, sản phẩm, tin tức, lời nhắn không bị đụng tới.</b></p>
             <label class="cl-days">
               Xoá lượt truy cập cũ hơn
-              <select [value]="cleanDays()" (change)="setCleanDays(+$any($event.target).value)">
-                @for (n of [30, 90, 180, 365]; track n) { <option [value]="n">{{ n }} ngày</option> }
+              <select (change)="setCleanDays(+$any($event.target).value)">
+                @for (n of [30, 90, 180, 365]; track n) { <option [value]="n" [selected]="n === cleanDays()">{{ n }} ngày</option> }
               </select>
             </label>
 
@@ -361,8 +362,8 @@ export function device(ua: string): string {
             </div>
           }
         </div>
-      </div>
     }
+    </dialog>
   `,
   styles: `
     .live { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: #2e7d32; font-weight: 700; }
@@ -447,8 +448,9 @@ export function device(ua: string): string {
     .store .hint { margin: 0; color: #646970; font-size: .8rem; }
     .purge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .88rem; }
     .clean-btn { margin-left: 6px; }
-    .cl-backdrop { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; }
-    .cl-modal { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+    .cl-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 0; outline: none; border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+    .cl-dialog::backdrop { background: rgba(0,0,0,.45); }
+    .cl-modal { padding: 20px 22px; background: #fff; }
     .cl-modal h2 { margin: 0 0 8px; padding: 0; border: 0; font-size: 1.2rem; }
     .cl-intro { margin: 0 0 12px; font-size: .9rem; color: #3c434a; }
     .cl-days { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; margin-bottom: 10px; }
@@ -628,16 +630,26 @@ export class AdminAnalytics {
     return `${pad(p.d)}/${pad(p.mo)}/${p.y}`;
   }
 
+  private readonly cleanDlg = viewChild<ElementRef<HTMLDialogElement>>('cleanDlg');
+
   openCleanup(): void {
     this.cleanResult.set(null);
     this.cleanError.set('');
     this.cleanOpen.set(true);
+    const d = this.cleanDlg()?.nativeElement;
+    if (d && !d.open) d.showModal();
     void this.scanCleanup();
   }
 
   closeCleanup(): void {
     if (this.cleaning()) return;
     this.cleanOpen.set(false);
+    this.cleanDlg()?.nativeElement.close();
+  }
+
+  /** Bấm ra vùng tối bên ngoài bảng → đóng. */
+  onDialogClick(e: MouseEvent): void {
+    if (e.target === e.currentTarget) this.closeCleanup();
   }
 
   setCleanDays(n: number): void {
@@ -691,11 +703,6 @@ export class AdminAnalytics {
     } finally {
       this.cleaning.set(false);
     }
-  }
-
-  @HostListener('document:keydown.escape')
-  onEsc(): void {
-    this.closeCleanup();
   }
 
   async purge(days: number): Promise<void> {
