@@ -8,7 +8,7 @@ const SEEN_KEY = 'fumo.admin.notify.seen';
 export interface AdminNotice {
   /** 'o:<mã đơn>' hoặc 'c:<id lời nhắn>'. */
   key: string;
-  kind: 'order' | 'contact';
+  kind: 'order' | 'contact' | 'storage';
   title: string;
   content: string;
   createdAt: number;
@@ -37,6 +37,9 @@ export class AdminInboxService {
   onNew?: (items: AdminNotice[]) => void;
 
   private orders: AdminNotice[] = [];
+  /** Cảnh báo dung lượng (kiểm tra mỗi ~10 phút). */
+  private storageNotice: AdminNotice[] = [];
+  private storageCheckedAt = 0;
   private contacts: AdminNotice[] = [];
   /** Khoá đã biết (để phát hiện mục mới); null = chưa tải lần nào. */
   private known: Set<string> | null = null;
@@ -67,6 +70,7 @@ export class AdminInboxService {
         .list()
         .then(({ orders }) => this.setOrders(orders))
         .catch(() => undefined),
+      this.checkStorage(),
     ]);
     this.refreshing = false;
     this.publish();
@@ -107,6 +111,37 @@ export class AdminInboxService {
     if (this.known && !this.refreshing) this.publish();
   }
 
+  /** Bộ nhớ cơ sở dữ liệu ≥ 70% → thêm cảnh báo vào chuông (mỗi mức chỉ báo 1 lần mỗi ngày). */
+  private async checkStorage(): Promise<void> {
+    if (Date.now() - this.storageCheckedAt < 10 * 60_000) return;
+    this.storageCheckedAt = Date.now();
+    try {
+      const s = await this.api.call<{ pct: number; level: 'ok' | 'warn' | 'danger'; dbBytes: number; limitBytes: number }>(
+        'GET',
+        '/api/analytics?storage=1',
+        undefined,
+        true,
+      );
+      const mb = (b: number) => `${(b / 1024 / 1024).toFixed(0)}MB`;
+      const day = new Date().toISOString().slice(0, 10);
+      this.storageNotice =
+        s.level === 'ok'
+          ? []
+          : [
+              {
+                key: `s:${s.level}:${day}`,
+                kind: 'storage',
+                title: s.level === 'danger' ? `🚨 Bộ nhớ sắp đầy (${s.pct}%)` : `⚠ Bộ nhớ đang đầy dần (${s.pct}%)`,
+                content: `Đã dùng ${mb(s.dbBytes)} / ${mb(s.limitBytes)} — bấm để dọn dữ liệu cũ không dùng.`,
+                createdAt: Date.now(),
+                link: '/admin/thong-ke?don=1',
+              },
+            ];
+    } catch {
+      /* chưa chạy schema mới / không phải Supabase → bỏ qua */
+    }
+  }
+
   /** Đánh dấu đã xem tất cả mục đang có trong chuông. */
   markAllSeen(): void {
     const keys = new Set(this.notices().map((n) => n.key));
@@ -119,7 +154,7 @@ export class AdminInboxService {
   }
 
   private publish(): void {
-    const all = [...this.orders, ...this.contacts].sort((a, b) => b.createdAt - a.createdAt);
+    const all = [...this.storageNotice, ...[...this.orders, ...this.contacts].sort((a, b) => b.createdAt - a.createdAt)];
     this.notices.set(all);
     const keys = new Set(all.map((n) => n.key));
     if (this.known) {

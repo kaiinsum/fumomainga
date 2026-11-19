@@ -358,3 +358,55 @@
     font-size: 16px;
   }
 }
+
+// ---------- Trường bắt buộc & trường nhập thiếu ----------
+// <label class="req"> → dấu * đỏ ngay từ đầu.
+// Trường lỗi: .invalid (tự gắn) hoặc ng-invalid + ng-touched (form Angular sau khi bấm lưu) → viền đỏ, nền đỏ nhạt, rung nhẹ.
+.req::after {
+  content: ' *';
+  color: #d63638;
+  font-weight: 800;
+}
+
+.adm-shell {
+  input.invalid,
+  select.invalid,
+  textarea.invalid,
+  .invalid-box,
+  input.ng-invalid.ng-touched,
+  select.ng-invalid.ng-touched,
+  textarea.ng-invalid.ng-touched {
+    border-color: #d63638 !important;
+    background-color: #fcf0f1 !important;
+    box-shadow: 0 0 0 3px rgba(214, 54, 56, 0.18) !important;
+    animation: field-shake 0.35s ease;
+  }
+
+  .field-err {
+    display: block;
+    color: #d63638;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 4px;
+
+    &::before {
+      content: '⚠ ';
+    }
+  }
+}
+
+@keyframes field-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-shell .invalid,
+  .adm-shell .ng-invalid.ng-touched {
+    animation: none;
+  }
+}

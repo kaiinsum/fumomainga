@@ -39,6 +39,21 @@ export interface AnalyticsStore {
   latest(limit: number): Promise<PageView[]>;
   /** Dọn khách online cũ (không cần giữ lâu). */
   cleanup(before: number): Promise<void>;
+  /** Dung lượng đang dùng (để cảnh báo trước khi đầy bộ nhớ). */
+  storage(): Promise<StorageInfo>;
+  /** Xoá lượt xem cũ hơn mốc thời gian → số dòng đã xoá. */
+  purge(before: number): Promise<number>;
+}
+
+export interface StorageInfo {
+  /** Số lượt xem đang lưu. */
+  rows: number;
+  /** Dung lượng bảng lượt xem (byte). */
+  viewsBytes: number;
+  /** Dung lượng toàn bộ cơ sở dữ liệu (byte). */
+  dbBytes: number;
+  /** Lượt xem cũ nhất (mốc thời gian) hoặc null. */
+  oldest: number | null;
 }
 
 /** Giờ Việt Nam = UTC+7, không đổi giờ theo mùa. */
@@ -103,6 +118,64 @@ export function memoryAnalytics(): AnalyticsStore {
     },
     async cleanup(before) {
       for (const [k, o] of online) if (o.lastSeen < before) online.delete(k);
+    },
+    async storage() {
+      const bytes = JSON.stringify(views).length;
+      return { rows: views.length, viewsBytes: bytes, dbBytes: bytes + 8_000_000, oldest: views.length ? Math.min(...views.map((v) => v.at)) : null };
+    },
+    async purge(before) {
+      const keep = views.filter((v) => v.at >= before);
+      const removed = views.length - keep.length;
+      views.splice(0, views.length, ...keep);
+      return removed;
+    },
+  };
+}
+
+// ---------- Dọn dữ liệu không dùng (khi bộ nhớ gần đầy) ----------
+
+export type CleanupPart = 'views' | 'online' | 'rateLimits' | 'salts' | 'images';
+export const CLEANUP_PARTS: CleanupPart[] = ['views', 'online', 'rateLimits', 'salts', 'images'];
+
+export interface CleanupCounts {
+  /** Lượt truy cập cũ hơn mốc đã chọn. */
+  views: number;
+  /** Khách "online" đã rời đi hơn 1 ngày. */
+  online: number;
+  /** Bộ đếm chống spam đã hết hạn. */
+  rateLimits: number;
+  /** Muối tạo code minigame của các ngày đã qua. */
+  salts: number;
+  /** Ảnh trong kho không còn sản phẩm / bài viết nào dùng (đã tải lên hơn 1 ngày). */
+  images: number;
+  imageBytes: number;
+}
+
+export interface CleanupOptions {
+  /** Xoá lượt truy cập trước mốc này. */
+  viewsBefore: number;
+  /** Đường dẫn ảnh (img/xxx.jpg) đang được dữ liệu web dùng — không bao giờ xoá. */
+  referenced: Set<string>;
+}
+
+export interface Maintenance {
+  /** Đếm (không xoá) để admin xem trước. */
+  scan(o: CleanupOptions): Promise<CleanupCounts>;
+  /** Xoá các phần đã chọn → số lượng đã xoá. */
+  run(o: CleanupOptions & { parts: CleanupPart[] }): Promise<CleanupCounts>;
+}
+
+export const emptyCounts = (): CleanupCounts => ({ views: 0, online: 0, rateLimits: 0, salts: 0, images: 0, imageBytes: 0 });
+
+/** Bản chạy thử ở máy: chỉ có lượt truy cập trong bộ nhớ. */
+export function memoryMaintenance(an: AnalyticsStore): Maintenance {
+  return {
+    async scan(o) {
+      const all = await an.latest(Number.MAX_SAFE_INTEGER);
+      return { ...emptyCounts(), views: all.filter((v) => v.at < o.viewsBefore).length };
+    },
+    async run(o) {
+      return { ...emptyCounts(), views: o.parts.includes('views') ? await an.purge(o.viewsBefore) : 0 };
     },
   };
 }

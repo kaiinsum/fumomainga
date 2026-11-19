@@ -13,9 +13,10 @@
 
 <form class="adm-edit" [formGroup]="form" (ngSubmit)="submit()" novalidate>
   <div class="main">
-    <input class="title-input" formControlName="name" placeholder="Nhập tên sản phẩm" aria-label="Tên sản phẩm" />
+    <label class="req top-label" for="p-name">Tên sản phẩm</label>
+    <input id="p-name" class="title-input" formControlName="name" placeholder="Nhập tên sản phẩm" aria-label="Tên sản phẩm" />
     @if (invalid('name')) {
-      <span class="error">Tên từ 3–80 ký tự.</span>
+      <span class="field-err">Tên sản phẩm từ 3–80 ký tự.</span>
     }
     <div class="slug-row">
       <span class="slug-label">🔗 Đường dẫn:</span>
@@ -30,12 +31,12 @@
     </div>
 
     <section class="adm-box">
-      <h2>Hình ảnh ({{ images().length }}/{{ maxImages }}) — ảnh đầu tiên là ảnh bìa</h2>
+      <h2><span class="req">Hình ảnh</span> ({{ images().length }}/{{ maxImages }}) — ảnh đầu tiên là ảnh bìa</h2>
       <div class="box-body">
         <label
           class="dropzone"
           [class.over]="dragOver()"
-          [class.invalid]="submitted() && !images().length"
+          [class.invalid-box]="submitted() && !images().length"
           (dragover)="$event.preventDefault(); dragOver.set(true)"
           (dragleave)="dragOver.set(false)"
           (drop)="onDrop($event)"
@@ -46,7 +47,7 @@
           <small>JPG, PNG, WebP — ảnh sẽ được tự động thu nhỏ</small>
         </label>
         @if (submitted() && !images().length) {
-          <span class="error">Cần ít nhất 1 hình ảnh.</span>
+          <span class="field-err">Cần ít nhất 1 hình ảnh.</span>
         }
 
         <div class="url-row field">
@@ -132,11 +133,11 @@
     </section>
 
     <section class="adm-box">
-      <h2>Mô tả sản phẩm</h2>
+      <h2><span class="req">Mô tả sản phẩm</span></h2>
       <div class="box-body field">
         <textarea formControlName="description" rows="8" placeholder="Chất liệu, kích thước, điểm nổi bật..."></textarea>
         @if (invalid('description')) {
-          <span class="error">Mô tả tối thiểu 10 ký tự.</span>
+          <span class="field-err">Mô tả tối thiểu 10 ký tự.</span>
         }
       </div>
     </section>
@@ -176,7 +177,7 @@
       <h2>Thông tin</h2>
       <div class="box-body">
         <div class="field">
-          <label for="category">Danh mục</label>
+          <label class="req" for="category">Danh mục</label>
           <select id="category" formControlName="category">
             @for (c of categories(); track c) {
               <option [value]="c">{{ c }}</option>
@@ -190,10 +191,10 @@
         </div>
         @if (!variants().length) {
         <div class="field">
-          <label for="price">Giá (VNĐ)</label>
+          <label class="req" for="price">Giá (VNĐ)</label>
           <input id="price" type="number" min="0" step="1000" formControlName="price" />
           @if (invalid('price')) {
-            <span class="error">Giá phải ≥ 0.</span>
+            <span class="field-err">Nhập giá (≥ 0).</span>
           } @else {
             <small class="hint">{{ form.controls.price.value | vnd }}</small>
           }

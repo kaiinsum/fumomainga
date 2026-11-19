@@ -234,7 +234,8 @@ export class AdminProductForm {
     if (this.form.invalid || !this.images().length) {
       this.form.markAllAsTouched();
       animate(this.host.querySelector('.adm-edit')!, { translateX: [0, -12, 10, -8, 6, 0], duration: 500, ease: 'inOutSine' });
-      this.toast.err('Vui lòng kiểm tra lại các trường bắt buộc.');
+      this.toast.err('Vui lòng điền các trường đang tô đỏ.');
+      this.focusFirstError();
       return;
     }
 
@@ -446,6 +447,15 @@ export class AdminProductForm {
     const p = this.editing();
     if (!p || !confirm(`Xoá sản phẩm "${p.name}"?`)) return;
     if (this.toast.run(() => this.service.remove(p.id), 'Đã xoá sản phẩm')) this.router.navigate(['/admin/san-pham']);
+  }
+
+  /** Cuộn tới (và đặt con trỏ vào) trường đang lỗi đầu tiên. */
+  private focusFirstError(): void {
+    setTimeout(() => {
+      const el = this.host.querySelector<HTMLElement>('.ng-invalid[formcontrolname], .invalid-box, .var-row.bad input');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (el && el.tagName !== 'LABEL') el.focus({ preventScroll: true });
+    });
   }
 
   invalid(name: keyof typeof this.form.controls): boolean {

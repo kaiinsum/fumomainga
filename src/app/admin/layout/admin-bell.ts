@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AdminInboxService } from '../inbox.service';
 
 /** Chuông thông báo admin: đơn hàng chờ duyệt, lời nhắn mới từ khách. */
@@ -22,8 +22,8 @@ import { AdminInboxService } from '../inbox.service';
           <ul>
             @for (n of inbox.notices(); track n.key) {
               <li [class.new]="fresh().has(n.key)">
-                <a [routerLink]="n.link" (click)="open.set(false)">
-                  <span class="ico" [class.contact]="n.kind === 'contact'">{{ n.kind === 'order' ? '🧾' : '✉️' }}</span>
+                <a [href]="n.link" (click)="go($event, n.link)">
+                  <span class="ico" [class.contact]="n.kind === 'contact'" [class.storage]="n.kind === 'storage'">{{ n.kind === 'order' ? '🧾' : n.kind === 'storage' ? '💾' : '✉️' }}</span>
                   <span class="txt">
                     <b>{{ n.title }}</b>
                     <span class="content">{{ n.content }}</span>
@@ -61,6 +61,7 @@ import { AdminInboxService } from '../inbox.service';
     li.new a { background: #fcf0f1; }
     .ico { flex: none; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: #fcf9e8; font-size: 1.1rem; }
     .ico.contact { background: #e7f2fd; }
+    .ico.storage { background: #fcf0f1; }
     .txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
     .txt b { font-size: .88rem; }
     .content { font-size: .8rem; color: #50575e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -74,6 +75,7 @@ import { AdminInboxService } from '../inbox.service';
 export class AdminBellComponent {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   readonly inbox = inject(AdminInboxService);
+  private readonly router = inject(Router);
   readonly open = signal(false);
   readonly fresh = signal<Set<string>>(new Set());
   readonly unread = computed(() => {
@@ -96,6 +98,12 @@ export class AdminBellComponent {
       this.fresh.update((s) => new Set([...s, ...added]));
       this.inbox.markAllSeen();
     });
+  }
+
+  go(e: Event, link: string): void {
+    e.preventDefault();
+    this.open.set(false);
+    void this.router.navigateByUrl(link);
   }
 
   when(t: number): string {

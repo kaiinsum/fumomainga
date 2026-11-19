@@ -73,7 +73,9 @@ export class AdminLayout implements AfterViewInit {
     // Có đơn hàng / lời nhắn mới trong lúc đang mở trang quản trị → hiện thông báo nổi.
     this.inbox.onNew = (items) => {
       const orders = items.filter((n) => n.kind === 'order').length;
-      const msgs = items.length - orders;
+      const msgs = items.filter((n) => n.kind === 'contact').length;
+      const storage = items.find((n) => n.kind === 'storage');
+      if (storage) this.toast.err(storage.title + ' — ' + storage.content);
       if (orders) this.toast.ok(orders === 1 ? `🔔 ${items.find((n) => n.kind === 'order')!.title}` : `🔔 Có ${orders} đơn hàng mới chờ duyệt`);
       if (msgs) this.toast.ok(msgs === 1 ? `🔔 ${items.find((n) => n.kind === 'contact')!.title}` : `🔔 Có ${msgs} lời nhắn mới`);
     };

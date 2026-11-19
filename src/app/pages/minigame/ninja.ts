@@ -1,11 +1,12 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GameSuggestComponent } from './game-suggest';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-engine';
 
 @Component({
   selector: 'app-fumo-ninja',
-  imports: [RouterLink, SoundToggleComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -48,6 +49,7 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
         <p class="muted small">Bé <b>nhỏ</b> được x2 điểm · chém từ 3 bé trở lên trong một nhát được thưởng <b>COMBO</b>.</p>
       </section>
     </div>
+    <app-game-suggest current="ninja" />
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }

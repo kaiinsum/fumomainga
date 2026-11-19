@@ -1,11 +1,12 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GameSuggestComponent } from './game-suggest';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
 
 @Component({
   selector: 'app-minigame',
-  imports: [RouterLink, SoundToggleComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -115,6 +116,7 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
         </aside>
       </div>
     </div>
+    <app-game-suggest current="shmup" />
   `,
   styles: `
     .wrap { padding: 24px 0 56px; }

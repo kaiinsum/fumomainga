@@ -1,6 +1,7 @@
 import { Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { GameSuggestComponent } from './game-suggest';
 import { ThAvatarComponent } from './th-avatar';
 import { sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
@@ -56,7 +57,7 @@ interface Saved {
 
 @Component({
   selector: 'app-touhoudle',
-  imports: [FormsModule, RouterLink, ThAvatarComponent, SoundToggleComponent],
+  imports: [FormsModule, RouterLink, ThAvatarComponent, SoundToggleComponent, GameSuggestComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -167,6 +168,7 @@ interface Saved {
     </div>
 
     @if (toast()) { <div class="toast">{{ toast() }}</div> }
+    <app-game-suggest current="touhoudle" />
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }

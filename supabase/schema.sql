@@ -220,3 +220,15 @@ revoke all on function public.analytics_totals(timestamptz) from public, anon, a
 revoke all on function public.analytics_top_pages(timestamptz, integer) from public, anon, authenticated;
 alter table public.page_views      enable row level security;
 alter table public.visitors_online enable row level security;
+
+-- Dung lượng đang dùng (trang "Thống kê" cảnh báo khi gần đầy — gói miễn phí Supabase giới hạn 500MB).
+create or replace function public.analytics_storage()
+returns table (row_count bigint, views_bytes bigint, db_bytes bigint, oldest timestamptz)
+language sql stable
+as $$
+  select (select count(*) from public.page_views),
+         pg_total_relation_size('public.page_views'),
+         pg_database_size(current_database()),
+         (select min(at) from public.page_views);
+$$;
+revoke all on function public.analytics_storage() from public, anon, authenticated;

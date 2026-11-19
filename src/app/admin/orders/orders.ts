@@ -1,3 +1,4 @@
+import { isValidVnPhone } from '../../shared/validators';
 import { Component, effect, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -102,18 +103,22 @@ interface Draft {
                   @for (s of statuses; track s) { <option [value]="s">{{ label[s] }}</option> }
                 </select>
               </div>
-              <div class="field"><label for="o-name">Họ tên</label><input id="o-name" [(ngModel)]="d.customer.name" /></div>
-              <div class="field"><label for="o-phone">Số điện thoại</label><input id="o-phone" [(ngModel)]="d.customer.phone" /></div>
+              <div class="field"><label class="req" for="o-name">Họ tên</label><input id="o-name" [class.invalid]="bad().has('name')" [(ngModel)]="d.customer.name" />
+                @if (bad().has('name')) { <span class="field-err">Nhập họ tên khách.</span> }</div>
+              <div class="field"><label class="req" for="o-phone">Số điện thoại</label><input id="o-phone" [class.invalid]="bad().has('phone')" [(ngModel)]="d.customer.phone" />
+                @if (bad().has('phone')) { <span class="field-err">Số điện thoại không hợp lệ.</span> }</div>
               <div class="field"><label for="o-email">Email</label><input id="o-email" [(ngModel)]="d.customer.email" /></div>
-              <div class="field full"><label for="o-addr">Địa chỉ</label><input id="o-addr" [(ngModel)]="d.customer.address" /></div>
+              <div class="field full"><label class="req" for="o-addr">Địa chỉ</label><input id="o-addr" [class.invalid]="bad().has('address')" [(ngModel)]="d.customer.address" />
+                @if (bad().has('address')) { <span class="field-err">Nhập địa chỉ nhận hàng (tối thiểu 5 ký tự).</span> }</div>
               <div class="field full"><label for="o-note">Ghi chú của khách</label><textarea id="o-note" rows="2" [(ngModel)]="d.customer.note"></textarea></div>
             </div>
 
             <div class="items">
-              <b>Sản phẩm</b>
+              <b class="req">Sản phẩm</b>
+              @if (bad().has('items')) { <span class="field-err">Đơn cần ít nhất 1 sản phẩm có tên, số lượng từ 1.</span> }
               @for (it of d.items; track $index; let i = $index) {
                 <div class="item-row">
-                  <input [(ngModel)]="it.name" placeholder="Tên sản phẩm" aria-label="Tên sản phẩm" />
+                  <input [class.invalid]="bad().has('items') && !it.name.trim()" [(ngModel)]="it.name" placeholder="Tên sản phẩm" aria-label="Tên sản phẩm" />
                   <input type="number" min="0" step="1000" [(ngModel)]="it.price" aria-label="Đơn giá" />
                   <input type="number" min="1" max="99" [(ngModel)]="it.qty" aria-label="Số lượng" />
                   <span class="line-sum">{{ it.price * it.qty | vnd }}</span>
@@ -402,7 +407,26 @@ export class AdminOrders {
     return d.items.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
   }
 
+  /** Trường đang thiếu / sai sau khi bấm lưu (tô đỏ). */
+  readonly bad = signal<Set<string>>(new Set());
+
+  private check(d: Draft): Set<string> {
+    const bad = new Set<string>();
+    if (d.customer.name.trim().length < 2) bad.add('name');
+    if (!isValidVnPhone(d.customer.phone)) bad.add('phone');
+    if (d.customer.address.trim().length < 5) bad.add('address');
+    if (!d.items.length || d.items.some((i) => !String(i.name).trim() || !(Number(i.qty) >= 1))) bad.add('items');
+    return bad;
+  }
+
   async save(d: Draft): Promise<void> {
+    const bad = this.check(d);
+    this.bad.set(bad);
+    if (bad.size) {
+      this.toast.err('Vui lòng điền các trường đang tô đỏ.');
+      setTimeout(() => document.querySelector<HTMLElement>('.adm-shell .invalid, .adm-shell .field-err')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return;
+    }
     this.saving.set(true);
     try {
       const items = d.items.map((i) => ({ ...i, price: Number(i.price), qty: Number(i.qty) }));

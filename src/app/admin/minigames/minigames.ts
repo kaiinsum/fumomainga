@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, normalizeGameSettings } from '../../models/minigames';
+import { DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, dailyFreeIds, normalizeGameSettings, resolveGames, vnToday } from '../../models/minigames';
+import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 
@@ -25,6 +26,42 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
         </button>
       </div>
     </div>
+
+    <!-- Code mở khoá trong ngày + giới hạn số trò miễn phí -->
+    <section class="adm-box daily">
+      <h2>🎟 Giới hạn trò chơi mỗi ngày &amp; code mở khoá</h2>
+      <div class="box-body daily-body">
+        <div class="field">
+          <label for="daily-free">Số trò được chơi miễn phí mỗi ngày</label>
+          <div class="daily-row">
+            <input id="daily-free" type="number" min="0" [max]="counts().open" [ngModel]="dailyFree()" (ngModelChange)="dailyFree.set(+$event || 0)" />
+            <span>/ {{ counts().open }} trò đang mở · <b>0 = mở tất cả</b> (không cần code)</span>
+          </div>
+          <small class="hint">
+            Mỗi ngày (giờ Việt Nam) tự xoay vòng các trò miễn phí; trò được tick <b>"Luôn miễn phí"</b> ở dưới luôn có mặt.
+            Khách có <b>code hôm nay</b> thì mở được tất cả trò đến 23:59, qua ngày mới tự khoá lại.
+          </small>
+          @if (dailyFree() > 0 && dailyFree() < counts().open) {
+            <p class="today-free">Hôm nay ({{ today }}) mở miễn phí: <b>{{ todayFree().join(' · ') }}</b></p>
+          }
+        </div>
+
+        <div class="code-card">
+          <span class="code-lbl">Code hôm nay</span>
+          @if (code(); as c) {
+            <strong class="code">{{ c.code }}</strong>
+            <small>Hết hạn lúc 23:59 ngày {{ c.day }} · ngày mai tự đổi code mới</small>
+            <div class="code-actions">
+              <button class="btn primary small" type="button" (click)="copyCode()">📋 Sao chép</button>
+              <button class="btn ghost small" type="button" (click)="newCode()" [disabled]="codeBusy()">🔄 Tạo code mới</button>
+            </div>
+          } @else {
+            <small class="code-err">{{ codeError() || 'Đang tải code…' }}</small>
+            @if (codeError()) { <button class="btn ghost small" type="button" (click)="loadCode()">Thử lại</button> }
+          }
+        </div>
+      </div>
+    </section>
 
     <p class="intro">
       Kéo thả (hoặc bấm ↑ ↓) để đổi thứ tự hiện trên trang Mini game. Ô nào để trống sẽ dùng nội dung mặc định.
@@ -59,6 +96,9 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
                 </button>
               }
             </div>
+            <label class="free-chk" title="Trò này luôn được chơi miễn phí mỗi ngày (không cần code)">
+              <input type="checkbox" [ngModel]="!!g.free" (ngModelChange)="set(i, 'free', $event)" /> Luôn miễn phí
+            </label>
             <div class="move">
               <button type="button" [disabled]="first" (click)="move(i, -1)" aria-label="Lên">↑</button>
               <button type="button" [disabled]="last" (click)="move(i, 1)" aria-label="Xuống">↓</button>
@@ -175,6 +215,20 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     .preview.locked .pv-play { background: #dcdcde; color: #50575e; }
     .extra { margin-top: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     .switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .daily { margin-bottom: 16px; }
+    .daily-body { display: grid !important; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+    .daily-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .daily-row input { width: 80px; font: inherit; padding: 7px 10px; border: 1px solid #c3c4c7; border-radius: 8px; }
+    .today-free { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #edfaef; color: #1f6f37; font-size: .88rem; }
+    .code-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 12px; text-align: center;
+      background: linear-gradient(135deg, #fff8e1, #ffe9a8); border: 1.5px dashed #ffb800; }
+    .code-lbl { font-size: .78rem; font-weight: 800; color: #8a6d00; text-transform: uppercase; letter-spacing: .06em; }
+    .code { font: 900 2rem ui-monospace, Consolas, monospace; letter-spacing: .18em; color: #3a2a00; }
+    .code-card small { color: #6b5a1e; font-size: .78rem; }
+    .code-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .code-err { color: #d63638; }
+    .free-chk { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 700; color: #1f6f37; white-space: nowrap; cursor: pointer; }
+    @media (max-width: 860px) { .daily-body { grid-template-columns: 1fr; } }
     .notice-box { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: #f6f7f7; border: 1px dashed #c3c4c7; }
     .notice-box input[type='date'] { max-width: 200px; }
     @media (max-width: 860px) { .edit { grid-template-columns: 1fr; } }
@@ -183,8 +237,22 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
 export class AdminMinigames {
   private readonly settingsSvc = inject(SettingsService);
   private readonly toast = inject(AdminToastService);
+  private readonly api = inject(OrderApiService);
 
   readonly statuses = STATUS;
+  readonly today = vnToday();
+  readonly dailyFree = signal(this.settingsSvc.settings().minigameDailyFree ?? 0);
+  /** Trò miễn phí hôm nay theo bản nháp đang chỉnh. */
+  readonly todayFree = computed(() => {
+    const games = resolveGames(this.draft());
+    const ids = dailyFreeIds(games, this.dailyFree(), this.today);
+    return games.filter((g) => ids.has(g.id)).map((g) => g.title);
+  });
+
+  // ---------- Code hôm nay ----------
+  readonly code = signal<{ day: string; code: string } | null>(null);
+  readonly codeError = signal('');
+  readonly codeBusy = signal(false);
   readonly defaultLock = DEFAULT_LOCK_MSG;
   readonly notifyDays = this.settingsSvc.settings().notifyDays || 14;
   readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀' };
@@ -206,9 +274,49 @@ export class AdminMinigames {
   readonly dirty = computed(() => {
     const s = this.settingsSvc.settings();
     return (
-      JSON.stringify(this.draft()) !== JSON.stringify(normalizeGameSettings(s.minigames)) || this.comingSoon() !== (s.minigameComingSoon ?? true)
+      JSON.stringify(this.draft()) !== JSON.stringify(normalizeGameSettings(s.minigames)) ||
+      this.comingSoon() !== (s.minigameComingSoon ?? true) ||
+      this.dailyFree() !== (s.minigameDailyFree ?? 0)
     );
   });
+
+  constructor() {
+    void this.loadCode();
+  }
+
+  async loadCode(): Promise<void> {
+    this.codeError.set('');
+    if (!this.api.adminKey()) return this.codeError.set('Chưa có mã quản trị — vào trang Đơn hàng để nhập mã.');
+    try {
+      this.code.set(await this.api.call<{ day: string; code: string }>('GET', '/api/minigame', undefined, true));
+    } catch (e) {
+      this.codeError.set(e instanceof Error ? e.message : 'Không tải được code.');
+    }
+  }
+
+  async newCode(): Promise<void> {
+    if (!confirm('Tạo code mới cho hôm nay? Code cũ sẽ không dùng được nữa (khách đã mở khoá vẫn giữ đến hết ngày).')) return;
+    this.codeBusy.set(true);
+    try {
+      this.code.set(await this.api.call<{ day: string; code: string }>('PUT', '/api/minigame', {}, true));
+      this.toast.ok('Đã tạo code mới cho hôm nay');
+    } catch (e) {
+      this.toast.err(e instanceof Error ? e.message : 'Không tạo được code mới.');
+    } finally {
+      this.codeBusy.set(false);
+    }
+  }
+
+  async copyCode(): Promise<void> {
+    const c = this.code()?.code;
+    if (!c) return;
+    try {
+      await navigator.clipboard.writeText(c);
+      this.toast.ok(`Đã sao chép code ${c}`);
+    } catch {
+      this.toast.err('Không sao chép được — hãy chép tay: ' + c);
+    }
+  }
 
   defOf(id: string): GameDef {
     return GAMES.find((g) => g.id === id)!;
@@ -263,6 +371,7 @@ export class AdminMinigames {
   resetAll(): void {
     this.draft.set(normalizeGameSettings(undefined));
     this.comingSoon.set(true);
+    this.dailyFree.set(0);
     this.toast.ok('Đã khôi phục mặc định — bấm "Lưu thay đổi" để áp dụng');
   }
 
@@ -270,6 +379,7 @@ export class AdminMinigames {
     const s = this.settingsSvc.settings();
     this.draft.set(normalizeGameSettings(s.minigames));
     this.comingSoon.set(s.minigameComingSoon ?? true);
+    this.dailyFree.set(s.minigameDailyFree ?? 0);
   }
 
   async save(): Promise<void> {
@@ -282,7 +392,8 @@ export class AdminMinigames {
       releasedAt: (g.releasedAt ?? '').trim(),
       notice: (g.notice ?? '').trim(),
     }));
-    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon() };
+    const daily = Math.max(0, Math.round(this.dailyFree() || 0));
+    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;
     this.draft.set(normalizeGameSettings(clean));
     this.saving.set(true);

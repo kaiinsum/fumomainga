@@ -1,4 +1,5 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { OrderApiService } from '../../services/order-api.service';
 
 type RangeKey = 'hour' | 'day' | 'month' | 'all';
@@ -26,6 +27,17 @@ interface Stats {
   series: { t: number; views: number; visitors: number }[];
   top: { path: string; views: number; visitors: number }[];
   latest: Visit[];
+  storage: Storage | null;
+}
+
+interface Storage {
+  rows: number;
+  viewsBytes: number;
+  dbBytes: number;
+  limitBytes: number;
+  pct: number;
+  level: 'ok' | 'warn' | 'danger';
+  oldest: number | null;
 }
 
 interface Point {
@@ -33,6 +45,9 @@ interface Point {
   views: number;
   visitors: number;
 }
+
+type CleanKey = 'views' | 'online' | 'rateLimits' | 'salts' | 'images';
+type CleanCounts = Record<CleanKey, number> & { imageBytes: number };
 
 const REFRESH_MS = 15_000;
 const VN = 7 * 3600_000;
@@ -106,6 +121,18 @@ export function device(ua: string): string {
 
     @if (error()) {
       <div class="adm-notice warn">⚠ {{ error() }}</div>
+    }
+
+    @if (data()?.storage; as st) {
+      @if (st.level !== 'ok') {
+        <div class="store-alert" [class.danger]="st.level === 'danger'" role="alert">
+          <b>{{ st.level === 'danger' ? '🚨 Bộ nhớ sắp đầy!' : '⚠ Bộ nhớ đang đầy dần' }}</b>
+          Cơ sở dữ liệu đã dùng <b>{{ mb(st.dbBytes) }}</b> / {{ mb(st.limitBytes) }} ({{ st.pct }}%).
+          {{ st.level === 'danger' ? 'Khi đầy, web có thể không lưu được đơn hàng mới.' : '' }}
+          Hãy dọn bớt dữ liệu cũ không dùng đến.
+          <button class="btn primary small clean-btn" type="button" (click)="openCleanup()">🧹 Dọn dữ liệu không dùng</button>
+        </div>
+      }
     }
 
     @if (data(); as d) {
@@ -232,6 +259,29 @@ export function device(ua: string): string {
         </section>
       </div>
 
+      <!-- Dung lượng lưu trữ -->
+      @if (d.storage; as st) {
+        <section class="adm-box store" id="store-box">
+          <h2>💾 Dung lượng lưu trữ</h2>
+          <div class="store-body">
+            <div class="store-bar" [class]="'store-bar ' + st.level" role="meter" aria-label="Dung lượng cơ sở dữ liệu"
+              [attr.aria-valuenow]="st.pct" aria-valuemin="0" aria-valuemax="100">
+              <i [style.width.%]="st.pct > 100 ? 100 : st.pct"></i>
+            </div>
+            <p class="store-line">
+              Cơ sở dữ liệu: <b>{{ mb(st.dbBytes) }}</b> / {{ mb(st.limitBytes) }} (<b>{{ st.pct }}%</b>)
+              · Dữ liệu truy cập: <b>{{ fmt(st.rows) }}</b> lượt ({{ mb(st.viewsBytes) }})
+              @if (st.oldest) { · cũ nhất từ {{ dayLabel(st.oldest) }} }
+            </p>
+            <p class="hint">Gói miễn phí Supabase cho 500MB. Hệ thống tự cảnh báo khi dùng trên 70% (chuông 🔔 ở thanh trên cùng).</p>
+            <div class="purge">
+              <button class="btn primary small" type="button" (click)="openCleanup()">🧹 Dọn dữ liệu không dùng</button>
+              <span class="hint">Xem trước những gì sẽ bị xoá, chọn rồi mới xác nhận.</span>
+            </div>
+          </div>
+        </section>
+      }
+
       <!-- IP gần nhất -->
       <section class="adm-box">
         <h2>🌐 Lượt truy cập gần nhất (IP)</h2>
@@ -256,6 +306,62 @@ export function device(ua: string): string {
       </section>
     } @else if (loading()) {
       <p class="none">Đang tải số liệu…</p>
+    }
+
+    <!-- Bảng dọn dữ liệu: xem trước → chọn → xác nhận xoá -->
+    @if (cleanOpen()) {
+      <div class="cl-backdrop" (click)="closeCleanup()">
+        <div class="cl-modal" role="dialog" aria-modal="true" aria-labelledby="cl-title" (click)="$event.stopPropagation()">
+          <h2 id="cl-title">🧹 Dọn dữ liệu không dùng</h2>
+
+          @if (cleanResult(); as r) {
+            <div class="cl-done">
+              <p>✅ <b>Đã dọn xong!</b></p>
+              <ul>
+                @for (p of parts; track p.key) {
+                  @if (r[p.key]) { <li>{{ p.label }}: <b>{{ fmt(r[p.key]) }}</b>{{ p.key === 'images' ? ' ảnh (' + mb(r.imageBytes) + ')' : '' }}</li> }
+                }
+              </ul>
+              @if (!cleanTotal(r)) { <p class="hint">Không có gì cần xoá.</p> }
+            </div>
+            <div class="cl-actions">
+              <button class="btn primary small" type="button" (click)="closeCleanup()">Đóng</button>
+            </div>
+          } @else {
+            <p class="cl-intro">Chọn loại dữ liệu cần xoá. <b>Đơn hàng, khách hàng, sản phẩm, tin tức, lời nhắn không bị đụng tới.</b></p>
+            <label class="cl-days">
+              Xoá lượt truy cập cũ hơn
+              <select [value]="cleanDays()" (change)="setCleanDays(+$any($event.target).value)">
+                @for (n of [30, 90, 180, 365]; track n) { <option [value]="n">{{ n }} ngày</option> }
+              </select>
+            </label>
+
+            <ul class="cl-list">
+              @for (p of parts; track p.key) {
+                <li [class.off]="!picked().has(p.key)">
+                  <label>
+                    <input type="checkbox" [checked]="picked().has(p.key)" (change)="togglePart(p.key)" />
+                    <span class="cl-txt"><b>{{ p.label }}</b><small>{{ p.hint }}</small></span>
+                    <span class="cl-count">
+                      @if (scanning()) { … } @else if (cleanCounts(); as c) {
+                        {{ fmt(c[p.key]) }}{{ p.key === 'images' && c.imageBytes ? ' · ' + mb(c.imageBytes) : '' }}
+                      }
+                    </span>
+                  </label>
+                </li>
+              }
+            </ul>
+            @if (cleanError()) { <p class="cl-err">⚠ {{ cleanError() }}</p> }
+            <p class="cl-warn">⚠ Dữ liệu đã xoá <b>không khôi phục được</b>.</p>
+            <div class="cl-actions">
+              <button class="btn ghost small" type="button" (click)="closeCleanup()" [disabled]="cleaning()">Huỷ</button>
+              <button class="btn danger small" type="button" (click)="confirmCleanup()" [disabled]="cleaning() || scanning() || !selectedCount()">
+                {{ cleaning() ? 'Đang xoá…' : '🗑 Xác nhận xoá' + (selectedCount() ? ' (' + fmt(selectedCount()) + ' mục)' : '') }}
+              </button>
+            </div>
+          }
+        </div>
+      </div>
     }
   `,
   styles: `
@@ -328,6 +434,38 @@ export function device(ua: string): string {
     .latest .path { max-width: 260px; font-weight: 600; }
     .latest .ref { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #646970; }
     .nowrap { white-space: nowrap; }
+    .store-alert { margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; background: #fcf9e8; border: 1.5px solid #dba617; color: #3c434a; line-height: 1.6; }
+    .store-alert.danger { background: #fcf0f1; border-color: #d63638; }
+    .store-alert a { color: #2271b1; font-weight: 700; }
+    .store { margin-bottom: 16px; scroll-margin-top: 80px; }
+    .store-body { padding: 14px 16px; display: grid; gap: 8px; }
+    .store-bar { height: 12px; border-radius: 6px; background: #f0f0f1; overflow: hidden; }
+    .store-bar i { display: block; height: 100%; border-radius: 6px; background: #2e7d32; }
+    .store-bar.warn i { background: #dba617; }
+    .store-bar.danger i { background: #d63638; }
+    .store-line { margin: 0; font-size: .9rem; }
+    .store .hint { margin: 0; color: #646970; font-size: .8rem; }
+    .purge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .88rem; }
+    .clean-btn { margin-left: 6px; }
+    .cl-backdrop { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; }
+    .cl-modal { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: #fff; border-radius: 14px; padding: 20px 22px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+    .cl-modal h2 { margin: 0 0 8px; padding: 0; border: 0; font-size: 1.2rem; }
+    .cl-intro { margin: 0 0 12px; font-size: .9rem; color: #3c434a; }
+    .cl-days { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600; margin-bottom: 10px; }
+    .cl-days select { font: inherit; padding: 5px 8px; border: 1px solid #c3c4c7; border-radius: 8px; }
+    .cl-list { list-style: none; margin: 0; padding: 0; border: 1px solid #dcdcde; border-radius: 10px; overflow: hidden; }
+    .cl-list li + li { border-top: 1px solid #f0f0f1; }
+    .cl-list label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+    .cl-list li.off { opacity: .55; }
+    .cl-txt { display: flex; flex-direction: column; }
+    .cl-txt small { color: #646970; font-size: .78rem; }
+    .cl-count { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .cl-warn { margin: 12px 0 0; font-size: .85rem; color: #8a2424; }
+    .cl-err { margin: 10px 0 0; color: #d63638; font-weight: 700; font-size: .88rem; }
+    .cl-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .btn.danger { background: #d63638 !important; color: #fff !important; border-color: #d63638 !important; }
+    .btn.danger:disabled { opacity: .5; }
+    .cl-done ul { margin: 6px 0; padding-left: 20px; }
 
     @media (max-width: 1000px) {
       .tiles { grid-template-columns: 1fr 1fr; }
@@ -370,6 +508,30 @@ export class AdminAnalytics {
   readonly auto = signal(true);
   readonly asTable = signal(false);
   readonly hover = signal(-1);
+  readonly purging = signal(false);
+
+  // ---------- Dọn dữ liệu không dùng ----------
+  readonly parts: { key: CleanKey; label: string; hint: string }[] = [
+    { key: 'views', label: 'Lượt truy cập cũ', hint: 'Lịch sử xem trang cũ hơn số ngày đã chọn (bảng thống kê).' },
+    { key: 'images', label: 'Ảnh không còn dùng', hint: 'Ảnh đã tải lên nhưng không sản phẩm / bài viết nào dùng nữa (giữ lại ảnh mới tải trong 24 giờ).' },
+    { key: 'online', label: 'Khách online đã rời đi', hint: 'Dấu vết "đang truy cập" của khách đã rời hơn 1 ngày.' },
+    { key: 'rateLimits', label: 'Bộ đếm chống spam hết hạn', hint: 'Số lần gửi form / nhập code của các khung giờ đã qua.' },
+    { key: 'salts', label: 'Dữ liệu code minigame ngày cũ', hint: 'Dùng để tạo code các ngày đã qua — không còn tác dụng.' },
+  ];
+  readonly cleanOpen = signal(false);
+  readonly cleanDays = signal(90);
+  readonly picked = signal<Set<CleanKey>>(new Set(['views', 'images', 'online', 'rateLimits', 'salts']));
+  readonly cleanCounts = signal<CleanCounts | null>(null);
+  readonly cleanResult = signal<CleanCounts | null>(null);
+  readonly cleanError = signal('');
+  readonly scanning = signal(false);
+  readonly cleaning = signal(false);
+  /** Số mục sẽ xoá theo lựa chọn hiện tại. */
+  readonly selectedCount = computed(() => {
+    const c = this.cleanCounts();
+    if (!c) return 0;
+    return [...this.picked()].reduce((s, k) => s + (c[k] || 0), 0);
+  });
 
   readonly rangeLabel = computed(() => ({ hour: '60 phút qua', day: '24 giờ qua', month: '30 ngày qua', all: 'Toàn bộ' })[this.range()]);
 
@@ -413,7 +575,11 @@ export class AdminAnalytics {
   private timer?: ReturnType<typeof setInterval>;
 
   constructor() {
-    void this.load();
+    // Bấm cảnh báo bộ nhớ trong chuông (?don=1) → mở luôn bảng dọn dữ liệu.
+    const openClean = inject(ActivatedRoute).snapshot.queryParamMap.has('don');
+    void this.load().then(() => {
+      if (openClean) this.openCleanup();
+    });
     this.timer = setInterval(() => {
       if (this.auto() && document.visibilityState === 'visible') void this.load(true);
     }, REFRESH_MS);
@@ -451,6 +617,100 @@ export class AdminAnalytics {
     if (!n || !r.width) return;
     const i = Math.round(((e.clientX - r.left) / r.width) * (n - 1));
     this.hover.set(Math.max(0, Math.min(n - 1, i)));
+  }
+
+  mb(bytes: number): string {
+    return bytes >= 1024 * 1024 * 1024 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  dayLabel(t: number): string {
+    const p = vnParts(t);
+    return `${pad(p.d)}/${pad(p.mo)}/${p.y}`;
+  }
+
+  openCleanup(): void {
+    this.cleanResult.set(null);
+    this.cleanError.set('');
+    this.cleanOpen.set(true);
+    void this.scanCleanup();
+  }
+
+  closeCleanup(): void {
+    if (this.cleaning()) return;
+    this.cleanOpen.set(false);
+  }
+
+  setCleanDays(n: number): void {
+    this.cleanDays.set(n);
+    void this.scanCleanup();
+  }
+
+  togglePart(k: CleanKey): void {
+    this.picked.update((s) => {
+      const n = new Set(s);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
+      return n;
+    });
+  }
+
+  cleanTotal(c: CleanCounts): number {
+    return this.parts.reduce((s, p) => s + (c[p.key] || 0), 0);
+  }
+
+  /** Xem trước: đếm số mục mỗi loại (chưa xoá gì). */
+  async scanCleanup(): Promise<void> {
+    this.scanning.set(true);
+    this.cleanError.set('');
+    try {
+      const r = await this.api.call<{ counts: CleanCounts }>('GET', `/api/analytics?cleanup=1&days=${this.cleanDays()}`, undefined, true, { timeoutMs: 30000 });
+      this.cleanCounts.set(r.counts);
+    } catch (e) {
+      this.cleanError.set(e instanceof Error ? e.message : 'Không kiểm tra được dữ liệu.');
+    } finally {
+      this.scanning.set(false);
+    }
+  }
+
+  /** Bấm "Xác nhận xoá": hỏi lại lần cuối rồi mới xoá. */
+  async confirmCleanup(): Promise<void> {
+    const n = this.selectedCount();
+    if (!n) return;
+    if (!confirm(`Xoá vĩnh viễn ${this.fmt(n)} mục dữ liệu đã chọn? Thao tác này không khôi phục được.`)) return;
+    this.cleaning.set(true);
+    this.cleanError.set('');
+    try {
+      const parts = [...this.picked()].join(',');
+      const r = await this.api.call<{ deleted: CleanCounts }>('DELETE', `/api/analytics?cleanup=1&days=${this.cleanDays()}&parts=${parts}`, undefined, true, {
+        timeoutMs: 30000,
+      });
+      this.cleanResult.set(r.deleted);
+      void this.load();
+    } catch (e) {
+      this.cleanError.set(e instanceof Error ? e.message : 'Không xoá được dữ liệu.');
+    } finally {
+      this.cleaning.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEsc(): void {
+    this.closeCleanup();
+  }
+
+  async purge(days: number): Promise<void> {
+    if (!confirm(`Xoá vĩnh viễn mọi lượt truy cập cũ hơn ${days} ngày? Không khôi phục được.`)) return;
+    this.purging.set(true);
+    try {
+      const r = await this.api.call<{ deleted: number }>('DELETE', `/api/analytics?days=${days}`, undefined, true, { timeoutMs: 30000 });
+      this.error.set('');
+      alert(`Đã xoá ${this.fmt(r.deleted)} lượt truy cập cũ.`);
+      await this.load();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Không xoá được dữ liệu cũ.');
+    } finally {
+      this.purging.set(false);
+    }
   }
 
   fmt(n: number): string {

@@ -1,6 +1,7 @@
 import { PriceTagComponent } from '../../shared/price-tag';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GameSuggestComponent } from './game-suggest';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { Product } from '../../models/product';
 import { CartService } from '../../services/cart.service';
@@ -39,7 +40,7 @@ const WIN_INDEX = 54;
 
 @Component({
   selector: 'app-gacha',
-  imports: [RouterLink, SoundToggleComponent, PriceTagComponent],
+  imports: [RouterLink, SoundToggleComponent, PriceTagComponent, GameSuggestComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -128,6 +129,7 @@ const WIN_INDEX = 54;
         </div>
       }
     </div>
+    <app-game-suggest current="gacha" />
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }

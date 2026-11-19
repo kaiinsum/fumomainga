@@ -5,7 +5,7 @@
 import { Redis } from '@upstash/redis';
 import { randomInt, timingSafeEqual } from 'node:crypto';
 import { ProductRow, supabaseStore } from './supabase-store';
-import { AnalyticsStore, memoryAnalytics } from './analytics';
+import { AnalyticsStore, Maintenance, memoryAnalytics, memoryMaintenance } from './analytics';
 
 /** Project Supabase của shop (URL không phải bí mật; khoá đặt trong biến môi trường). */
 const DEFAULT_SUPABASE_URL = 'https://socfkoptqceyzhhpwxoe.supabase.co';
@@ -58,6 +58,8 @@ interface Store {
   syncProducts?(products: ProductRow[]): Promise<void>;
   /** Thống kê truy cập (Supabase hoặc bộ nhớ khi chạy thử). */
   analytics?: AnalyticsStore;
+  /** Dọn dữ liệu không dùng khi bộ nhớ gần đầy. */
+  maintenance?: Maintenance;
   /** Lưu ảnh và trả về link công khai (chỉ có ở Supabase Storage). */
   uploadImage?(path: string, bytes: Uint8Array, contentType: string): Promise<string>;
   /** Lời nhắn liên hệ (Supabase có bảng riêng; kho khác lưu dạng danh sách JSON). */
@@ -177,6 +179,7 @@ function redisStore(redis: Redis): Store {
 
 /** Chỉ dùng khi chạy thử ở máy (không có Redis). Trên Vercel bắt buộc phải có Redis. */
 function memoryStore(): Store {
+  const memAn = memoryAnalytics();
   const orders = new Map<string, Order>();
   const hits = new Map<string, { n: number; until: number }>();
   const kv = new Map<string, unknown>();
@@ -192,7 +195,8 @@ function memoryStore(): Store {
       hits.set(key, next);
       return next.n;
     },
-    analytics: memoryAnalytics(),
+    analytics: memAn,
+    maintenance: memoryMaintenance(memAn),
     getJson: async <T,>(key: string) => structuredClone((kv.get(key) as T | undefined) ?? null),
     setJson: async (key, value) => void kv.set(key, structuredClone(value)),
     delKey: async (key) => void kv.delete(key),

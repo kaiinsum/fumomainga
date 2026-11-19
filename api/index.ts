@@ -15,6 +15,7 @@ import * as aiKnowledge from './_routes/ai/knowledge';
 import * as analytics from './_routes/analytics';
 import * as catalog from './_routes/catalog';
 import * as chat from './_routes/chat';
+import * as minigame from './_routes/minigame';
 import * as contactOne from './_routes/contacts/[id]';
 import * as contacts from './_routes/contacts/index';
 import * as orderOne from './_routes/orders/[code]';
@@ -32,6 +33,7 @@ const ROUTES: [RegExp, Module][] = [
   [/^settings$/, settings],
   [/^catalog$/, catalog],
   [/^analytics$/, analytics],
+  [/^minigame$/, minigame],
   [/^ai\/catalog$/, aiCatalog],
   [/^ai\/knowledge$/, aiKnowledge],
   [/^contacts$/, contacts],

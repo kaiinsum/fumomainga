@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, WritableSignal, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GameSuggestComponent } from './game-suggest';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { H, JpResult, JpState, JpTypingGame, W } from './jp-engine';
 import { JpLevel } from './jp-words';
@@ -13,7 +14,7 @@ interface LevelCard {
 
 @Component({
   selector: 'app-jp-type',
-  imports: [RouterLink, SoundToggleComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -133,6 +134,7 @@ interface LevelCard {
         </aside>
       </div>
     </div>
+    <app-game-suggest current="jp-type" />
   `,
   styles: `
     .wrap { padding: 24px 0 64px; }

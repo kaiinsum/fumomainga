@@ -4,7 +4,7 @@
  */
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import type { Contact, ContactStore, Order, OrderItem, OrderStatus } from './orders';
-import type { AnalyticsStore, PageView } from './analytics';
+import type { AnalyticsStore, CleanupCounts, CleanupOptions, Maintenance, PageView } from './analytics';
 
 /** Bucket công khai chứa ảnh sản phẩm / tin tức. */
 const MEDIA_BUCKET = 'media';
@@ -186,10 +186,99 @@ export function supabaseStore(url: string, serviceKey: string) {
     async cleanup(before) {
       check(await db.from('visitors_online').delete().lt('last_seen', new Date(before).toISOString()), 'dọn khách online');
     },
+    async storage() {
+      const rows = check(await db.rpc('analytics_storage'), 'dung lượng') as { row_count: number; views_bytes: number; db_bytes: number; oldest: string | null }[];
+      const r = rows?.[0];
+      return { rows: num(r?.row_count), viewsBytes: num(r?.views_bytes), dbBytes: num(r?.db_bytes), oldest: r?.oldest ? new Date(r.oldest).getTime() : null };
+    },
+    async purge(before) {
+      const res = await db.from('page_views').delete({ count: 'exact' }).lt('at', new Date(before).toISOString());
+      check(res, 'xoá lượt xem cũ');
+      return res.count ?? 0;
+    },
+  };
+
+  const DAY = 86_400_000;
+  const vnToday = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+  const SALT_PREFIX = 'minigame:salt:';
+
+  /** Ảnh trong kho không còn được dùng và đã tải lên hơn 1 ngày (tránh xoá ảnh admin vừa tải, chưa kịp lưu). */
+  async function unusedImages(referenced: Set<string>): Promise<{ path: string; size: number }[]> {
+    const out: { path: string; size: number }[] = [];
+    for (let offset = 0; offset < 20_000; offset += 1000) {
+      const { data, error } = await db.storage.from(MEDIA_BUCKET).list('img', { limit: 1000, offset });
+      if (error) {
+        if (/not.?found|does not exist/i.test(error.message)) return out; // chưa có kho ảnh
+        throw new Error(`Đọc kho ảnh: ${error.message}`);
+      }
+      for (const f of data ?? []) {
+        const path = `img/${f.name}`;
+        const created = f.created_at ? new Date(f.created_at).getTime() : 0;
+        if (!f.id || referenced.has(path) || Date.now() - created < DAY) continue;
+        out.push({ path, size: Number((f.metadata as { size?: number } | null)?.size) || 0 });
+      }
+      if (!data || data.length < 1000) break;
+    }
+    return out;
+  }
+
+  async function oldSalts(): Promise<string[]> {
+    const rows = check(await db.from('app_kv').select('key').like('key', SALT_PREFIX + '%'), 'đọc muối code') as { key: string }[];
+    const today = SALT_PREFIX + vnToday();
+    return rows.map((r) => r.key).filter((k) => k < today);
+  }
+
+  const countOf = async (q: PromiseLike<{ count: number | null; error: { message: string } | null }>, what: string) => {
+    const res = await q;
+    if (res.error) throw new Error(`${what}: ${res.error.message}`);
+    return res.count ?? 0;
+  };
+
+  const maintenance: Maintenance = {
+    async scan(o: CleanupOptions): Promise<CleanupCounts> {
+      const now = new Date().toISOString();
+      const [views, online, rateLimits, salts, images] = await Promise.all([
+        countOf(db.from('page_views').select('id', { count: 'exact', head: true }).lt('at', new Date(o.viewsBefore).toISOString()), 'đếm lượt truy cập'),
+        countOf(db.from('visitors_online').select('vid', { count: 'exact', head: true }).lt('last_seen', new Date(Date.now() - DAY).toISOString()), 'đếm khách online'),
+        countOf(db.from('rate_limits').select('key', { count: 'exact', head: true }).lt('reset_at', now), 'đếm chống spam'),
+        oldSalts(),
+        unusedImages(o.referenced),
+      ]);
+      return { views, online, rateLimits, salts: salts.length, images: images.length, imageBytes: images.reduce((s, f) => s + f.size, 0) };
+    },
+    async run(o): Promise<CleanupCounts> {
+      const out: CleanupCounts = { views: 0, online: 0, rateLimits: 0, salts: 0, images: 0, imageBytes: 0 };
+      const has = (p: string) => o.parts.includes(p as never);
+      if (has('views')) {
+        out.views = await countOf(db.from('page_views').delete({ count: 'exact' }).lt('at', new Date(o.viewsBefore).toISOString()), 'xoá lượt truy cập');
+      }
+      if (has('online')) {
+        out.online = await countOf(db.from('visitors_online').delete({ count: 'exact' }).lt('last_seen', new Date(Date.now() - DAY).toISOString()), 'xoá khách online');
+      }
+      if (has('rateLimits')) {
+        out.rateLimits = await countOf(db.from('rate_limits').delete({ count: 'exact' }).lt('reset_at', new Date().toISOString()), 'xoá chống spam');
+      }
+      if (has('salts')) {
+        const keys = await oldSalts();
+        if (keys.length) check(await db.from('app_kv').delete().in('key', keys), 'xoá muối code');
+        out.salts = keys.length;
+      }
+      if (has('images')) {
+        const files = await unusedImages(o.referenced);
+        for (let i = 0; i < files.length; i += 100) {
+          const { error } = await db.storage.from(MEDIA_BUCKET).remove(files.slice(i, i + 100).map((f) => f.path));
+          if (error) throw new Error(`Xoá ảnh: ${error.message}`);
+        }
+        out.images = files.length;
+        out.imageBytes = files.reduce((s, f) => s + f.size, 0);
+      }
+      return out;
+    },
   };
 
   return {
     analytics,
+    maintenance,
     contacts,
     async get(code: string): Promise<Order | null> {
       const row = check(await db.from('orders').select(ORDER_SELECT).eq('code', code).maybeSingle(), 'đọc đơn');

@@ -216,7 +216,8 @@ export class AdminNewsForm {
     this.submitted.set(true);
     if (this.title.trim().length < 3 || !this.content.trim()) {
       animate(this.host.querySelector('.adm-edit')!, { translateX: [0, -12, 10, -8, 6, 0], duration: 500, ease: 'inOutSine' });
-      this.toast.err('Cần có tiêu đề (tối thiểu 3 ký tự) và nội dung.');
+      this.toast.err('Vui lòng điền các trường đang tô đỏ: tiêu đề (tối thiểu 3 ký tự) và nội dung.');
+      setTimeout(() => this.host.querySelector<HTMLElement>('.invalid, .invalid-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
       return;
     }
     this.status = status;

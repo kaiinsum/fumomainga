@@ -23,8 +23,9 @@ interface Draft {
         <h2>Thêm danh mục</h2>
         <form class="box-body" (ngSubmit)="add()">
           <div class="field">
-            <label for="cat-name">Tên danh mục</label>
-            <input id="cat-name" name="name" [(ngModel)]="newCat.name" maxlength="40" placeholder="Ví dụ: Gối ôm" />
+            <label class="req" for="cat-name">Tên danh mục</label>
+            <input id="cat-name" name="name" [class.invalid]="nameBad()" (input)="nameBad.set(false)" [(ngModel)]="newCat.name" maxlength="40" placeholder="Ví dụ: Gối ôm" />
+            @if (nameBad()) { <span class="field-err">Nhập tên danh mục.</span> }
           </div>
           <div class="field">
             <label for="cat-icon">Biểu tượng (emoji)</label>
@@ -142,8 +143,15 @@ export class AdminCategories {
   readonly editing = signal<string | null>(null);
   readonly deleting = signal<string | null>(null);
 
+  readonly nameBad = signal(false);
+
   add(): void {
     const name = this.newCat.name.trim();
+    if (!name) {
+      this.nameBad.set(true);
+      this.toast.err('Vui lòng điền trường đang tô đỏ.');
+      return;
+    }
     if (this.toast.run(() => this.service.add(name, this.newCat.icon), `Đã thêm danh mục "${name}"`)) {
       this.newCat = { name: '', icon: '✨' };
     }

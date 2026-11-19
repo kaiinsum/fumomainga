@@ -114,9 +114,13 @@ export class AdminSettings implements OnDestroy {
   }
 
   // ---------- Lưu cài đặt ----------
+  readonly shopNameBad = signal(false);
+
   save(): void {
-    if (!this.draft.shopName.trim()) {
-      this.toast.err('Tên shop không được để trống.');
+    this.shopNameBad.set(!this.draft.shopName.trim());
+    if (this.shopNameBad()) {
+      this.active.set('chung');
+      this.toast.err('Vui lòng điền trường đang tô đỏ: Tên shop.');
       return;
     }
     if (this.toast.run(() => this.settingsSvc.save(this.draft), 'Đã lưu cài đặt')) void this.publish();

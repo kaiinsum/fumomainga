@@ -1,7 +1,8 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GameArt, resolveGames } from '../../models/minigames';
+import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 import { startFireworks } from './fireworks';
 import { sfx } from '../../shared/sfx';
@@ -17,7 +18,12 @@ function readHideIntro(): boolean {
 }
 
 interface GameCard {
+  id: string;
   path: string | null;
+  /** Game đang mở nhưng hôm nay cần code mới chơi được. */
+  needCode: boolean;
+  /** Đang giới hạn và game này nằm trong các trò miễn phí hôm nay. */
+  freeToday: boolean;
   title: string;
   tag: string;
   desc: string;
@@ -39,6 +45,26 @@ interface GameCard {
         <app-sound-toggle />
       </header>
 
+      @if (access.limited()) {
+        <section class="daily" [class.ok]="access.unlocked()" id="code-box">
+          @if (access.unlocked()) {
+            <p class="daily-ok">🎉 <b>Đã mở khoá tất cả trò chơi</b> đến hết hôm nay (23:59). Chơi thả ga nhé!</p>
+          } @else {
+            <div class="daily-text">
+              <b>🎟 Hôm nay mở miễn phí {{ freeTitles().length }} trò:</b> {{ freeTitles().join(' · ') }}
+              <small>Có <b>code hôm nay</b> thì mở được tất cả trò chơi đến hết ngày. Code đổi mỗi ngày.</small>
+            </div>
+            <form class="code-form" (submit)="$event.preventDefault(); submitCode()">
+              <input #codeInput [value]="code()" (input)="code.set($any($event.target).value); codeError.set('')" placeholder="Nhập code" maxlength="12"
+                autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code mở khoá minigame" [class.bad]="!!codeError()" />
+              <button class="btn primary" type="submit" [disabled]="checking() || !code().trim()">{{ checking() ? 'Đang kiểm tra…' : '🔓 Mở khoá' }}</button>
+            </form>
+            @if (codeError()) { <p class="code-err" role="alert">⚠ {{ codeError() }}</p> }
+            @if (codeFor(); as c) { <p class="code-for">🔒 <b>{{ c.title }}</b> hôm nay cần code mới chơi được.</p> }
+          }
+        </section>
+      }
+
       @if (blockedGame(); as b) {
         <p class="blocked" role="alert">🔒 <b>{{ b.title }}</b> {{ b.status === 'hidden' ? 'hiện không mở cho người chơi.' : 'đang tạm khoá — ' + b.lockMsg }}
           <button type="button" (click)="blockedId.set(null)" aria-label="Đóng">✕</button></p>
@@ -47,7 +73,11 @@ interface GameCard {
         <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
         <div class="track" #track>
           @for (g of games(); track $index) {
-            @if (g.path) {
+            @if (g.path && g.needCode) {
+              <button type="button" class="card need-code" (click)="askCode(g)" [attr.aria-label]="g.title + ' — cần code hôm nay'">
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
+              </button>
+            } @else if (g.path) {
               <a class="card" [routerLink]="g.path" [attr.aria-label]="'Chơi ' + g.title">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
               </a>
@@ -122,10 +152,11 @@ interface GameCard {
       </div>
       <div class="info">
         <span class="tag">{{ g.tag }}</span>
+        @if (g.freeToday) { <span class="free-badge">🎟 Miễn phí hôm nay</span> }
         <h2>{{ g.title }}</h2>
         <p>{{ g.desc }}</p>
         @if (g.lockMsg) { <span class="lock-msg">🔒 {{ g.lockMsg }}</span> }
-        <span class="play">{{ g.path ? '▶ Chơi ngay' : g.lockMsg ? '🔒 Tạm khoá' : 'Sắp ra mắt' }}</span>
+        <span class="play">{{ g.needCode ? '🔑 Nhập code để chơi' : g.path ? '▶ Chơi ngay' : g.lockMsg ? '🔒 Tạm khoá' : 'Sắp ra mắt' }}</span>
       </div>
     </ng-template>
   `,
@@ -196,6 +227,22 @@ interface GameCard {
       border-color: var(--primary); box-shadow: 0 24px 50px -10px color-mix(in srgb, var(--primary) 55%, transparent), 0 0 0 4px var(--primary-100);
     }
     .card.locked { cursor: not-allowed; }
+    button.card { font: inherit; color: inherit; text-align: left; padding: 0; cursor: pointer; }
+    .need-code .play { background: #ffb800; color: #3a2a00; }
+    .free-badge { align-self: flex-start; font-size: .72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, #3fcf74 20%, var(--surface)); color: #1f8a4c; }
+    .daily { max-width: 820px; margin: 0 auto 18px; padding: 14px 18px; border-radius: 16px; display: grid; gap: 10px;
+      background: color-mix(in srgb, #ffb800 12%, var(--surface)); border: 1.5px dashed #ffb800; scroll-margin-top: 90px; }
+    .daily.ok { background: color-mix(in srgb, #3fcf74 14%, var(--surface)); border: 1.5px solid #3fcf74; }
+    .daily-ok { margin: 0; text-align: center; }
+    .daily-text { display: flex; flex-direction: column; gap: 2px; }
+    .daily-text small { color: var(--muted); }
+    .code-form { display: flex; gap: 8px; flex-wrap: wrap; }
+    .code-form input { flex: 1 1 160px; min-width: 0; font: 800 1.05rem ui-monospace, Consolas, monospace; letter-spacing: .18em; text-transform: uppercase;
+      padding: 10px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); color: var(--text); }
+    .code-form input:focus { outline: none; border-color: var(--primary); }
+    .code-form input.bad { border-color: #d63638; background: color-mix(in srgb, #d63638 8%, var(--surface)); }
+    .code-err { margin: 0; color: #d63638; font-weight: 700; font-size: .9rem; }
+    .code-for { margin: 0; font-size: .9rem; }
 
     .art { position: relative; height: 230px; overflow: hidden; }
     .shine {
@@ -327,16 +374,65 @@ export class MiniGameHubPage implements AfterViewInit {
   }
 
   private readonly settings = inject(SettingsService).settings;
+  readonly access = inject(MinigameAccessService);
+  private readonly router = inject(Router);
+  private readonly codeInput = viewChild<ElementRef<HTMLInputElement>>('codeInput');
   /** Thẻ game theo thứ tự admin xếp; game bị ẩn không hiện, game bị khoá hiện mờ kèm lời nhắn. */
   readonly games = computed<GameCard[]>(() => {
+    const limited = this.access.limited() && !this.access.unlocked();
+    const free = this.access.freeIds();
     const list: GameCard[] = resolveGames(this.settings().minigames)
       .filter((g) => g.status !== 'hidden')
-      .map((g) => ({ path: g.status === 'open' ? g.path : null, title: g.title, tag: g.tag, desc: g.desc, art: g.art, lockMsg: g.status === 'locked' ? g.lockMsg : '' }));
+      .map((g) => ({
+        id: g.id,
+        path: g.status === 'open' ? g.path : null,
+        needCode: g.status === 'open' && limited && !free.has(g.id),
+        freeToday: g.status === 'open' && limited && free.has(g.id),
+        title: g.title,
+        tag: g.tag,
+        desc: g.desc,
+        art: g.art,
+        lockMsg: g.status === 'locked' ? g.lockMsg : '',
+      }));
     if (this.settings().minigameComingSoon) {
-      list.push({ path: null, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '' });
+      list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '' });
     }
     return list;
   });
+  /** Tên các trò miễn phí hôm nay (theo thứ tự trên trang). */
+  readonly freeTitles = computed(() => this.games().filter((g) => g.freeToday).map((g) => g.title));
+
+  // ---------- Code mở khoá trong ngày ----------
+  readonly code = signal('');
+  readonly codeError = signal('');
+  readonly checking = signal(false);
+  /** Game khách vừa bấm (hoặc bị chuyển về từ link ?code=id) cần code. */
+  readonly codeForId = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('code'));
+  readonly codeFor = computed(() => {
+    const id = this.codeForId();
+    return id ? this.games().find((g) => g.id === id && g.needCode) : undefined;
+  });
+
+  askCode(g: GameCard): void {
+    this.codeForId.set(g.id);
+    document.getElementById('code-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => this.codeInput()?.nativeElement.focus({ preventScroll: true }), 350);
+  }
+
+  async submitCode(): Promise<void> {
+    if (!this.code().trim() || this.checking()) return;
+    this.checking.set(true);
+    const err = await this.access.unlock(this.code());
+    this.checking.set(false);
+    this.codeError.set(err);
+    if (!err) {
+      this.code.set('');
+      // Vừa mở khoá từ một game cụ thể → vào chơi luôn.
+      const g = this.codeForId() ? this.games().find((x) => x.id === this.codeForId()) : undefined;
+      this.codeForId.set(null);
+      if (g?.path) void this.router.navigateByUrl(g.path);
+    }
+  }
   /** Bị chuyển về từ link của game đang khoá (?khoa=id). */
   readonly blockedGame = computed(() => {
     const id = this.blockedId();

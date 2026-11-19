@@ -15,8 +15,9 @@
         <h2>Thông tin shop</h2>
         <div class="box-body grid">
           <div class="field">
-            <label for="shopName">Tên shop</label>
-            <input id="shopName" [(ngModel)]="draft.shopName" />
+            <label class="req" for="shopName">Tên shop</label>
+            <input id="shopName" [class.invalid]="shopNameBad()" [(ngModel)]="draft.shopName" />
+            @if (shopNameBad()) { <span class="field-err">Tên shop không được để trống.</span> }
           </div>
           <div class="field">
             <label for="logo">Logo (emoji)</label>

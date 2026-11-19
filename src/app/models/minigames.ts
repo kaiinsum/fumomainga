@@ -81,11 +81,13 @@ export interface GameSetting {
   releasedAt?: string;
   /** Nội dung thông báo cho khách. Trống = dùng mô tả ngắn. */
   notice?: string;
+  /** Luôn mở miễn phí mỗi ngày (không cần code). */
+  free?: boolean;
 }
 
 export const DEFAULT_LOCK_MSG = 'Game đang bảo trì, quay lại sau nhé!';
 
-export const DEFAULT_GAME_SETTINGS: GameSetting[] = GAMES.map((g) => ({ id: g.id, status: 'open', title: '', tag: '', desc: '', lockMsg: '', releasedAt: '', notice: '' }));
+export const DEFAULT_GAME_SETTINGS: GameSetting[] = GAMES.map((g) => ({ id: g.id, status: 'open', title: '', tag: '', desc: '', lockMsg: '', releasedAt: '', notice: '', free: false }));
 
 /** Một game đã gộp định nghĩa + cấu hình admin, theo đúng thứ tự admin xếp. */
 export interface ResolvedGame extends GameDef {
@@ -93,6 +95,8 @@ export interface ResolvedGame extends GameDef {
   lockMsg: string;
   /** Nội dung thông báo cho khách. */
   notice: string;
+  /** Admin đánh dấu luôn mở miễn phí. */
+  free: boolean;
 }
 
 /** Gộp cấu hình admin với danh sách game: giữ thứ tự admin, bỏ game không còn tồn tại, nối game mới vào cuối. */
@@ -113,9 +117,10 @@ export function resolveGames(saved: GameSetting[] | undefined): ResolvedGame[] {
       lockMsg: s.lockMsg?.trim() || DEFAULT_LOCK_MSG,
       releasedAt: s.releasedAt?.trim() || def.releasedAt,
       notice: s.notice?.trim() || s.desc?.trim() || def.desc,
+      free: !!s.free,
     });
   }
-  for (const def of GAMES) if (!seen.has(def.id)) out.push({ ...def, status: 'open', lockMsg: DEFAULT_LOCK_MSG, notice: def.desc });
+  for (const def of GAMES) if (!seen.has(def.id)) out.push({ ...def, status: 'open', lockMsg: DEFAULT_LOCK_MSG, notice: def.desc, free: false });
   return out;
 }
 
@@ -133,6 +138,42 @@ export function normalizeGameSettings(saved: GameSetting[] | undefined): GameSet
       lockMsg: s?.lockMsg ?? '',
       releasedAt: s?.releasedAt ?? '',
       notice: s?.notice ?? '',
+      free: !!s?.free,
     };
   });
+}
+
+// ---------- Giới hạn trò chơi miễn phí mỗi ngày ----------
+
+/** Ngày hôm nay theo giờ Việt Nam: 'YYYY-MM-DD' (đổi ngày lúc 0:00 giờ VN). */
+export function vnToday(now = Date.now()): string {
+  return new Date(now + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
+/** Số ngẫu nhiên cố định theo chuỗi (cùng ngày → cùng kết quả trên mọi máy). */
+function seeded(seed: string): () => number {
+  let h = 2166136261;
+  for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Các game được chơi miễn phí trong ngày `day`.
+ * limit = 0 → không giới hạn (mọi game đang mở). Game "luôn miễn phí" luôn có mặt; còn lại xoay vòng theo ngày.
+ */
+export function dailyFreeIds(games: ResolvedGame[], limit: number, day: string): Set<string> {
+  const open = games.filter((g) => g.status === 'open');
+  if (!limit || limit >= open.length) return new Set(open.map((g) => g.id));
+  const pinned = open.filter((g) => g.free);
+  const rest = open.filter((g) => !g.free);
+  const rnd = seeded('fumo-free:' + day);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return new Set([...pinned, ...rest.slice(0, Math.max(0, limit - pinned.length))].map((g) => g.id));
 }
