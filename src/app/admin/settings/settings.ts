@@ -12,6 +12,7 @@ import { NewsService, SEED_NEWS } from '../../services/news.service';
 import { ProductService } from '../../services/product.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
+import { AdminLoginsComponent } from './admin-logins';
 
 type TabKey = 'chung' | 'trang-chu' | 'gioi-thieu' | 'lien-he' | 'chinh-sach' | 'thong-bao' | 'bao-mat' | 'sao-luu';
 
@@ -21,7 +22,7 @@ const BG_PRESETS = ['#F5FAFF', '#EAF5FF', '#FFFFFF', '#60B5FF'];
 
 @Component({
   selector: 'app-admin-settings',
-  imports: [FormsModule],
+  imports: [FormsModule, AdminLoginsComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

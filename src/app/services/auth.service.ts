@@ -3,6 +3,8 @@ import { STORAGE_KEYS } from '../core/storage';
 import { ApiError, OrderApiService } from './order-api.service';
 
 const SESSION_KEY = 'fumo.admin.session';
+/** id lần đăng nhập của máy này (đánh dấu "Máy này" trong lịch sử đăng nhập). */
+export const LOGIN_ID_KEY = 'fumo.admin.loginId';
 /** Phiên hết hạn sau 2 giờ không thao tác (không chuyển trang trong admin). */
 const SESSION_TTL = 2 * 60 * 60 * 1000;
 export const DEFAULT_ADMIN_PASSWORD = 'admin123';
@@ -36,9 +38,10 @@ export class AuthService {
   /** Trả về '' nếu đúng, ngược lại là lời báo lỗi. */
   async login(password: string): Promise<string> {
     try {
-      const { token } = await this.api.call<{ token: string }>('POST', '/api/admin/login', { password }, false, { timeoutMs: 15000 });
+      const { token, loginId } = await this.api.call<{ token: string; loginId?: string }>('POST', '/api/admin/login', { password }, false, { timeoutMs: 15000 });
       // Phiên đăng nhập máy chủ dùng luôn làm "mã quản trị" cho trang Đơn hàng, Trợ lý AI...
       this.api.setAdminKey(token);
+      if (loginId) this.write(localStorage, LOGIN_ID_KEY, loginId);
       this.write(localStorage, STORAGE_KEYS.adminPass, await sha256(password));
     } catch (e) {
       if (!offline(e)) return e instanceof ApiError && e.status === 401 ? 'Mật khẩu không đúng.' : e instanceof Error ? e.message : 'Không đăng nhập được.';

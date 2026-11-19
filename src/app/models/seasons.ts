@@ -54,18 +54,8 @@ const LANTERN = svg(
     `<path d="M26 79 L24 94 M32 79 L32 96 M38 79 L40 94" stroke="#f2b631" stroke-width="2.5" stroke-linecap="round"/></svg>`,
 );
 
-/** Mặt troll cười nhăn nhở (vẽ đơn giản). */
-const TROLL = svg(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">` +
-    `<path d="M14 40 C14 14 44 6 62 10 C84 14 94 32 90 54 C87 76 70 92 48 92 C26 92 10 76 12 58 Z" fill="#fff" stroke="#111" stroke-width="3.5"/>` +
-    `<path d="M24 34 Q34 24 46 32" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>` +
-    `<path d="M58 30 Q70 20 82 30" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>` +
-    `<path d="M28 42 Q36 36 44 42 Q36 46 28 42 Z" fill="#111"/>` +
-    `<path d="M60 40 Q69 34 78 40 Q69 45 60 40 Z" fill="#111"/>` +
-    `<path d="M20 56 Q50 50 86 52 Q82 84 50 84 Q24 82 20 56 Z" fill="#fff" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>` +
-    `<path d="M24 60 Q52 58 82 58 M28 68 Q52 70 78 66 M34 76 Q52 78 70 74" fill="none" stroke="#111" stroke-width="2"/>` +
-    `<path d="M36 56 L36 80 M48 55 L48 83 M60 55 L60 82 M72 55 L71 78" stroke="#111" stroke-width="2"/></svg>`,
-);
+/** Mặt troll (ảnh admin cung cấp, nền trong suốt). */
+const TROLL = '/season/troll.webp';
 
 export const SEASON_ART: Record<string, string> = { flag: FLAG_VN, lantern: LANTERN, troll: TROLL };
 

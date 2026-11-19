@@ -24,6 +24,8 @@ import * as orders from './_routes/orders/index';
 import * as orderLookup from './_routes/orders/lookup';
 import * as settings from './_routes/settings';
 import * as adminAuth from './_routes/admin-auth';
+import { ADMIN_BODY_PATHS, GLOBAL_RULE, MAX_BODY_ADMIN, MAX_BODY_PUBLIC, RULES, memLimit } from './_lib/guard';
+import { clientIp, isAdmin } from './_lib/orders';
 
 type Handler = (req: Request) => Promise<Response>;
 type Module = Partial<Record<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', Handler>>;
@@ -49,6 +51,9 @@ const ROUTES: [RegExp, Module][] = [
 const reply = (body: unknown, status: number, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra } });
 
+const tooMany = (retryAfter: number) =>
+  reply({ error: 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.' }, 429, { 'retry-after': String(retryAfter) });
+
 async function route(req: Request): Promise<Response> {
   const url = new URL(req.url);
   // Đường dẫn gốc: từ rewrite (?__path=) hoặc chính URL (khi chạy thử / gọi thẳng).
@@ -68,14 +73,30 @@ async function route(req: Request): Promise<Response> {
     return reply({ error: 'Phương thức không được hỗ trợ.' }, 405, { allow });
   }
 
+  // ---- Chống spam / DoS (không tốn database) ----
+  const admin = isAdmin(req);
+  if (!admin) {
+    const ip = clientIp(req);
+    const all = memLimit(`all:${ip}`, GLOBAL_RULE.max, GLOBAL_RULE.windowMs);
+    if (!all.ok) return tooMany(all.retryAfter);
+    for (const r of RULES) {
+      if (!r.path.test(path) || (r.method && r.method !== method)) continue;
+      const lim = memLimit(`${r.path.source}:${method}:${ip}`, r.max, r.windowMs);
+      if (!lim.ok) return r.silent ? new Response(null, { status: 204 }) : tooMany(lim.retryAfter);
+    }
+  }
+
   // Dựng lại Request với URL gốc /api/<path>?<query> — các handler đọc mã đơn / id từ đường dẫn như trước.
   const target = `${url.origin}/api/${path}${url.search}`;
   const hasBody = method !== 'GET';
-  const forwarded = new Request(target, {
-    method,
-    headers: req.headers,
-    body: hasBody ? await req.arrayBuffer() : undefined,
-  });
+  let body: ArrayBuffer | undefined;
+  if (hasBody) {
+    const limit = admin && ADMIN_BODY_PATHS.test(path) ? MAX_BODY_ADMIN : MAX_BODY_PUBLIC;
+    if (Number(req.headers.get('content-length') ?? 0) > limit) return reply({ error: 'Dữ liệu gửi lên quá lớn.' }, 413);
+    body = await req.arrayBuffer();
+    if (body.byteLength > limit) return reply({ error: 'Dữ liệu gửi lên quá lớn.' }, 413);
+  }
+  const forwarded = new Request(target, { method, headers: req.headers, body });
   return handler(forwarded);
 }
 

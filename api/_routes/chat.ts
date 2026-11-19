@@ -10,6 +10,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ApiError as GeminiApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { catalogToPrompt, loadAiContext } from '../_lib/ai';
+import { HttpError, rateLimit } from '../_lib/orders';
 
 const MODEL = 'claude-opus-5-5';
 /** Gemini (gói miễn phí của Google AI Studio). Đổi model bằng biến GEMINI_MODEL nếu cần. */
@@ -72,6 +73,13 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
 
 export async function POST(request: Request): Promise<Response> {
+  // Mỗi IP tối đa 60 câu hỏi / giờ (đếm chung mọi máy chủ) — chống spam làm cạn quota AI.
+  try {
+    await rateLimit(request, 'chat', 60, 3600);
+  } catch (e) {
+    if (e instanceof HttpError) return json({ error: 'Bạn hỏi hơi nhiều rồi, nghỉ một chút rồi hỏi tiếp nhé!' }, 429);
+    // Database lỗi → vẫn cho chat (đã có giới hạn trong bộ nhớ ở cổng API).
+  }
   let body: { messages?: unknown };
   try {
     body = await request.json();
