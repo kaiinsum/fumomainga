@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { dailyFreeIds, resolveGames, vnToday } from '../models/minigames';
+import { dailyFreeIds, dailyPool, resolveGames, rollFor, vnToday } from '../models/minigames';
 import { OrderApiService } from './order-api.service';
 import { SettingsService } from './settings.service';
 
@@ -30,11 +30,13 @@ export class MinigameAccessService {
   readonly limit = computed(() => Math.max(0, Math.round(this.settings().minigameDailyFree || 0)));
   /** Đang giới hạn số trò mỗi ngày. */
   readonly limited = computed(() => {
-    const open = resolveGames(this.settings().minigames).filter((g) => g.status === 'open').length;
-    return this.limit() > 0 && this.limit() < open;
+    const pool = dailyPool(resolveGames(this.settings().minigames)).length;
+    return this.limit() > 0 && this.limit() < pool;
   });
   readonly unlocked = computed(() => this.unlockDay() === this.today());
-  readonly freeIds = computed(() => dailyFreeIds(resolveGames(this.settings().minigames), this.limit(), this.today()));
+  readonly freeIds = computed(() =>
+    dailyFreeIds(resolveGames(this.settings().minigames), this.limit(), this.today(), rollFor(this.settings().minigameRoll, this.today())),
+  );
 
   constructor() {
     setInterval(() => this.tick.set(Date.now()), 60_000);

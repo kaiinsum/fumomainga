@@ -161,19 +161,31 @@ function seeded(seed: string): () => number {
   };
 }
 
+/** Trò luôn mở miễn phí mỗi ngày, không tính vào giới hạn (Túi mù may mắn). */
+export const ALWAYS_FREE_ID = 'gacha';
+
+/** Các trò đang mở được đem đi random theo ngày (trừ trò luôn mở). */
+export const dailyPool = (games: ResolvedGame[]): ResolvedGame[] => games.filter((g) => g.status === 'open' && g.id !== ALWAYS_FREE_ID);
+
+/** Lần random lại của admin trong ngày `day` (0 = chưa random lại). */
+export const rollFor = (roll: { day: string; n: number } | undefined, day: string): number => (roll?.day === day ? roll.n : 0);
+
 /**
  * Các game được chơi miễn phí trong ngày `day`.
- * limit = 0 → không giới hạn (mọi game đang mở). Game "luôn miễn phí" luôn có mặt; còn lại xoay vòng theo ngày.
+ * limit = 0 → không giới hạn (mọi game đang mở). Túi mù luôn mở (không tính vào limit);
+ * game "luôn miễn phí" luôn có mặt; còn lại random theo ngày. `roll` > 0 = admin bấm random lại.
  */
-export function dailyFreeIds(games: ResolvedGame[], limit: number, day: string): Set<string> {
+export function dailyFreeIds(games: ResolvedGame[], limit: number, day: string, roll = 0): Set<string> {
   const open = games.filter((g) => g.status === 'open');
-  if (!limit || limit >= open.length) return new Set(open.map((g) => g.id));
-  const pinned = open.filter((g) => g.free);
-  const rest = open.filter((g) => !g.free);
-  const rnd = seeded('fumo-free:' + day);
+  const pool = dailyPool(games);
+  if (!limit || limit >= pool.length) return new Set(open.map((g) => g.id));
+  const always = open.filter((g) => g.id === ALWAYS_FREE_ID);
+  const pinned = pool.filter((g) => g.free);
+  const rest = pool.filter((g) => !g.free);
+  const rnd = seeded('fumo-free:' + day + (roll ? ':' + roll : ''));
   for (let i = rest.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
     [rest[i], rest[j]] = [rest[j], rest[i]];
   }
-  return new Set([...pinned, ...rest.slice(0, Math.max(0, limit - pinned.length))].map((g) => g.id));
+  return new Set([...always, ...pinned, ...rest.slice(0, Math.max(0, limit - pinned.length))].map((g) => g.id));
 }

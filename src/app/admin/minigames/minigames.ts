@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, dailyFreeIds, normalizeGameSettings, resolveGames, vnToday } from '../../models/minigames';
+import { ALWAYS_FREE_ID, DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, dailyFreeIds, dailyPool, normalizeGameSettings, resolveGames, rollFor, vnToday } from '../../models/minigames';
 import { OrderApiService } from '../../services/order-api.service';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
@@ -34,15 +34,20 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
         <div class="field">
           <label for="daily-free">Số trò được chơi miễn phí mỗi ngày</label>
           <div class="daily-row">
-            <input id="daily-free" type="number" min="0" [max]="counts().open" [ngModel]="dailyFree()" (ngModelChange)="dailyFree.set(+$event || 0)" />
-            <span>/ {{ counts().open }} trò đang mở · <b>0 = mở tất cả</b> (không cần code)</span>
+            <input id="daily-free" type="number" min="0" [max]="poolCount()" [ngModel]="dailyFree()" (ngModelChange)="dailyFree.set(+$event || 0)" />
+            <span>/ {{ poolCount() }} trò random · <b>0 = mở tất cả</b> (không cần code)</span>
           </div>
           <small class="hint">
-            Mỗi ngày (giờ Việt Nam) tự xoay vòng các trò miễn phí; trò được tick <b>"Luôn miễn phí"</b> ở dưới luôn có mặt.
-            Khách có <b>code hôm nay</b> thì mở được tất cả trò đến 23:59, qua ngày mới tự khoá lại.
+            <b>🎁 Túi mù may mắn luôn mở</b> (không tính vào số này). Các trò còn lại random mỗi ngày (giờ Việt Nam);
+            trò được tick <b>"Luôn miễn phí"</b> ở dưới luôn có mặt. Khách có <b>code hôm nay</b> thì mở được tất cả trò đến 23:59, qua ngày mới tự khoá lại.
           </small>
-          @if (dailyFree() > 0 && dailyFree() < counts().open) {
-            <p class="today-free">Hôm nay ({{ today }}) mở miễn phí: <b>{{ todayFree().join(' · ') }}</b></p>
+          @if (limited()) {
+            <div class="today-free">
+              <span>Hôm nay ({{ today }}) mở miễn phí: <b>{{ todayFree().join(' · ') }}</b></span>
+              <button class="btn ghost small" type="button" (click)="reroll()" [disabled]="saving()" title="Không ưng? Random bộ trò khác cho hôm nay (lưu & áp dụng ngay)">
+                🎲 Random lại
+              </button>
+            </div>
           }
         </div>
 
@@ -73,7 +78,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
         @let def = defOf(g.id);
         <li
           class="adm-box game"
-          [class]="'adm-box game st-' + g.status"
+          [class]="'adm-box game st-' + g.status + (todayState(g)?.cls === 'need' ? ' today-code' : '')"
           [class.drag-over]="overIndex() === i"
           draggable="true"
           (dragstart)="dragStart(i, $event)"
@@ -96,9 +101,18 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
                 </button>
               }
             </div>
-            <label class="free-chk" title="Trò này luôn được chơi miễn phí mỗi ngày (không cần code)">
-              <input type="checkbox" [ngModel]="!!g.free" (ngModelChange)="set(i, 'free', $event)" /> Luôn miễn phí
-            </label>
+            @if (g.id === alwaysId) {
+              <label class="free-chk" title="Túi mù may mắn luôn mở miễn phí mỗi ngày">
+                <input type="checkbox" checked disabled /> Luôn miễn phí
+              </label>
+            } @else {
+              <label class="free-chk" title="Trò này luôn được chơi miễn phí mỗi ngày (không cần code)">
+                <input type="checkbox" [ngModel]="!!g.free" (ngModelChange)="set(i, 'free', $event)" /> Luôn miễn phí
+              </label>
+            }
+            @if (todayState(g); as st) {
+              <span [class]="'today-chip ' + st.cls" [title]="st.hint">{{ st.label }}</span>
+            }
             <div class="move">
               <button type="button" [disabled]="first" (click)="move(i, -1)" aria-label="Lên">↑</button>
               <button type="button" [disabled]="last" (click)="move(i, 1)" aria-label="Xuống">↓</button>
@@ -219,7 +233,12 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     .daily-body { display: grid !important; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
     .daily-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .daily-row input { width: 80px; font: inherit; padding: 7px 10px; border: 1px solid #c3c4c7; border-radius: 8px; }
-    .today-free { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #edfaef; color: #1f6f37; font-size: .88rem; }
+    .today-free { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #edfaef; color: #1f6f37; font-size: .88rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .today-chip { font-size: .75rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+    .today-chip.free { background: #edfaef; color: #1f6f37; border: 1px solid #68de7c; }
+    .today-chip.need { background: #fcf9e8; color: #8a6d00; border: 1px dashed #dba617; }
+    .game.today-code { border-left-color: #dba617; border-left-style: dashed; }
     .code-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 12px; text-align: center;
       background: linear-gradient(135deg, #fff8e1, #ffe9a8); border: 1.5px dashed #ffb800; }
     .code-lbl { font-size: .78rem; font-weight: 800; color: #8a6d00; text-transform: uppercase; letter-spacing: .06em; }
@@ -241,13 +260,37 @@ export class AdminMinigames {
 
   readonly statuses = STATUS;
   readonly today = vnToday();
+  readonly alwaysId = ALWAYS_FREE_ID;
   readonly dailyFree = signal(this.settingsSvc.settings().minigameDailyFree ?? 0);
-  /** Trò miễn phí hôm nay theo bản nháp đang chỉnh. */
-  readonly todayFree = computed(() => {
-    const games = resolveGames(this.draft());
-    const ids = dailyFreeIds(games, this.dailyFree(), this.today);
-    return games.filter((g) => ids.has(g.id)).map((g) => g.title);
-  });
+  /** Lần random lại hôm nay (lưu trong cài đặt để mọi khách cùng thấy một bộ trò). */
+  readonly roll = signal(this.settingsSvc.settings().minigameRoll);
+  readonly poolCount = computed(() => dailyPool(resolveGames(this.draft())).length);
+  /** Đang giới hạn số trò mỗi ngày (theo bản nháp). */
+  readonly limited = computed(() => this.dailyFree() > 0 && this.dailyFree() < this.poolCount());
+  /** id các trò miễn phí hôm nay theo bản nháp đang chỉnh. */
+  readonly todayIds = computed(() => dailyFreeIds(resolveGames(this.draft()), this.dailyFree(), this.today, rollFor(this.roll(), this.today)));
+  readonly todayFree = computed(() => resolveGames(this.draft()).filter((g) => this.todayIds().has(g.id)).map((g) => g.title));
+
+  /** Nhãn "hôm nay" của từng trò (chỉ khi đang giới hạn và trò đang mở). */
+  todayState(g: GameSetting): { label: string; cls: string; hint: string } | null {
+    if (!this.limited() || g.status !== 'open') return null;
+    return this.todayIds().has(g.id)
+      ? { label: '🎲 Mở hôm nay', cls: 'free', hint: 'Hôm nay khách chơi miễn phí' }
+      : { label: '🔑 Cần code hôm nay', cls: 'need', hint: 'Hôm nay khách cần nhập code mới chơi được' };
+  }
+
+  /** Không ưng bộ trò hôm nay → random bộ khác, lưu & gửi lên web ngay. */
+  async reroll(): Promise<void> {
+    const before = [...this.todayIds()].sort().join();
+    let n = rollFor(this.roll(), this.today);
+    // Random tới khi ra bộ khác (nếu có thể).
+    for (let k = 0; k < 30; k++) {
+      n++;
+      this.roll.set({ day: this.today, n });
+      if ([...this.todayIds()].sort().join() !== before) break;
+    }
+    await this.save();
+  }
 
   // ---------- Code hôm nay ----------
   readonly code = signal<{ day: string; code: string } | null>(null);
@@ -276,7 +319,8 @@ export class AdminMinigames {
     return (
       JSON.stringify(this.draft()) !== JSON.stringify(normalizeGameSettings(s.minigames)) ||
       this.comingSoon() !== (s.minigameComingSoon ?? true) ||
-      this.dailyFree() !== (s.minigameDailyFree ?? 0)
+      this.dailyFree() !== (s.minigameDailyFree ?? 0) ||
+      JSON.stringify(this.roll() ?? null) !== JSON.stringify(s.minigameRoll ?? null)
     );
   });
 
@@ -380,6 +424,7 @@ export class AdminMinigames {
     this.draft.set(normalizeGameSettings(s.minigames));
     this.comingSoon.set(s.minigameComingSoon ?? true);
     this.dailyFree.set(s.minigameDailyFree ?? 0);
+    this.roll.set(s.minigameRoll);
   }
 
   async save(): Promise<void> {
@@ -393,7 +438,7 @@ export class AdminMinigames {
       notice: (g.notice ?? '').trim(),
     }));
     const daily = Math.max(0, Math.round(this.dailyFree() || 0));
-    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily };
+    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll() };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;
     this.draft.set(normalizeGameSettings(clean));
     this.saving.set(true);
