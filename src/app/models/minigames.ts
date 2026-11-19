@@ -3,7 +3,7 @@
  * Cấu hình nằm trong SiteSettings → lưu lên máy chủ, mọi khách thấy giống nhau.
  */
 
-export type GameArt = 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp' | 'crush';
+export type GameArt = 'shmup' | 'gacha' | 'dle' | 'ninja' | 'jp' | 'crush' | 'merge';
 
 /** open: chơi được · locked: hiện thẻ nhưng khoá · hidden: ẩn hẳn khỏi trang Mini game. */
 export type GameStatus = 'open' | 'locked' | 'hidden';
@@ -21,6 +21,15 @@ export interface GameDef {
 
 /** Thứ tự ở đây = thứ tự mặc định. Game mới thêm sau sẽ tự nối vào cuối danh sách của admin. */
 export const GAMES: GameDef[] = [
+  {
+    id: 'merge',
+    path: '/mini-game/merge-fumo',
+    art: 'merge',
+    title: 'Merge Fumo',
+    tag: '🫧 Thả & gộp · Mới',
+    desc: 'Thả các bé fumo vào hộp quà, 2 bé giống nhau chạm nhau sẽ gộp thành bé lớn hơn. Gộp tới Reimu siêu to — đừng để hộp tràn!',
+    releasedAt: '2026-11-20',
+  },
   {
     id: 'crush',
     path: '/mini-game/fumo-crush-saga',

@@ -79,6 +79,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/minigame/ninja').then((m) => m.FumoNinjaPage),
       },
       {
+        path: 'mini-game/merge-fumo',
+        canActivate: [minigameGuard('merge')],
+        title: 'Merge Fumo',
+        loadComponent: () => import('./pages/minigame/merge').then((m) => m.MergeFumoPage),
+      },
+      {
         path: 'mini-game/fumo-crush-saga',
         canActivate: [minigameGuard('crush')],
         title: 'Fumo Crush Saga',

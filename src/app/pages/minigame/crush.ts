@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameSuggestComponent } from './game-suggest';
+import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crush-engine';
 
 @Component({
   selector: 'app-fumo-crush',
-  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent, LeaderboardComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -17,6 +18,7 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
       </header>
 
       <div class="layout">
+        <app-leaderboard class="lb-slot" game="crush" [score]="state() === 'over' ? result()?.score : null" />
         <div class="stage" [style.aspect-ratio]="ratio">
           <canvas #cv aria-label="Màn chơi Fumo Crush Saga"></canvas>
 
@@ -79,7 +81,9 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
     .hl { color: var(--primary); }
     .muted { color: var(--muted); }
     .small { font-size: .85rem; }
-    .layout { display: flex; gap: 22px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+    .layout { display: grid; grid-template-columns: auto minmax(260px, 380px); grid-template-areas: 'stage lb' 'stage guide'; grid-template-rows: auto 1fr; gap: 16px 22px; justify-content: center; align-items: start; }
+    .layout > .stage { grid-area: stage; } .layout > .lb-slot { grid-area: lb; } .layout > .guide { grid-area: guide; max-width: none; }
+    @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 500px); grid-template-areas: 'lb' 'stage' 'guide'; } }
     .stage { position: relative; width: min(500px, 100%, calc((100dvh - 90px) * ${W / H})); flex-shrink: 0; border-radius: 18px; overflow: hidden;
       touch-action: none; user-select: none; -webkit-user-select: none; box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 3px #4b2c7a; background: #140d26; }
     canvas { display: block; width: 100%; height: 100%; }

@@ -249,7 +249,7 @@ export class AdminInsights {
   }
 
   readonly gameRows = computed(() => {
-    const icon: Record<string, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎' };
+    const icon: Record<string, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧' };
     return this.games()
       .map((g) => {
         const def = GAMES.find((d) => d.path === '/mini-game/' + g.game);

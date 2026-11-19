@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, WritableSignal, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameSuggestComponent } from './game-suggest';
+import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { H, JpResult, JpState, JpTypingGame, W } from './jp-engine';
 import { JpLevel } from './jp-words';
@@ -14,7 +15,7 @@ interface LevelCard {
 
 @Component({
   selector: 'app-jp-type',
-  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent, LeaderboardComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -25,6 +26,7 @@ interface LevelCard {
       </header>
 
       <div class="layout">
+        <app-leaderboard class="lb-slot" game="jp-type" [score]="state() === 'over' ? result()?.score : null" />
         <div class="play">
           <div class="stage" [style.aspect-ratio]="ratio" (click)="focusInput()">
             <canvas #cv aria-label="Màn chơi Gõ chữ diệt Fumo"></canvas>
@@ -145,7 +147,8 @@ interface LevelCard {
     .head h1 { margin: 8px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); }
     .hl { color: var(--primary); }
     .muted { color: var(--muted); }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; max-width: 1240px; margin: 0 auto; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: 'play lb' 'play guide'; grid-template-rows: auto 1fr; gap: 16px 20px; align-items: start; max-width: 1240px; margin: 0 auto; }
+    .layout > .play { grid-area: play; } .layout > .lb-slot { grid-area: lb; } .layout > .guide { grid-area: guide; }
     .stage { position: relative; width: 100%; border-radius: 18px 18px 0 0; overflow: hidden; user-select: none;
       box-shadow: 0 20px 50px rgba(0,0,0,.35); background: #120c2e; }
     canvas { display: block; width: 100%; height: 100%; }
@@ -215,7 +218,7 @@ interface LevelCard {
     .specials img { width: 40px; height: 40px; object-fit: contain; }
     .bosses { display: flex; justify-content: space-around; gap: 6px; margin-top: 10px; }
     .bosses img { height: 90px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
-    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; grid-template-areas: 'lb' 'play' 'guide'; } }
     /* Điện thoại: thẻ độ khó + nút nhỏ gọn để vừa khung chơi */
     @media (max-width: 600px) {
       .wrap { padding-top: 14px; }

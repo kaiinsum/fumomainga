@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameSuggestComponent } from './game-suggest';
+import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
 
 @Component({
   selector: 'app-minigame',
-  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent, LeaderboardComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -17,6 +18,7 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
       </header>
 
       <div class="layout">
+        <app-leaderboard class="lb-slot" game="shmup" [score]="state() === 'over' || state() === 'win' ? result()?.score : null" />
         <div class="stage" [style.aspect-ratio]="ratio">
           <canvas #cv [attr.width]="w" [attr.height]="h" aria-label="Màn chơi"></canvas>
 
@@ -127,7 +129,8 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
     .head h1 { margin: 8px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); }
     .hl { color: var(--primary); }
     .muted { color: var(--muted); max-width: 620px; margin: 0 auto; }
-    .layout { display: grid; grid-template-columns: auto 300px; gap: 24px; justify-content: center; align-items: start; }
+    .layout { display: grid; grid-template-columns: auto 300px; grid-template-areas: 'stage lb' 'stage help'; grid-template-rows: auto 1fr; gap: 16px 24px; justify-content: center; align-items: start; }
+    .layout > .stage { grid-area: stage; } .layout > .lb-slot { grid-area: lb; } .layout > .help { grid-area: help; }
     .stage { position: relative; width: min(480px, calc(100vw - 32px), calc((100dvh - var(--header-h) - 40px) * 0.75)); border-radius: 16px; overflow: hidden;
       box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 2px var(--primary-300); background: #120c22; touch-action: none; user-select: none; }
     canvas { display: block; width: 100%; height: 100%; }
@@ -172,7 +175,7 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
     .tag { display: inline-grid; place-items: center; width: 18px; height: 18px; font-size: .7rem; font-weight: 800; color: #fff; border-radius: 3px; }
     .tag.p { background: #ff4d6d; } .tag.b { background: #3ddc97; } .tag.l { background: #ff7ac6; }
     @keyframes fade { from { opacity: 0; } }
-    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; justify-items: center; } .help { width: min(480px, 100%); } }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; grid-template-areas: 'lb' 'stage' 'help'; justify-items: center; } .help, .lb-slot { width: min(480px, 100%); } }
   `,
 })
 export class MiniGamePage implements AfterViewInit {

@@ -25,6 +25,7 @@ import * as orderLookup from './_routes/orders/lookup';
 import * as settings from './_routes/settings';
 import * as adminAuth from './_routes/admin-auth';
 import * as security from './_routes/security';
+import * as leaderboard from './_routes/leaderboard';
 import { isBlocked, recordRateHit } from './_lib/security';
 import { ADMIN_BODY_PATHS, GLOBAL_RULE, MAX_BODY_ADMIN, MAX_BODY_PUBLIC, RULES, memLimit } from './_lib/guard';
 import { clientIp, isAdmin } from './_lib/orders';
@@ -38,6 +39,7 @@ const ROUTES: [RegExp, Module][] = [
   [/^settings$/, settings],
   [/^admin\/(login|password)$/, adminAuth],
   [/^admin\/security$/, security],
+  [/^leaderboard$/, leaderboard],
   [/^catalog$/, catalog],
   [/^analytics$/, analytics],
   [/^minigame$/, minigame],

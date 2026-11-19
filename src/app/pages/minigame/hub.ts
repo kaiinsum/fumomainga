@@ -158,6 +158,14 @@ interface GameCard {
             </span>
             <span class="who">?</span>
           }
+          @case ('merge') {
+            <span class="mg-box"></span>
+            <img class="mg m1" src="fumo-ninja/cirno.webp" alt="" />
+            <img class="mg m2" src="fumo-ninja/cirno.webp" alt="" />
+            <img class="mg m3" src="fumo-ninja/meiling.webp" alt="" />
+            <img class="mg m4" src="fumo-ninja/reimu.webp" alt="" />
+            <span class="mg-plus">+</span>
+          }
           @case ('crush') {
             <span class="cr-grid">
               @for (f of crushArt; track $index) {
@@ -345,6 +353,17 @@ interface GameCard {
     .s1 { top: 30px; left: 60px; } .s2 { top: 60px; right: 55px; animation-delay: -.6s; } .s3 { bottom: 40px; left: 80px; animation-delay: -1.1s; }
 
     .art-ninja { background: linear-gradient(#3b2416, #1f130c); }
+    .art-merge { background: radial-gradient(circle at 50% 30%, #fff3f8, #ffb8d4); }
+    .mg-box { position: absolute; left: 50%; bottom: 10px; width: 230px; height: 150px; transform: translateX(-50%); border: 5px solid #ff9ec4; border-top: 0;
+      border-radius: 0 0 26px 26px; background: rgba(255,255,255,.45); }
+    .mg { position: absolute; border-radius: 50%; object-fit: contain; background: #fff; filter: drop-shadow(0 4px 6px rgba(150,40,90,.3)); animation: mg-fall 2.6s ease-in infinite paused; }
+    .mg.m1 { width: 44px; height: 44px; left: calc(50% - 58px); top: 20px; box-shadow: 0 0 0 3px #2f9bff; }
+    .mg.m2 { width: 44px; height: 44px; left: calc(50% + 14px); top: 20px; box-shadow: 0 0 0 3px #2f9bff; animation-delay: -.3s; }
+    .mg.m3 { width: 60px; height: 60px; left: calc(50% - 30px); bottom: 20px; box-shadow: 0 0 0 3px #21d07a; animation-name: mg-pop; }
+    .mg.m4 { width: 92px; height: 92px; right: calc(50% - 110px); bottom: 16px; box-shadow: 0 0 0 4px #ff4040; animation: none; }
+    .mg-plus { position: absolute; left: calc(50% - 8px); top: 30px; font: 900 1.6rem/1 sans-serif; color: #ff5f9c; }
+    @keyframes mg-fall { 0%, 20% { transform: translateY(0); } 60%, 100% { transform: translateY(70px); opacity: 0; } }
+    @keyframes mg-pop { 0%, 55% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
     .art-crush { background: radial-gradient(circle at 50% 40%, #4b2a8a, #160b2e); }
     .cr-grid { position: absolute; inset: 14px 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .cr { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; padding: 3px; border: 2px solid var(--g);

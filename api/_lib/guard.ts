@@ -60,6 +60,7 @@ export const RULES: GuardRule[] = [
   { path: /^contacts$/, method: 'POST', max: 6, windowMs: MIN },
   { path: /^minigame$/, method: 'POST', max: 15, windowMs: MIN },
   { path: /^admin\/login$/, method: 'POST', max: 10, windowMs: MIN },
+  { path: /^leaderboard$/, method: 'POST', max: 6, windowMs: MIN },
 ];
 
 /** Dung lượng tối đa dữ liệu gửi lên. API admin (đồng bộ sản phẩm, ảnh, kiến thức AI) được phép lớn hơn. */

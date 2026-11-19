@@ -4,7 +4,7 @@ import { GameArt, resolveGames } from '../../models/minigames';
 import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 
-const ART_ICON: Record<GameArt, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎' };
+const ART_ICON: Record<GameArt, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧' };
 
 /** Cuối mỗi trang minigame: gợi ý các trò khác (kèm trạng thái miễn phí / cần code / tạm khoá). */
 @Component({
@@ -53,6 +53,7 @@ const ART_ICON: Record<GameArt, string> = { jp: '⌨️', gacha: '🎁', dle: '�
     .art-dle { background: linear-gradient(135deg, #dff3ff, #c9e8ff); }
     .art-ninja { background: linear-gradient(135deg, #ffe3c2, #ffc2c2); }
     .art-jp { background: linear-gradient(135deg, #2a1b55, #6b4fd6); }
+    .art-merge { background: linear-gradient(135deg, #ffd6e7, #ff9ec4); }
     .art-crush { background: linear-gradient(135deg, #3b1d6e, #c2185b); }
     .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .txt b { font-size: 1rem; }

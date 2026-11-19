@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, NgZone, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameSuggestComponent } from './game-suggest';
+import { LeaderboardComponent } from './leaderboard';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-engine';
 
 @Component({
   selector: 'app-fumo-ninja',
-  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent],
+  imports: [RouterLink, SoundToggleComponent, GameSuggestComponent, LeaderboardComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/mini-game">← Chọn game khác</a><app-sound-toggle /></nav>
@@ -16,6 +17,8 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
         <p class="muted">Vuốt chuột / ngón tay để chém các bé fumo bay lên. Tránh <b class="bomb">Reimu viền neon đỏ</b> — chém trúng là thua ngay!</p>
       </header>
 
+      <div class="layout">
+      <app-leaderboard class="lb-slot" game="ninja" [score]="state() === 'over' ? result()?.score : null" />
       <div class="stage" [style.aspect-ratio]="ratio">
         <canvas #cv aria-label="Màn chơi Fumo Ninja"></canvas>
 
@@ -36,6 +39,8 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
             <button class="btn primary big" type="button" (click)="start()">🔁 Chơi lại</button>
           </div>
         }
+      </div>
+
       </div>
 
       <section class="table card-surface">
@@ -62,7 +67,10 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
     .muted { color: var(--muted); }
     .small { font-size: .85rem; }
     .bomb { color: #ff1744; text-shadow: 0 0 10px rgba(255, 23, 68, .6); }
-    .stage { position: relative; width: min(900px, 100%); margin: 0 auto; border-radius: 18px; overflow: hidden; touch-action: none; user-select: none;
+    .layout { display: grid; grid-template-columns: minmax(0, 900px) 280px; grid-template-areas: 'stage lb'; gap: 20px; justify-content: center; align-items: start; }
+    .layout > .stage { grid-area: stage; } .layout > .lb-slot { grid-area: lb; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 900px); grid-template-areas: 'lb' 'stage'; gap: 10px; } }
+    .stage { position: relative; width: 100%; margin: 0 auto; border-radius: 18px; overflow: hidden; touch-action: none; user-select: none;
       box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 3px #6b4226; cursor: crosshair; }
     canvas { display: block; width: 100%; height: 100%; }
     .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
