@@ -85,7 +85,7 @@
           [queryParams]="{ danhMuc: c.name }"
           appAnimateIn="zoom"
           [animDelay]="i * 90"
-          (mouseenter)="bounce($event); startPeek(c.name)"
+          (mouseenter)="startPeek(c.name)"
           (mouseleave)="stopPeek()"
           (focus)="startPeek(c.name)"
           (blur)="stopPeek()"

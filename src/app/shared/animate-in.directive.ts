@@ -39,6 +39,8 @@ export class AnimateInDirective implements OnInit, OnDestroy {
       duration: 800,
       delay: this.animDelay(),
       ease: 'outExpo',
+      // Xong thì bỏ transform gắn trên phần tử để hiệu ứng :hover bằng CSS (nhấc lên, phóng to) hoạt động.
+      onComplete: () => this.el.style.removeProperty('transform'),
     });
   }
 
