@@ -24,6 +24,8 @@ import * as orders from './_routes/orders/index';
 import * as orderLookup from './_routes/orders/lookup';
 import * as settings from './_routes/settings';
 import * as adminAuth from './_routes/admin-auth';
+import * as security from './_routes/security';
+import { isBlocked, recordRateHit } from './_lib/security';
 import { ADMIN_BODY_PATHS, GLOBAL_RULE, MAX_BODY_ADMIN, MAX_BODY_PUBLIC, RULES, memLimit } from './_lib/guard';
 import { clientIp, isAdmin } from './_lib/orders';
 
@@ -35,6 +37,7 @@ const ROUTES: [RegExp, Module][] = [
   [/^chat$/, chat],
   [/^settings$/, settings],
   [/^admin\/(login|password)$/, adminAuth],
+  [/^admin\/security$/, security],
   [/^catalog$/, catalog],
   [/^analytics$/, analytics],
   [/^minigame$/, minigame],
@@ -77,12 +80,21 @@ async function route(req: Request): Promise<Response> {
   const admin = isAdmin(req);
   if (!admin) {
     const ip = clientIp(req);
+    // IP bị admin chặn → từ chối mọi API (trừ khi đang đăng nhập admin hợp lệ).
+    const blocked = await isBlocked(ip);
+    if (blocked) return reply({ error: 'Địa chỉ IP của bạn đã bị chặn. Nếu nhầm lẫn, vui lòng liên hệ shop qua Facebook / điện thoại.' }, 403);
     const all = memLimit(`all:${ip}`, GLOBAL_RULE.max, GLOBAL_RULE.windowMs);
-    if (!all.ok) return tooMany(all.retryAfter);
+    if (!all.ok) {
+      await recordRateHit(ip, '*');
+      return tooMany(all.retryAfter);
+    }
     for (const r of RULES) {
       if (!r.path.test(path) || (r.method && r.method !== method)) continue;
       const lim = memLimit(`${r.path.source}:${method}:${ip}`, r.max, r.windowMs);
-      if (!lim.ok) return r.silent ? new Response(null, { status: 204 }) : tooMany(lim.retryAfter);
+      if (!lim.ok) {
+        await recordRateHit(ip, path);
+        return r.silent ? new Response(null, { status: 204 }) : tooMany(lim.retryAfter);
+      }
     }
   }
 

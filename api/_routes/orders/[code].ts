@@ -30,7 +30,8 @@ export const PUT = handle(async (req) => {
   const order = await load(req);
   const body = await readJson(req);
   if ('status' in body) order.status = parseStatus(body['status']);
-  if ('customer' in body) order.customer = parseCustomer(body['customer']);
+  // Admin sửa thông tin khách: giữ lại vị trí theo IP lúc đặt (cho bản đồ nhiệt).
+  if ('customer' in body) order.customer = { ...parseCustomer(body['customer']), ...(order.customer.geo ? { geo: order.customer.geo } : {}) };
   if ('items' in body) {
     order.items = parseItems(body['items']);
     order.total = orderTotal(order.items);

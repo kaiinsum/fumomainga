@@ -10,10 +10,11 @@ import { PriceTagComponent } from '../../shared/price-tag';
 import { OrderApiService } from '../../services/order-api.service';
 import { GAMES } from '../../models/minigames';
 import { fmtDuration } from '../insights/insights';
+import { OrderHeatmapComponent } from './order-heatmap';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [RouterLink, DatePipe, PriceTagComponent],
+  imports: [RouterLink, DatePipe, PriceTagComponent, OrderHeatmapComponent],
   template: `
     <div class="adm-head">
       <h1>Bảng tin</h1>
@@ -57,6 +58,8 @@ import { fmtDuration } from '../insights/insights';
         <div class="qi-tile"><span>🏆 Đặt nhiều nhất</span><b>{{ qi().topProduct || '—' }}</b></div>
       </div>
     </section>
+
+    <app-order-heatmap />
 
     <div class="cols">
       <section class="adm-box">

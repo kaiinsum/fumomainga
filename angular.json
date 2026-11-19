@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
@@ -28,13 +28,20 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "leaflet.css",
+                "input": "node_modules/leaflet/dist",
+                "output": "vendor/leaflet"
               }
             ],
             "styles": [
               "src/styles.scss"
             ],
             "allowedCommonJsDependencies": [
-              "exceljs"
+              "exceljs",
+              "leaflet",
+              "leaflet.heat"
             ]
           },
           "configurations": {

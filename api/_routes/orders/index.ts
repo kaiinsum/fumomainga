@@ -16,6 +16,7 @@ import {
   rateLimit,
   readJson,
   requireAdmin,
+  geoFromRequest,
 } from '../../_lib/orders';
 
 export const POST = handle(async (req) => {
@@ -23,7 +24,8 @@ export const POST = handle(async (req) => {
   const admin = isAdmin(req) && (await requireAdmin(req).then(() => true, () => false));
   const body = await readJson(req);
   const items = parseItems(body['items']);
-  const customer = parseCustomer(body['customer']);
+  // Khách đặt (không phải admin tạo tay) → gắn vị trí theo IP cho bản đồ nhiệt.
+  const customer = { ...parseCustomer(body['customer']), ...(isAdmin(req) ? {} : { geo: geoFromRequest(req) }) };
   const now = Date.now();
   // Khách đã thấy mã đơn trong popup (tạo trên trình duyệt) → dùng lại nếu hợp lệ và chưa trùng.
   const wanted = typeof body['code'] === 'string' ? body['code'].toUpperCase() : '';

@@ -79,6 +79,8 @@ export class AdminLayout implements AfterViewInit {
       const msgs = items.filter((n) => n.kind === 'contact').length;
       const storage = items.find((n) => n.kind === 'storage');
       if (storage) this.toast.err(storage.title + ' — ' + storage.content);
+      const sec = items.filter((n) => n.kind === 'security');
+      if (sec.length) this.toast.err(sec.length === 1 ? sec[0].title : `🚨 Có ${sec.length} IP đáng ngờ — xem Cài đặt → Bảo mật`);
       if (orders) this.toast.ok(orders === 1 ? `🔔 ${items.find((n) => n.kind === 'order')!.title}` : `🔔 Có ${orders} đơn hàng mới chờ duyệt`);
       if (msgs) this.toast.ok(msgs === 1 ? `🔔 ${items.find((n) => n.kind === 'contact')!.title}` : `🔔 Có ${msgs} lời nhắn mới`);
     };

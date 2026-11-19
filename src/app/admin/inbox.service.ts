@@ -8,7 +8,7 @@ const SEEN_KEY = 'fumo.admin.notify.seen';
 export interface AdminNotice {
   /** 'o:<mã đơn>' hoặc 'c:<id lời nhắn>'. */
   key: string;
-  kind: 'order' | 'contact' | 'storage';
+  kind: 'order' | 'contact' | 'storage' | 'security';
   title: string;
   content: string;
   createdAt: number;
@@ -40,6 +40,9 @@ export class AdminInboxService {
   /** Cảnh báo dung lượng (kiểm tra mỗi ~10 phút). */
   private storageNotice: AdminNotice[] = [];
   private storageCheckedAt = 0;
+  /** IP đáng ngờ (kiểm tra mỗi ~5 phút). */
+  private securityNotice: AdminNotice[] = [];
+  private securityCheckedAt = 0;
   private contacts: AdminNotice[] = [];
   /** Khoá đã biết (để phát hiện mục mới); null = chưa tải lần nào. */
   private known: Set<string> | null = null;
@@ -71,6 +74,7 @@ export class AdminInboxService {
         .then(({ orders }) => this.setOrders(orders))
         .catch(() => undefined),
       this.checkStorage(),
+      this.checkSecurity(),
     ]);
     this.refreshing = false;
     this.publish();
@@ -142,6 +146,36 @@ export class AdminInboxService {
     }
   }
 
+  /** IP spam / nhập sai mật khẩu admin nhiều lần → cảnh báo trong chuông (mỗi IP mỗi mức 1 lần / ngày). */
+  private async checkSecurity(): Promise<void> {
+    if (Date.now() - this.securityCheckedAt < 5 * 60_000) return;
+    this.securityCheckedAt = Date.now();
+    try {
+      const r = await this.api.call<{ suspects: { ip: string; rateHits: number; loginFails: number; last: number; blocked: boolean; level: string }[] }>(
+        'GET',
+        '/api/admin/security',
+        undefined,
+        true,
+      );
+      const day = new Date().toISOString().slice(0, 10);
+      this.securityNotice = r.suspects
+        .filter((s) => !s.blocked)
+        .slice(0, 10)
+        .map((s) => ({
+          key: `sec:${s.ip}:${s.level}:${day}`,
+          kind: 'security' as const,
+          title: s.loginFails >= 3 ? `🔐 IP ${s.ip} nhập sai mật khẩu admin ${s.loginFails} lần` : `🚨 IP ${s.ip} đang spam / tấn công`,
+          content: [s.rateHits ? `Bị chặn tốc độ ${s.rateHits} lần` : '', s.loginFails ? `sai mật khẩu ${s.loginFails} lần` : '', 'trong 24 giờ — bấm để xem và chặn IP.']
+            .filter(Boolean)
+            .join(', '),
+          createdAt: s.last,
+          link: '/admin/cai-dat?tab=bao-mat',
+        }));
+    } catch {
+      /* chưa có máy chủ → bỏ qua */
+    }
+  }
+
   /** Đánh dấu đã xem tất cả mục đang có trong chuông. */
   markAllSeen(): void {
     const keys = new Set(this.notices().map((n) => n.key));
@@ -154,7 +188,7 @@ export class AdminInboxService {
   }
 
   private publish(): void {
-    const all = [...this.storageNotice, ...[...this.orders, ...this.contacts].sort((a, b) => b.createdAt - a.createdAt)];
+    const all = [...this.securityNotice, ...this.storageNotice, ...[...this.orders, ...this.contacts].sort((a, b) => b.createdAt - a.createdAt)];
     this.notices.set(all);
     const keys = new Set(all.map((n) => n.key));
     if (this.known) {

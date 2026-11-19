@@ -23,7 +23,7 @@ import { AdminInboxService } from '../inbox.service';
             @for (n of inbox.notices(); track n.key) {
               <li [class.new]="fresh().has(n.key)">
                 <a [href]="n.link" (click)="go($event, n.link)">
-                  <span class="ico" [class.contact]="n.kind === 'contact'" [class.storage]="n.kind === 'storage'">{{ n.kind === 'order' ? '🧾' : n.kind === 'storage' ? '💾' : '✉️' }}</span>
+                  <span class="ico" [class.contact]="n.kind === 'contact'" [class.storage]="n.kind === 'storage' || n.kind === 'security'">{{ n.kind === 'order' ? '🧾' : n.kind === 'storage' ? '💾' : n.kind === 'security' ? '🛡' : '✉️' }}</span>
                   <span class="txt">
                     <b>{{ n.title }}</b>
                     <span class="content">{{ n.content }}</span>

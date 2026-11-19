@@ -23,6 +23,8 @@ export interface Customer {
   email: string;
   address: string;
   note: string;
+  /** Vị trí ước tính theo IP lúc đặt (máy chủ tự thêm). */
+  geo?: { ip: string; country: string; region: string; city: string; lat: number | null; lon: number | null };
 }
 
 /** Đơn đầy đủ (admin xem). */

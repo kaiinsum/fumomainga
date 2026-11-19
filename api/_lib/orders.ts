@@ -26,6 +26,43 @@ export interface Customer {
   email: string;
   address: string;
   note: string;
+  /** Vị trí theo IP lúc đặt (máy chủ tự thêm, khách không gửi được). */
+  geo?: OrderGeo;
+}
+
+/** Vị trí ước tính theo IP lúc đặt (Vercel tự gắn) — chỉ admin xem, dùng cho bản đồ nhiệt. */
+export interface OrderGeo {
+  ip: string;
+  country: string;
+  region: string;
+  city: string;
+  lat: number | null;
+  lon: number | null;
+}
+
+/** Đọc vị trí theo IP từ header của Vercel (chạy thử ở máy thì không có → chỉ lưu IP). */
+export function geoFromRequest(req: Request): OrderGeo {
+  const h = (k: string) => {
+    const v = req.headers.get(k) ?? '';
+    try {
+      return decodeURIComponent(v).slice(0, 80);
+    } catch {
+      return v.slice(0, 80);
+    }
+  };
+  const n = (k: string) => {
+    const v = Number(req.headers.get(k));
+    return req.headers.get(k) && Number.isFinite(v) ? v : null;
+  };
+  const ip = clientIp(req);
+  return {
+    ip: ip === 'unknown' ? '' : ip.slice(0, 64),
+    country: h('x-vercel-ip-country'),
+    region: h('x-vercel-ip-country-region'),
+    city: h('x-vercel-ip-city'),
+    lat: n('x-vercel-ip-latitude'),
+    lon: n('x-vercel-ip-longitude'),
+  };
 }
 
 export interface Order {
