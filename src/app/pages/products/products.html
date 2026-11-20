@@ -34,7 +34,7 @@
       @for (c of categories(); track c) {
         <label class="check">
           <input type="checkbox" [checked]="selectedCats().has(c)" (change)="toggle(selectedCats, c)" />
-          <span>{{ c }}</span>
+          <span><app-icon [icon]="catIcon(c)" /> {{ c }}</span>
         </label>
       }
     </fieldset>

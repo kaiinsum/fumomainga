@@ -38,7 +38,7 @@ import { IconComponent } from '../../shared/icon';
         <div>
           <h4>Danh mục</h4>
           @for (c of categories(); track c) {
-            <a routerLink="/san-pham" [queryParams]="{ danhMuc: c }">{{ c }}</a>
+            <a routerLink="/san-pham" [queryParams]="{ danhMuc: c }"><app-icon [icon]="catIcon(c)" /> {{ c }}</a>
           }
         </div>
         <div>
@@ -112,7 +112,11 @@ import { IconComponent } from '../../shared/icon';
 })
 export class FooterComponent {
   readonly settings = inject(SettingsService).settings;
-  readonly categories = inject(CategoryService).names;
+  private readonly catSvc = inject(CategoryService);
+  readonly categories = this.catSvc.names;
+  catIcon(name: string): string {
+    return this.catSvc.find(name)?.icon ?? '';
+  }
   readonly year = new Date().getFullYear();
   readonly season = inject(SeasonService);
 }

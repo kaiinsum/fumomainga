@@ -14,6 +14,8 @@ import { flyToCart } from '../../shared/fly-to-cart';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { PriceTagComponent } from '../../shared/price-tag';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
+import { IconComponent } from '../../shared/icon';
+import { CategoryService } from '../../services/category.service';
 
 /** Từ khoá trong 1 đoạn chữ (bỏ dấu, bỏ từ quá ngắn / quá chung). */
 const STOP = new Set(['fumo', 'plush', 'cho', 'cua', 'the', 'and', 'voi', 'mot', 'cac', 'nhung', 'size', 'cm', 'ban']);
@@ -24,7 +26,7 @@ function keywords(text: string): Set<string> {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent],
+  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent, IconComponent],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
 })
@@ -40,6 +42,10 @@ export class ProductDetailPage {
   private readonly cart = inject(CartService);
   private readonly router = inject(Router);
   private readonly seoMeta = inject(SeoMetaService);
+  private readonly catSvc = inject(CategoryService);
+  catIcon(name: string): string {
+    return this.catSvc.find(name)?.icon ?? '';
+  }
   readonly qty = signal(1);
   /** Biến thể đang chọn (null nếu sản phẩm không có biến thể). */
   readonly variantId = signal<string | null>(null);

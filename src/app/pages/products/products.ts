@@ -8,6 +8,7 @@ import { CategoryService } from '../../services/category.service';
 import { ProductService } from '../../services/product.service';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { VndPipe } from '../../shared/vnd.pipe';
+import { IconComponent } from '../../shared/icon';
 
 const PAGE_SIZE = 12;
 
@@ -16,7 +17,7 @@ const END_FUMOS = ['cirno', 'reimu', 'flandre', 'koishi', 'remilia', 'yuyuko', '
 
 @Component({
   selector: 'app-products',
-  imports: [FormsModule, ProductCardComponent, VndPipe],
+  imports: [FormsModule, ProductCardComponent, VndPipe, IconComponent],
   templateUrl: './products.html',
   styleUrl: './products.scss',
 })
@@ -24,7 +25,12 @@ export class ProductsPage {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(ProductService);
 
-  readonly categories = inject(CategoryService).names;
+  private readonly catSvc = inject(CategoryService);
+  readonly categories = this.catSvc.names;
+  /** Icon danh mục (emoji hoặc ảnh PNG vuông). */
+  catIcon(name: string): string {
+    return this.catSvc.find(name)?.icon ?? '';
+  }
   readonly allTags = this.service.allTags;
   readonly maxPrice = computed(() => Math.ceil(this.service.maxPrice() / 10000) * 10000 || 1000000);
 

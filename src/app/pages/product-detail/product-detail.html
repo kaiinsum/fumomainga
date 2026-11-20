@@ -27,7 +27,7 @@
       </div>
 
       <div class="info">
-        <span class="chip">{{ p.category }}</span>
+        <span class="chip"><app-icon [icon]="catIcon(p.category)" /> {{ p.category }}</span>
         <h1>{{ p.name }}</h1>
         <app-price-tag class="price" [product]="variant() ?? p" />
         @if (variants().length) {

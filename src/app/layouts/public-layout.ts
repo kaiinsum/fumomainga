@@ -13,10 +13,11 @@ import { AnnounceToastComponent } from '../components/announce-toast/announce-to
 import { AnnounceModalComponent } from '../components/announce-toast/announce-modal';
 import { CursorFxComponent } from '../components/cursor-fx/cursor-fx';
 import { GuideComponent } from '../components/guide/guide';
+import { MinigameGateComponent } from '../components/minigame-gate/minigame-gate';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent, AnnounceToastComponent, AnnounceModalComponent, CursorFxComponent, GuideComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent, AnnounceToastComponent, AnnounceModalComponent, CursorFxComponent, GuideComponent, MinigameGateComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
@@ -32,6 +33,7 @@ import { GuideComponent } from '../components/guide/guide';
     <app-announce-toast />
     <app-announce-modal />
     <app-guide />
+    <app-minigame-gate />
     <app-cursor-fx [dark]="theme.theme() === 'dark'" />
   `,
   styles: `

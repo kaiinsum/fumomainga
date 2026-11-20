@@ -4,6 +4,8 @@ import { AnimatableObject, AnimatableProperty, animate, createAnimatable, spring
 import { Product, discountPercent, onSale } from '../../models/product';
 import { PriceTagComponent } from '../../shared/price-tag';
 import { perf } from '../../core/perf';
+import { IconComponent } from '../../shared/icon';
+import { CategoryService } from '../../services/category.service';
 
 /** Độ nghiêng tối đa (độ) và độ lệch ảnh (px) khi rê chuột. */
 const TILT = 9;
@@ -14,7 +16,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
 
 @Component({
   selector: 'app-product-card',
-  imports: [RouterLink, PriceTagComponent],
+  imports: [RouterLink, PriceTagComponent, IconComponent],
   template: `
     @let p = product();
     <a class="card" [class.feat]="p.featured && p.inStock" [class.out]="!p.inStock" [routerLink]="['/san-pham', p.slug || p.id]">
@@ -32,7 +34,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
         }
       </div>
       <div class="info">
-        <span class="cat">{{ p.category }}</span>
+        <span class="cat"><app-icon [icon]="catIcon(p.category)" /> {{ p.category }}</span>
         <h3>{{ p.name }}</h3>
         <div class="bottom">
           <app-price-tag class="pt" [product]="p" [badge]="false" />
@@ -163,6 +165,10 @@ export class ProductCardComponent implements AfterViewInit, OnDestroy {
   protected readonly discountPercent = discountPercent;
   readonly product = input.required<Product>();
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
+  private readonly catSvc = inject(CategoryService);
+  catIcon(name: string): string {
+    return this.catSvc.find(name)?.icon ?? '';
+  }
 
   private card!: HTMLElement;
   private glare!: HTMLElement;
