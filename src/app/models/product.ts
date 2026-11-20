@@ -34,7 +34,60 @@ export interface Product {
   releasedAt?: string;
   /** Nội dung thông báo cho khách. Trống = dùng mô tả sản phẩm. */
   notice?: string;
+  /** SEO kiểu Rank Math (từ khoá chính, tiêu đề / mô tả meta, robots, schema). Sản phẩm cũ có thể chưa có. */
+  seo?: ProductSeo;
 }
+
+/** Loại bài viết khai báo kèm trang sản phẩm (schema.org). */
+export type ProductArticleType = 'Article' | 'BlogPosting' | 'Review';
+export type ProductCondition = 'NewCondition' | 'UsedCondition' | 'RefurbishedCondition';
+
+/** Cấu hình SEO của sản phẩm — để trống thì lấy mặc định từ tên / mô tả sản phẩm. */
+export interface ProductSeo {
+  focusKeyword: string;
+  /** Tiêu đề SEO (thẻ <title>). Trống → tên sản phẩm. */
+  title: string;
+  /** Mô tả meta. Trống → đầu mô tả sản phẩm. */
+  description: string;
+  noindex: boolean;
+  nofollow: boolean;
+  /** URL chuẩn (canonical). Trống → chính link sản phẩm. */
+  canonical: string;
+  /** Khai báo schema Product (giá, tình trạng, thương hiệu) cho Google. */
+  productSchema: boolean;
+  brand: string;
+  sku: string;
+  condition: ProductCondition;
+  /** Khai báo bài viết (Article / BlogPosting / Review) về sản phẩm. */
+  article: boolean;
+  articleType: ProductArticleType;
+  /** Tiêu đề bài viết. Trống → tiêu đề SEO. */
+  headline: string;
+  /** Tác giả bài viết. Trống → tên shop. */
+  author: string;
+  /** Điểm đánh giá (1–5) khi khai báo dạng Review. */
+  rating: number;
+}
+
+export const EMPTY_PRODUCT_SEO: ProductSeo = {
+  focusKeyword: '',
+  title: '',
+  description: '',
+  noindex: false,
+  nofollow: false,
+  canonical: '',
+  productSchema: true,
+  brand: '',
+  sku: '',
+  condition: 'NewCondition',
+  article: false,
+  articleType: 'Article',
+  headline: '',
+  author: '',
+  rating: 5,
+};
+
+export const productSeoOf = (p: { seo?: Partial<ProductSeo> }): ProductSeo => ({ ...EMPTY_PRODUCT_SEO, ...p.seo });
 
 export type ProductInput = Omit<Product, 'id' | 'createdAt' | 'oldSlugs'>;
 

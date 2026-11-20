@@ -1,7 +1,8 @@
 import { DOCUMENT, Injectable, inject } from '@angular/core';
 import { Meta } from '@angular/platform-browser';
 import { EMPTY_SEO, NewsPost, newsPath } from '../models/news';
-import { effectiveSeo } from '../shared/seo';
+import { Product, finalPrice, productPath, productSeoOf, variantsOf } from '../models/product';
+import { effectiveProductSeo, effectiveSeo } from '../shared/seo';
 
 export interface ArticleSchemaInput {
   post: NewsPost;
@@ -49,7 +50,89 @@ export function buildArticleSchema({ post, url, shopName, logo }: ArticleSchemaI
   };
 }
 
+export interface ProductSchemaInput {
+  product: Product;
+  url: string;
+  shopName: string;
+  logo?: string;
+}
+
+/**
+ * JSON-LD cho trang sản phẩm: Product (+ Offer / AggregateOffer), bài viết khai báo kèm
+ * (Article / BlogPosting / Review) nếu bật, và Breadcrumb Trang chủ › Sản phẩm › Danh mục › Sản phẩm.
+ */
+export function buildProductSchema({ product: p, url, shopName, logo }: ProductSchemaInput): object {
+  const seo = productSeoOf(p);
+  const { title, description } = effectiveProductSeo({ name: p.name, description: p.description, seo });
+  const origin = new URL(url).origin;
+  const images = p.images.map(publicImage).filter(Boolean);
+  const org = { '@type': 'Organization', name: shopName, url: origin, ...(logo ? { logo } : {}) };
+  const availability = `https://schema.org/${p.inStock ? 'InStock' : 'OutOfStock'}`;
+  const condition = `https://schema.org/${seo.condition}`;
+  const prices = (variantsOf(p).length ? variantsOf(p) : [p]).map((v) => finalPrice(v));
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+  const offers =
+    low !== high
+      ? { '@type': 'AggregateOffer', priceCurrency: 'VND', lowPrice: low, highPrice: high, offerCount: prices.length, availability, itemCondition: condition, url, seller: org }
+      : { '@type': 'Offer', priceCurrency: 'VND', price: low, availability, itemCondition: condition, url, seller: org };
+  const graph: object[] = [];
+  if (seo.productSchema) {
+    graph.push({
+      '@type': 'Product',
+      '@id': `${url}#product`,
+      name: p.name,
+      description,
+      ...(images.length ? { image: images } : {}),
+      sku: seo.sku || p.id,
+      brand: { '@type': 'Brand', name: seo.brand || shopName },
+      category: p.category,
+      ...(seo.focusKeyword || p.tags.length ? { keywords: [seo.focusKeyword, ...p.tags].filter(Boolean).join(', ') } : {}),
+      offers,
+    });
+  }
+  if (seo.article) {
+    const author = seo.author ? { '@type': 'Person', name: seo.author } : org;
+    const date = new Date(p.releasedAt || p.createdAt);
+    const iso = Number.isNaN(date.getTime()) ? new Date(p.createdAt).toISOString() : date.toISOString();
+    const itemRef = seo.productSchema ? { '@id': `${url}#product` } : { '@type': 'Product', name: p.name };
+    graph.push({
+      '@type': seo.articleType,
+      '@id': `${url}#article`,
+      ...(seo.articleType === 'Review'
+        ? {
+            name: (seo.headline || title).slice(0, 110),
+            itemReviewed: itemRef,
+            reviewRating: { '@type': 'Rating', ratingValue: Math.min(5, Math.max(1, seo.rating || 5)), bestRating: 5, worstRating: 1 },
+            reviewBody: description,
+          }
+        : { headline: (seo.headline || title).slice(0, 110), description, about: itemRef }),
+      ...(images.length ? { image: images.slice(0, 3) } : {}),
+      datePublished: iso,
+      dateModified: iso,
+      author,
+      publisher: org,
+      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+      inLanguage: 'vi-VN',
+      ...(seo.focusKeyword ? { keywords: seo.focusKeyword } : {}),
+    });
+  }
+  graph.push({
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: `${origin}/` },
+      { '@type': 'ListItem', position: 2, name: 'Sản phẩm', item: `${origin}/san-pham` },
+      { '@type': 'ListItem', position: 3, name: p.category, item: `${origin}/san-pham?danhMuc=${encodeURIComponent(p.category)}` },
+      { '@type': 'ListItem', position: 4, name: p.name, item: url },
+    ],
+  });
+  return { '@context': 'https://schema.org', '@graph': graph };
+}
+
 const MANAGED_META = [
+  'property="product:price:amount"',
+  'property="product:price:currency"',
+  'property="product:availability"',
   'name="robots"',
   'property="og:type"',
   'property="og:title"',
@@ -121,6 +204,52 @@ export class SeoMetaService {
     ld.type = 'application/ld+json';
     ld.setAttribute('data-seo', '');
     ld.textContent = JSON.stringify(buildArticleSchema({ post, url, shopName })).replace(/</g, '\\u003c');
+    this.doc.head.appendChild(ld);
+  }
+
+  /** Thẻ SEO cho trang sản phẩm (meta, robots, canonical, Open Graph, JSON-LD Product / bài viết). */
+  applyProduct(p: Product, shopName: string): void {
+    this.clear();
+    const seo = productSeoOf(p);
+    const origin = this.doc.location.origin;
+    const url = origin + productPath(p);
+    const { title, description } = effectiveProductSeo({ name: p.name, description: p.description, seo });
+    const image = p.images.map(publicImage).find(Boolean) ?? '';
+
+    this.defaultDescription ??= this.meta.getTag('name="description"')?.content ?? '';
+    this.meta.updateTag({ name: 'description', content: description });
+
+    const robots = [seo.noindex ? 'noindex' : 'index', seo.nofollow ? 'nofollow' : 'follow'];
+    if (!seo.noindex) robots.push('max-image-preview:large', 'max-snippet:-1');
+    const tags: Record<string, string>[] = [
+      { name: 'robots', content: robots.join(', ') },
+      { property: 'og:type', content: 'product' },
+      { property: 'og:locale', content: 'vi_VN' },
+      { property: 'og:site_name', content: shopName },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:url', content: url },
+      { property: 'product:price:amount', content: String(finalPrice(p)) },
+      { property: 'product:price:currency', content: 'VND' },
+      { property: 'product:availability', content: p.inStock ? 'in stock' : 'out of stock' },
+      { name: 'twitter:card', content: image ? 'summary_large_image' : 'summary' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+    ];
+    if (image) tags.push({ property: 'og:image', content: image }, { name: 'twitter:image', content: image });
+    if (seo.focusKeyword) tags.push({ name: 'keywords', content: [seo.focusKeyword, ...p.tags].join(', ') });
+    this.meta.addTags(tags);
+
+    const canonical = this.doc.createElement('link');
+    canonical.rel = 'canonical';
+    canonical.href = seo.canonical || url;
+    canonical.setAttribute('data-seo', '');
+    this.doc.head.appendChild(canonical);
+
+    const ld = this.doc.createElement('script');
+    ld.type = 'application/ld+json';
+    ld.setAttribute('data-seo', '');
+    ld.textContent = JSON.stringify(buildProductSchema({ product: p, url, shopName })).replace(/</g, '\\u003c');
     this.doc.head.appendChild(ld);
   }
 

@@ -1,8 +1,9 @@
-import { Component, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { setPageTitle } from '../../core/shop-title.strategy';
+import { SeoMetaService } from '../../core/seo-meta.service';
 import { SettingsService } from '../../services/settings.service';
 import { animate, createTimeline, stagger } from 'animejs';
 import { CatalogSyncService } from '../../services/catalog-sync.service';
@@ -38,6 +39,7 @@ export class ProductDetailPage {
   private readonly settings = inject(SettingsService).settings;
   private readonly cart = inject(CartService);
   private readonly router = inject(Router);
+  private readonly seoMeta = inject(SeoMetaService);
   readonly qty = signal(1);
   /** Biến thể đang chọn (null nếu sản phẩm không có biến thể). */
   readonly variantId = signal<string | null>(null);
@@ -125,12 +127,19 @@ export class ProductDetailPage {
   });
 
   constructor() {
+    // Khai báo SEO (meta, Open Graph, canonical, JSON-LD Product / bài viết) theo sản phẩm đang xem.
+    inject(DestroyRef).onDestroy(() => this.seoMeta.clear());
+    effect(() => {
+      const p = this.product();
+      const shop = this.settings().shopName;
+      untracked(() => (p ? this.seoMeta.applyProduct(p, shop) : this.seoMeta.clear()));
+    });
     // Khi đổi sản phẩm (ví dụ bấm vào sản phẩm liên quan) -> reset ảnh & chạy hiệu ứng vào trang.
     effect(() => {
       this.id();
       untracked(() => {
         const p = this.product();
-        if (p) setPageTitle(this.title, p.name, this.settings().shopName);
+        if (p) setPageTitle(this.title, p.seo?.title || p.name, this.settings().shopName);
         // Mở bằng id hoặc slug cũ → đổi URL sang link chuẩn (không thêm lịch sử).
         if (p?.slug && this.id() !== p.slug) this.router.navigate(['/san-pham', p.slug], { replaceUrl: true });
         this.activeIndex.set(0);

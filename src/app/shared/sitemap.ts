@@ -36,7 +36,7 @@ export function buildNewsSitemap(origin: string, posts: NewsPost[], products: Pr
         url(newsPath(p), p.updatedAt, 'weekly', '0.8', /^https?:\/\//i.test(p.cover) ? p.cover : undefined),
       ),
     url('/san-pham', undefined, 'weekly', '0.8'),
-    ...products.map((p) =>
+    ...products.filter((p) => !p.seo?.noindex).map((p) =>
       url(productPath(p), p.createdAt, 'weekly', '0.7', p.images.find((i) => /^https?:\/\//i.test(i))),
     ),
     url('/gioi-thieu', undefined, 'monthly', '0.5'),

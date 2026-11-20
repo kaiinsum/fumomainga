@@ -1,4 +1,5 @@
 import { NewsSeo } from '../models/news';
+import { ProductSeo } from '../models/product';
 
 /** Giới hạn hiển thị của Google (xấp xỉ theo ký tự). */
 export const SEO_LIMITS = { title: 60, description: 160, descriptionMin: 120, url: 75, minWords: 600 };
@@ -172,4 +173,113 @@ export function analyzeSeo(src: SeoSource, slugFallback: string): SeoReport {
 
 export function scoreLevel(score: number): CheckLevel {
   return score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+}
+
+// ================= SEO sản phẩm =================
+
+export interface ProductSeoSource {
+  name: string;
+  description: string;
+  images: string[];
+  tags: string[];
+  slug: string;
+  seo: ProductSeo;
+}
+
+/** Giá trị thực tế khi trống: tiêu đề SEO → tên sản phẩm, mô tả → đầu mô tả sản phẩm. */
+export function effectiveProductSeo(src: Pick<ProductSeoSource, 'name' | 'description' | 'seo'>): { title: string; description: string } {
+  const description = (src.seo.description || src.description.replace(/\s+/g, ' ')).trim();
+  return {
+    title: (src.seo.title || src.name).trim(),
+    description: description.length > SEO_LIMITS.description ? description.slice(0, SEO_LIMITS.description - 1) + '…' : description,
+  };
+}
+
+/** Số từ tối thiểu nên có cho mô tả sản phẩm. */
+export const PRODUCT_MIN_WORDS = 150;
+
+/** Chấm điểm SEO sản phẩm theo tiêu chí kiểu Rank Math (bản dành cho WooCommerce). */
+export function analyzeProductSeo(src: ProductSeoSource): SeoReport {
+  const { title, description } = effectiveProductSeo(src);
+  const slug = src.slug;
+  const kw = norm(src.seo.focusKeyword);
+  const text = src.description.trim();
+  const total = words(text).length;
+  const occurrences = countOccurrences(norm(text), kw);
+  const density = kw && total ? (occurrences * words(kw).length * 100) / total : 0;
+
+  const checks: SeoCheck[] = [];
+  const add = (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => {
+    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
+    checks.push({ level, weight, text: level === 'ok' ? ok : bad });
+  };
+
+  // --- Từ khoá chính ---
+  if (!kw) {
+    add(false, 30, '', 'Chưa đặt từ khoá chính — nhập cụm từ khách hay gõ trên Google để tìm sản phẩm này.');
+  } else {
+    const t = norm(title);
+    add(t.includes(kw), 8, 'Từ khoá có trong tiêu đề SEO.', 'Thêm từ khoá chính vào tiêu đề SEO.');
+    add(t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2, 3, 'Từ khoá nằm ở nửa đầu tiêu đề.', 'Nên đưa từ khoá về gần đầu tiêu đề.');
+    add(norm(description).includes(kw), 6, 'Từ khoá có trong mô tả meta.', 'Thêm từ khoá chính vào mô tả meta.');
+    add(slug.includes(slugify(kw)), 6, 'Từ khoá có trong đường dẫn (URL).', 'Đưa từ khoá vào đường dẫn sản phẩm.');
+    const head = norm(words(text).slice(0, Math.max(30, Math.ceil(total * 0.1))).join(' '));
+    add(head.includes(kw), 5, 'Từ khoá xuất hiện ở đầu mô tả sản phẩm.', 'Dùng từ khoá ngay trong câu đầu của mô tả sản phẩm.');
+    add(
+      density >= 0.5 && density <= 3,
+      4,
+      `Mật độ từ khoá ${density.toFixed(1)}% — hợp lý.`,
+      density > 3
+        ? `Mật độ từ khoá ${density.toFixed(1)}% — quá dày, nên giảm (0.5–3%).`
+        : `Mật độ từ khoá ${density.toFixed(1)}% (${occurrences} lần) — nên lặp lại từ khoá trong mô tả (0.5–3%).`,
+    );
+    add(norm(src.name).includes(kw), 3, 'Tên sản phẩm (dùng làm alt ảnh) có từ khoá.', 'Tên sản phẩm chưa có từ khoá — ảnh sản phẩm dùng tên làm mô tả (alt).');
+    add(src.tags.some((g) => norm(g).includes(kw) || kw.includes(norm(g))), 2, 'Thẻ sản phẩm có từ khoá.', 'Thêm từ khoá vào ô Thẻ sản phẩm.');
+  }
+
+  // --- Tiêu đề, mô tả, URL ---
+  add(
+    (title.length >= 30 && title.length <= SEO_LIMITS.title) || 'warn',
+    5,
+    `Tiêu đề SEO dài ${title.length} ký tự — vừa đẹp.`,
+    title.length > SEO_LIMITS.title
+      ? `Tiêu đề SEO dài ${title.length} ký tự — Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).`
+      : `Tiêu đề SEO hơi ngắn (${title.length} ký tự) — nên 30–${SEO_LIMITS.title}, vd: thêm kích cỡ / loại hàng.`,
+  );
+  add(
+    !src.seo.description ? 'warn' : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
+    6,
+    `Mô tả meta dài ${description.length} ký tự — vừa đẹp.`,
+    !src.seo.description
+      ? 'Chưa viết mô tả meta riêng — đang tự lấy đầu mô tả sản phẩm.'
+      : `Mô tả meta dài ${description.length} ký tự — nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
+  );
+  add(!!slug && slug.length <= SEO_LIMITS.url, 4, `Đường dẫn ngắn gọn (${slug.length} ký tự).`, `Đường dẫn dài ${slug.length} ký tự — nên ≤ ${SEO_LIMITS.url}.`);
+
+  // --- Nội dung & hình ảnh ---
+  add(
+    total >= PRODUCT_MIN_WORDS ? true : total >= 60 ? 'warn' : false,
+    12,
+    `Mô tả sản phẩm dài ${total} từ — tốt.`,
+    `Mô tả sản phẩm có ${total} từ — nên viết từ ${PRODUCT_MIN_WORDS} từ (chất liệu, kích thước, cách bảo quản…).`,
+  );
+  const imgs = src.images.length;
+  add(imgs >= 3 ? true : imgs ? 'warn' : false, 5, `Có ${imgs} ảnh sản phẩm.`, `Mới có ${imgs} ảnh — nên có từ 3 ảnh trở lên (nhiều góc chụp).`);
+  add(
+    src.images.some((i) => /^https?:\/\//i.test(i)) || (imgs ? 'warn' : false),
+    3,
+    'Ảnh có link công khai — Google / Facebook đọc được.',
+    'Ảnh đang là ảnh tải từ máy (chưa có link https) — Google Hình ảnh không đọc được.',
+  );
+  add(src.tags.length >= 2 || (src.tags.length ? 'warn' : false), 2, 'Sản phẩm có thẻ phân loại.', 'Thêm vài thẻ (tag) để gợi ý sản phẩm liên quan tốt hơn.');
+
+  // --- Khai báo ---
+  add(src.seo.productSchema, 4, 'Đã khai báo schema Product (giá, tình trạng hàng).', 'Bật khai báo schema Product để Google hiện giá & tình trạng hàng.');
+  add(!src.seo.noindex, 5, 'Sản phẩm được phép lập chỉ mục (index).', 'Sản phẩm đang đặt noindex — Google sẽ không hiển thị.');
+
+  const max = checks.reduce((s, c) => s + c.weight, 0);
+  const got = checks.reduce((s, c) => s + (c.level === 'ok' ? c.weight : c.level === 'warn' ? c.weight / 2 : 0), 0);
+  const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
+  checks.sort((a, b) => order[a.level] - order[b.level]);
+  return { score: Math.round((got / max) * 100), checks, title, description, slug, words: total, density };
 }

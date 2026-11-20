@@ -164,6 +164,153 @@
         }
       </div>
     </section>
+
+    @let r = report();
+    <section class="adm-box seo">
+      <div class="box-title seo-head">
+        <span>🔍 SEO sản phẩm</span>
+        <span [class]="'score ' + scoreLevel(r.score)" title="Điểm SEO kiểu Rank Math">{{ r.score }}/100</span>
+      </div>
+
+      <nav class="adm-tabs seo-tabs">
+        <button type="button" [class.on]="seoTab() === 'general'" (click)="seoTab.set('general')">Chung</button>
+        <button type="button" [class.on]="seoTab() === 'advanced'" (click)="seoTab.set('advanced')">Nâng cao</button>
+        <button type="button" [class.on]="seoTab() === 'schema'" (click)="seoTab.set('schema')">Schema · Khai báo bài viết</button>
+      </nav>
+
+      <div class="box-body">
+        @switch (seoTab()) {
+          @case ('general') {
+            <div class="serp" aria-label="Xem trước trên Google">
+              <small class="serp-url">{{ origin }} › san-pham › {{ r.slug || '...' }}</small>
+              <div class="serp-title">{{ r.title || 'Tên sản phẩm' }} — {{ shopName }}</div>
+              <div class="serp-desc">{{ r.description || 'Mô tả sẽ hiển thị ở đây.' }}</div>
+            </div>
+
+            <div class="field">
+              <label for="seo-kw">Từ khoá chính</label>
+              <input id="seo-kw" [value]="seo().focusKeyword" (input)="setSeo('focusKeyword', $any($event.target).value)"
+                placeholder="Ví dụ: fumo cirno 20cm" maxlength="80" />
+            </div>
+
+            <div class="field">
+              <label for="seo-title">
+                Tiêu đề SEO
+                <span class="counter" [class.over]="r.title.length > limits.title">{{ r.title.length }}/{{ limits.title }}</span>
+              </label>
+              <input id="seo-title" [value]="seo().title" (input)="setSeo('title', $any($event.target).value)"
+                [placeholder]="form.controls.name.value || 'Để trống = dùng tên sản phẩm'" maxlength="120" />
+              <div class="meter"><i [style.width.%]="(r.title.length / limits.title) * 100" [class.over]="r.title.length > limits.title"></i></div>
+            </div>
+
+            <div class="field">
+              <label for="seo-desc">
+                Mô tả meta
+                <span class="counter" [class.over]="r.description.length > limits.description">{{ r.description.length }}/{{ limits.description }}</span>
+              </label>
+              <textarea id="seo-desc" rows="3" maxlength="300" [value]="seo().description" (input)="setSeo('description', $any($event.target).value)"
+                placeholder="Để trống = lấy đầu mô tả sản phẩm. Nên 120–160 ký tự, có từ khoá chính."></textarea>
+              <div class="meter"><i [style.width.%]="(r.description.length / limits.description) * 100"></i></div>
+              <small class="hint">Đường dẫn sửa ở ô 🔗 ngay dưới tên sản phẩm.</small>
+            </div>
+
+            <ul class="checks">
+              @for (c of r.checks; track c.text) {
+                <li [class]="c.level"><span class="dot">{{ c.level === 'ok' ? '✓' : c.level === 'warn' ? '!' : '✕' }}</span>{{ c.text }}</li>
+              }
+            </ul>
+            <p class="hint">Mô tả {{ r.words }} từ · mật độ từ khoá {{ r.density.toFixed(1) }}%</p>
+          }
+
+          @case ('advanced') {
+            <div class="field">
+              <span class="label">Robots meta</span>
+              <label class="check"><input type="checkbox" [checked]="seo().noindex" (change)="setSeo('noindex', $any($event.target).checked)" />
+                <b>noindex</b> — không cho Google hiển thị sản phẩm này</label>
+              <label class="check"><input type="checkbox" [checked]="seo().nofollow" (change)="setSeo('nofollow', $any($event.target).checked)" />
+                <b>nofollow</b> — không theo các liên kết trên trang</label>
+            </div>
+            <div class="field">
+              <label for="seo-canon">URL chuẩn (canonical)</label>
+              <input id="seo-canon" type="url" [value]="seo().canonical" (input)="setSeo('canonical', $any($event.target).value)"
+                [placeholder]="origin + '/san-pham/' + r.slug" />
+              <small class="hint">Chỉ điền khi trang này là bản sao của một trang khác.</small>
+            </div>
+            <div class="field">
+              <span class="label">Xem trước khi chia sẻ (Facebook, Zalo, Messenger)</span>
+              <div class="og">
+                @if (images()[0]; as img) { <img [src]="img" alt="" /> }
+                <div>
+                  <small>{{ siteHost }}</small>
+                  <b>{{ r.title || 'Tên sản phẩm' }}</b>
+                  <p>{{ r.description }}</p>
+                </div>
+              </div>
+            </div>
+          }
+
+          @case ('schema') {
+            <label class="check big">
+              <input type="checkbox" [checked]="seo().productSchema" (change)="setSeo('productSchema', $any($event.target).checked)" />
+              <span><b>Khai báo schema Product</b> — Google hiện giá, tình trạng còn hàng ngay trên kết quả tìm kiếm</span>
+            </label>
+            @if (seo().productSchema) {
+              <div class="seo-grid">
+                <div class="field">
+                  <label for="seo-brand">Thương hiệu</label>
+                  <input id="seo-brand" [value]="seo().brand" (input)="setSeo('brand', $any($event.target).value)" [placeholder]="shopName" maxlength="60" />
+                </div>
+                <div class="field">
+                  <label for="seo-sku">Mã SKU</label>
+                  <input id="seo-sku" [value]="seo().sku" (input)="setSeo('sku', $any($event.target).value)" [placeholder]="editing()?.id || 'Tự động'" maxlength="40" />
+                </div>
+                <div class="field">
+                  <label for="seo-cond">Tình trạng</label>
+                  <select id="seo-cond" [value]="seo().condition" (change)="setSeo('condition', $any($event.target).value)">
+                    <option value="NewCondition">Mới</option>
+                    <option value="UsedCondition">Đã qua sử dụng</option>
+                    <option value="RefurbishedCondition">Tân trang</option>
+                  </select>
+                </div>
+              </div>
+            }
+
+            <label class="check big">
+              <input type="checkbox" [checked]="seo().article" (change)="setSeo('article', $any($event.target).checked)" />
+              <span><b>Khai báo bài viết</b> — trang sản phẩm đồng thời là một bài viết / bài đánh giá</span>
+            </label>
+            @if (seo().article) {
+              <div class="seo-grid">
+                <div class="field">
+                  <label for="seo-at">Loại bài viết</label>
+                  <select id="seo-at" [value]="seo().articleType" (change)="setSeo('articleType', $any($event.target).value)">
+                    @for (t of articleTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="seo-author">Tác giả</label>
+                  <input id="seo-author" [value]="seo().author" (input)="setSeo('author', $any($event.target).value)" [placeholder]="shopName" maxlength="60" />
+                </div>
+                @if (seo().articleType === 'Review') {
+                  <div class="field">
+                    <label for="seo-rate">Điểm đánh giá (1–5)</label>
+                    <input id="seo-rate" type="number" min="1" max="5" step="0.5" [value]="seo().rating" (input)="setSeo('rating', +$any($event.target).value)" />
+                  </div>
+                }
+              </div>
+              <div class="field">
+                <label for="seo-head">Tiêu đề bài viết</label>
+                <input id="seo-head" [value]="seo().headline" (input)="setSeo('headline', $any($event.target).value)"
+                  [placeholder]="r.title || 'Để trống = dùng tiêu đề SEO'" maxlength="110" />
+                <small class="hint">Nội dung bài viết lấy từ <b>Mô tả sản phẩm</b>; ngày đăng = ngày ra mắt (hoặc ngày đăng sản phẩm).</small>
+              </div>
+            }
+            <small class="hint">Kèm breadcrumb Trang chủ › Sản phẩm › {{ form.controls.category.value }} › sản phẩm. JSON-LD sẽ chèn vào trang:</small>
+            <pre class="jsonld">{{ schemaPreview() }}</pre>
+          }
+        }
+      </div>
+    </section>
   </div>
 
   <aside class="side">

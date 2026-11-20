@@ -17,6 +17,7 @@ interface P {
   hidden?: boolean;
   price?: number;
   salePrice?: number | null;
+  seo?: { title?: string; description?: string; noindex?: boolean };
 }
 interface N {
   id: string;
@@ -73,8 +74,8 @@ export const GET = handle(async (req) => {
     const p = products.find((x) => x.slug === key || x.id === key || (x.oldSlugs ?? []).includes(key));
     if (p) {
       const price = typeof p.salePrice === 'number' && p.salePrice < (p.price ?? Infinity) ? p.salePrice : p.price;
-      title = `${p.name} — ${shop}`;
-      desc = clip(`${typeof price === 'number' ? vnd(price) + ' · ' : ''}${plain(p.description ?? '')}`, 200);
+      title = `${p.seo?.title || p.name} — ${shop}`;
+      desc = clip(`${typeof price === 'number' ? vnd(price) + ' · ' : ''}${plain(p.seo?.description || p.description || '')}`, 200);
       image = abs(p.images?.[0]);
       type = 'product';
     }

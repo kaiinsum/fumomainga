@@ -2,12 +2,26 @@ import { Component, ElementRef, computed, effect, inject, input, signal, untrack
 import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
-import { ProductInput, ProductVariant, cheapest, discountPercent, finalPrice, onSale } from '../../models/product';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { buildProductSchema } from '../../core/seo-meta.service';
+import {
+  EMPTY_PRODUCT_SEO,
+  Product,
+  ProductArticleType,
+  ProductInput,
+  ProductSeo,
+  ProductVariant,
+  cheapest,
+  discountPercent,
+  finalPrice,
+  onSale,
+  productSeoOf,
+} from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { SettingsService } from '../../services/settings.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
-import { slugify } from '../../shared/seo';
+import { SEO_LIMITS, SeoReport, analyzeProductSeo, scoreLevel, slugify } from '../../shared/seo';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { CostService } from '../cost.service';
 import { AdminToastService } from '../toast.service';
@@ -95,6 +109,62 @@ export class AdminProductForm {
     notice: [''],
   });
 
+  // ---------- SEO (kiểu Rank Math) ----------
+  readonly seo = signal<ProductSeo>({ ...EMPTY_PRODUCT_SEO });
+  readonly seoTab = signal<'general' | 'advanced' | 'schema'>('general');
+  readonly limits = SEO_LIMITS;
+  readonly scoreLevel = scoreLevel;
+  readonly shopName = inject(SettingsService).settings().shopName;
+  readonly articleTypes: { value: ProductArticleType; label: string }[] = [
+    { value: 'Article', label: 'Article — bài viết giới thiệu' },
+    { value: 'BlogPosting', label: 'BlogPosting — bài blog' },
+    { value: 'Review', label: 'Review — bài đánh giá sản phẩm' },
+  ];
+  private readonly formTick = toSignal(this.form.valueChanges);
+
+  setSeo<K extends keyof ProductSeo>(key: K, value: ProductSeo[K]): void {
+    this.seo.update((s) => ({ ...s, [key]: value }));
+  }
+
+  readonly report = computed<SeoReport>(() => {
+    this.formTick();
+    const v = this.form.getRawValue();
+    return analyzeProductSeo({
+      name: v.name,
+      description: v.description,
+      images: this.images(),
+      tags: v.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      slug: slugify(this.slug()) || slugify(v.name),
+      seo: this.seo(),
+    });
+  });
+
+  /** Bản xem trước JSON-LD sẽ chèn vào trang sản phẩm. */
+  readonly schemaPreview = computed(() => {
+    this.formTick();
+    const v = this.form.getRawValue();
+    const variants = this.variants().map((x) => this.toVariant(x));
+    const cur = this.editing();
+    const p: Product = {
+      id: cur?.id ?? 'moi',
+      createdAt: cur?.createdAt ?? Date.now(),
+      name: v.name || 'Tên sản phẩm',
+      slug: slugify(this.slug()) || slugify(v.name) || 'san-pham',
+      category: v.category,
+      price: variants.length ? cheapest({ price: 0, variants }).price : Number(v.price) || 0,
+      salePrice: variants.length ? (cheapest({ price: 0, variants }).salePrice ?? null) : this.salePrice.value,
+      variants,
+      description: v.description,
+      images: this.images(),
+      tags: v.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      inStock: v.inStock,
+      featured: v.featured,
+      releasedAt: v.releasedAt,
+      seo: this.seo(),
+    };
+    return JSON.stringify(buildProductSchema({ product: p, url: `${this.origin}/san-pham/${p.slug}`, shopName: this.shopName }), null, 2);
+  });
+
   /** Giảm giá: nhập % hoặc giá sau giảm — ô kia tự tính theo. Để trống cả hai = không giảm. */
   readonly salePercent = new FormControl<number | null>(null);
   readonly salePrice = new FormControl<number | null>(null);
@@ -102,6 +172,7 @@ export class AdminProductForm {
 
   // ---------- Đường dẫn (slug) ----------
   readonly origin = location.origin;
+  readonly siteHost = location.host;
   readonly slug = signal('');
   /** true = admin tự sửa đường dẫn → thôi tự cập nhật theo tên. */
   readonly slugManual = signal(false);
@@ -152,6 +223,23 @@ export class AdminProductForm {
     }
   }
 
+  /** Cắt khoảng trắng, chuẩn hoá trước khi lưu. */
+  private cleanSeo(): ProductSeo {
+    const s = this.seo();
+    return {
+      ...s,
+      focusKeyword: s.focusKeyword.trim(),
+      title: s.title.trim(),
+      description: s.description.trim(),
+      canonical: s.canonical.trim(),
+      brand: s.brand.trim(),
+      sku: s.sku.trim(),
+      headline: s.headline.trim(),
+      author: s.author.trim(),
+      rating: Math.min(5, Math.max(1, Number(s.rating) || 5)),
+    };
+  }
+
   constructor() {
     void this.costSvc.load().then(() => {
       const p = this.editing();
@@ -185,6 +273,7 @@ export class AdminProductForm {
             notice: p.notice ?? '',
           });
           this.images.set([...p.images]);
+          this.seo.set(productSeoOf(p));
           this.slug.set(p.slug ?? this.service.suggestSlug(p.name, p.id));
           // Đường dẫn đã sửa tay (khác tên) thì giữ nguyên khi đổi tên.
           this.slugManual.set(!!p.slug && slugify(p.name) !== p.slug.replace(/-\d+$/, '') && slugify(p.name) !== p.slug);
@@ -210,6 +299,7 @@ export class AdminProductForm {
           this.salePercent.setValue(null);
           this.form.reset({ category: this.categories()[0] ?? '' });
           this.images.set([]);
+          this.seo.set({ ...EMPTY_PRODUCT_SEO });
         }
         this.submitted.set(false);
       });
@@ -314,6 +404,7 @@ export class AdminProductForm {
       slug: slugify(this.slug()) || slugify(v.name),
       tags: [...new Set(v.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
       images: this.images(),
+      seo: this.cleanSeo(),
     };
 
     const current = this.editing();
