@@ -266,10 +266,10 @@
                 </div>
                 <div class="field">
                   <label for="seo-cond">Tình trạng</label>
-                  <select id="seo-cond" [value]="seo().condition" (change)="setSeo('condition', $any($event.target).value)">
-                    <option value="NewCondition">Mới</option>
-                    <option value="UsedCondition">Đã qua sử dụng</option>
-                    <option value="RefurbishedCondition">Tân trang</option>
+                  <select id="seo-cond" (change)="setSeo('condition', $any($event.target).value)">
+                    <option value="NewCondition" [selected]="seo().condition === 'NewCondition'">Mới</option>
+                    <option value="UsedCondition" [selected]="seo().condition === 'UsedCondition'">Đã qua sử dụng</option>
+                    <option value="RefurbishedCondition" [selected]="seo().condition === 'RefurbishedCondition'">Tân trang</option>
                   </select>
                 </div>
               </div>
@@ -283,8 +283,8 @@
               <div class="seo-grid">
                 <div class="field">
                   <label for="seo-at">Loại bài viết</label>
-                  <select id="seo-at" [value]="seo().articleType" (change)="setSeo('articleType', $any($event.target).value)">
-                    @for (t of articleTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+                  <select id="seo-at" (change)="setSeo('articleType', $any($event.target).value)">
+                    @for (t of articleTypes; track t.value) { <option [value]="t.value" [selected]="seo().articleType === t.value">{{ t.label }}</option> }
                   </select>
                 </div>
                 <div class="field">
