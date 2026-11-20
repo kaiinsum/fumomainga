@@ -27,6 +27,17 @@ interface Bubble {
   max: number;
   color: string;
 }
+/** Hiệu ứng "công nghệ" khi bấm (giao diện tối): khung ngắm, lục giác, mạch điện, chữ số bay. */
+interface Tech {
+  x: number;
+  y: number;
+  life: number;
+  max: number;
+  rot: number;
+  /** Đường mạch: góc, độ dài đoạn 1, độ dài đoạn 2, hướng rẽ. */
+  lines: { a: number; l1: number; l2: number; turn: number }[];
+  digits: { dx: number; dy: number; ch: string; vy: number }[];
+}
 interface Ring {
   x: number;
   y: number;
@@ -40,9 +51,9 @@ const PASTEL = ['#60b5ff', '#ff9ec4', '#ffd23f', '#9be7c4', '#c9a7ff'];
 
 /**
  * Hiệu ứng con trỏ cho trang khách:
- *  - Giao diện tối: vệt neon phát sáng chạy theo chuột.
- *  - Giao diện sáng: bụi lấp lánh pastel rơi theo chuột.
- *  - Bấm / chạm: chùm bong bóng bung ra, bay lên rồi vỡ.
+ *  - Vệt neon chạy theo chuột (máy tính) — bản tối sáng rực, bản sáng màu đậm hơn để nổi trên nền trắng.
+ *  - Giao diện sáng: thêm bụi lấp lánh pastel; bấm / chạm → chùm bong bóng bung ra, bay lên rồi vỡ.
+ *  - Giao diện tối: bấm / chạm → hiệu ứng công nghệ (khung ngắm, lục giác, mạch điện, chữ số bay).
  * Canvas phủ màn hình nhưng không bắt chuột; chỉ vẽ khi có hiệu ứng. Tắt khi "giảm chuyển động".
  */
 @Component({
@@ -64,6 +75,7 @@ export class CursorFxComponent {
   private sparks: Spark[] = [];
   private bubbles: Bubble[] = [];
   private rings: Ring[] = [];
+  private techs: Tech[] = [];
   private mouse: { x: number; y: number } | null = null;
   private lastSpark = { x: 0, y: 0 };
   private hue = 0;
@@ -124,10 +136,10 @@ export class CursorFxComponent {
     this.ensure();
     const now = performance.now();
     this.mouse = { x: e.clientX, y: e.clientY };
-    if (this.dark()) {
-      this.trail.push({ x: e.clientX, y: e.clientY, t: now });
-      if (this.trail.length > 40) this.trail.shift();
-    } else {
+    // Vệt neon theo con trỏ (cả sáng lẫn tối).
+    this.trail.push({ x: e.clientX, y: e.clientY, t: now });
+    if (this.trail.length > 40) this.trail.shift();
+    if (!this.dark()) {
       // Rắc bụi lấp lánh theo quãng đường chuột đi.
       const dx = e.clientX - this.lastSpark.x;
       const dy = e.clientY - this.lastSpark.y;
@@ -152,7 +164,11 @@ export class CursorFxComponent {
 
   private burst(x: number, y: number): void {
     if (!this.ensure()) return;
-    const colors = this.dark() ? NEON : PASTEL;
+    if (this.dark()) {
+      this.techBurst(x, y);
+      return;
+    }
+    const colors = PASTEL;
     const n = perf.lite ? 6 : 10;
     for (let i = 0; i < n; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4;
@@ -173,6 +189,138 @@ export class CursorFxComponent {
     this.kick();
   }
 
+  private techBurst(x: number, y: number): void {
+    const off = Math.random() * Math.PI;
+    const n = perf.lite ? 4 : 6;
+    this.techs.push({
+      x,
+      y,
+      life: 0,
+      max: 0.95,
+      rot: Math.random() * Math.PI,
+      lines: Array.from({ length: n }, (_, i) => ({
+        a: off + (i / n) * Math.PI * 2,
+        l1: 16 + Math.random() * 18,
+        l2: 12 + Math.random() * 20,
+        turn: Math.random() < 0.5 ? -1 : 1,
+      })),
+      digits: Array.from({ length: perf.lite ? 3 : 6 }, () => ({
+        dx: (Math.random() - 0.5) * 70,
+        dy: (Math.random() - 0.5) * 40,
+        ch: Math.random() < 0.6 ? (Math.random() < 0.5 ? '0' : '1') : '0123456789ABCDEF'[Math.floor(Math.random() * 16)],
+        vy: 30 + Math.random() * 40,
+      })),
+    });
+    if (this.techs.length > 12) this.techs.shift();
+    this.kick();
+  }
+
+  /** Vẽ 1 hiệu ứng công nghệ. */
+  private drawTech(x: CanvasRenderingContext2D, t: Tech): void {
+    const k = t.life / t.max;
+    const ease = 1 - Math.pow(1 - Math.min(1, k * 1.6), 3);
+    const fade = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+    const cyan = '#00e5ff';
+    const pink = '#ff2d95';
+    x.save();
+    x.globalCompositeOperation = 'lighter';
+    x.translate(t.x, t.y);
+    x.lineCap = 'round';
+    x.shadowBlur = 12;
+
+    // 1) Lục giác lan ra
+    x.globalAlpha = fade * (1 - k * 0.6);
+    x.strokeStyle = cyan;
+    x.shadowColor = cyan;
+    x.lineWidth = 1.6;
+    const hr = 10 + ease * 44;
+    x.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + t.rot;
+      x.lineTo(Math.cos(a) * hr, Math.sin(a) * hr);
+    }
+    x.stroke();
+
+    // 2) Vòng nét đứt xoay
+    x.save();
+    x.rotate(t.rot + k * 4);
+    x.setLineDash([7, 6]);
+    x.globalAlpha = fade * 0.9;
+    x.strokeStyle = pink;
+    x.shadowColor = pink;
+    x.lineWidth = 1.4;
+    x.beginPath();
+    x.arc(0, 0, 20 + ease * 6, 0, Math.PI * 2);
+    x.stroke();
+    x.restore();
+
+    // 3) Khung ngắm 4 góc thu vào (khoá mục tiêu)
+    const br = 40 - ease * 16;
+    const bl = 8;
+    x.globalAlpha = fade;
+    x.strokeStyle = cyan;
+    x.shadowColor = cyan;
+    x.lineWidth = 2;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      x.beginPath();
+      x.moveTo(sx * br, sy * (br - bl));
+      x.lineTo(sx * br, sy * br);
+      x.lineTo(sx * (br - bl), sy * br);
+      x.stroke();
+    }
+
+    // 4) Đường mạch điện có nút
+    x.strokeStyle = pink;
+    x.shadowColor = pink;
+    x.fillStyle = pink;
+    x.lineWidth = 1.3;
+    const grow = Math.min(1, k * 2.2);
+    for (const l of t.lines) {
+      const c1 = Math.cos(l.a);
+      const s1 = Math.sin(l.a);
+      const a2 = l.a + l.turn * (Math.PI / 4);
+      const r0 = 24;
+      const p1x = c1 * (r0 + l.l1);
+      const p1y = s1 * (r0 + l.l1);
+      const d1 = Math.min(1, grow * 2);
+      const d2 = Math.max(0, grow * 2 - 1);
+      x.globalAlpha = fade * 0.95;
+      x.beginPath();
+      x.moveTo(c1 * r0, s1 * r0);
+      x.lineTo(c1 * (r0 + l.l1 * d1), s1 * (r0 + l.l1 * d1));
+      if (d2 > 0) x.lineTo(p1x + Math.cos(a2) * l.l2 * d2, p1y + Math.sin(a2) * l.l2 * d2);
+      x.stroke();
+      if (d2 >= 1) {
+        const ex = p1x + Math.cos(a2) * l.l2;
+        const ey = p1y + Math.sin(a2) * l.l2;
+        x.fillRect(ex - 2.5, ey - 2.5, 5, 5);
+      }
+    }
+
+    // 5) Chữ số nhị phân / hex bay lên
+    x.shadowBlur = 8;
+    x.shadowColor = cyan;
+    x.fillStyle = cyan;
+    x.font = '700 11px ui-monospace, Consolas, monospace';
+    x.textAlign = 'center';
+    for (const d of t.digits) {
+      x.globalAlpha = fade * 0.85;
+      x.fillText(d.ch, d.dx, d.dy - d.vy * t.life);
+    }
+
+    // 6) Chớp sáng ở tâm
+    if (k < 0.25) {
+      x.globalAlpha = 1 - k / 0.25;
+      x.fillStyle = '#fff';
+      x.shadowColor = cyan;
+      x.shadowBlur = 20;
+      x.beginPath();
+      x.arc(0, 0, 4 + k * 20, 0, Math.PI * 2);
+      x.fill();
+    }
+    x.restore();
+  }
+
   private readonly frame = (now: number) => {
     const dt = Math.min(0.05, (now - (this.last || now)) / 1000);
     this.last = now;
@@ -185,25 +333,25 @@ export class CursorFxComponent {
     x.clearRect(0, 0, innerWidth, innerHeight);
     const dark = this.dark();
 
-    // ----- Vệt neon (tối) -----
-    if (dark) {
+    // ----- Vệt neon theo con trỏ (tối: sáng rực trên nền đen · sáng: màu đậm hơn để nổi trên nền trắng) -----
+    {
       const cut = performance.now() - 260;
       this.trail = this.trail.filter((p) => p.t > cut);
       this.hue = (this.hue + dt * 90) % 360;
       if (this.trail.length > 1) {
         x.save();
-        x.globalCompositeOperation = 'lighter';
+        x.globalCompositeOperation = dark ? 'lighter' : 'source-over';
         x.lineCap = 'round';
         x.lineJoin = 'round';
         for (let i = 1; i < this.trail.length; i++) {
           const a = this.trail[i - 1];
           const b = this.trail[i];
           const k = i / this.trail.length;
-          const col = `hsl(${(this.hue + k * 120) % 360}, 100%, 62%)`;
+          const col = dark ? `hsl(${(this.hue + k * 120) % 360}, 100%, 62%)` : `hsl(${(this.hue + k * 120) % 360}, 95%, 55%)`;
           x.strokeStyle = col;
           x.shadowColor = col;
-          x.shadowBlur = 16;
-          x.globalAlpha = k * 0.9;
+          x.shadowBlur = dark ? 16 : 10;
+          x.globalAlpha = k * (dark ? 0.9 : 0.75);
           x.lineWidth = 1.5 + k * 5;
           x.beginPath();
           x.moveTo(a.x, a.y);
@@ -212,9 +360,9 @@ export class CursorFxComponent {
         }
         x.restore();
       }
-      if (this.mouse) {
+      if (this.mouse && this.trail.length) {
         const g = x.createRadialGradient(this.mouse.x, this.mouse.y, 0, this.mouse.x, this.mouse.y, 22);
-        g.addColorStop(0, `hsla(${this.hue}, 100%, 75%, .55)`);
+        g.addColorStop(0, `hsla(${this.hue}, 100%, ${dark ? 75 : 60}%, ${dark ? 0.55 : 0.35})`);
         g.addColorStop(1, `hsla(${this.hue}, 100%, 60%, 0)`);
         x.fillStyle = g;
         x.beginPath();
@@ -250,7 +398,14 @@ export class CursorFxComponent {
     }
     this.sparks = this.sparks.filter((s) => s.life < s.max);
 
-    // ----- Bong bóng khi bấm -----
+    // ----- Hiệu ứng công nghệ khi bấm (tối) -----
+    for (const t of this.techs) {
+      t.life += dt;
+      if (t.life < t.max) this.drawTech(x, t);
+    }
+    this.techs = this.techs.filter((t) => t.life < t.max);
+
+    // ----- Bong bóng khi bấm (sáng) -----
     for (const r of this.rings) {
       r.life += dt;
       const k = r.life / r.max;
@@ -315,7 +470,7 @@ export class CursorFxComponent {
 
     // Còn gì để vẽ thì vẽ tiếp, không thì dừng (tiết kiệm pin).
     // Chuột đứng yên (hết vệt) và không còn bụi / bong bóng → dừng hẳn.
-    const busy = this.sparks.length || this.bubbles.length || this.rings.length || (dark && this.trail.length > 0);
+    const busy = this.sparks.length || this.bubbles.length || this.rings.length || this.techs.length || this.trail.length > 0;
     if (busy) {
       this.raf = requestAnimationFrame(this.frame);
     } else {
