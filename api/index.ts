@@ -28,7 +28,6 @@ import * as security from './_routes/security';
 import * as leaderboard from './_routes/leaderboard';
 import * as costs from './_routes/costs';
 import * as og from './_routes/og';
-import * as yt from './_routes/yt';
 import { isBlocked, recordRateHit } from './_lib/security';
 import { ADMIN_BODY_PATHS, GLOBAL_RULE, MAX_BODY_ADMIN, MAX_BODY_PUBLIC, RULES, memLimit } from './_lib/guard';
 import { clientIp, isAdmin } from './_lib/orders';
@@ -45,7 +44,6 @@ const ROUTES: [RegExp, Module][] = [
   [/^admin\/costs$/, costs],
   [/^leaderboard$/, leaderboard],
   [/^og$/, og],
-  [/^yt$/, yt],
   [/^catalog$/, catalog],
   [/^analytics$/, analytics],
   [/^minigame$/, minigame],

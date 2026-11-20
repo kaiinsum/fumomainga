@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { LOGIN_ID_KEY } from '../../services/auth.service';
+import { IpGeoComponent } from './ip-geo';
 
 interface LoginEvent {
   id: string;
@@ -40,6 +41,7 @@ const KIND: Record<LoginEvent['kind'], { label: string; cls: string }> = {
 /** Tab Bảo mật: lịch sử đăng nhập admin (IP, thiết bị, bao lâu trước). */
 @Component({
   selector: 'app-admin-logins',
+  imports: [IpGeoComponent],
   template: `
     <section class="adm-box">
       <h2>🛡 Lịch sử đăng nhập</h2>
@@ -63,7 +65,7 @@ const KIND: Record<LoginEvent['kind'], { label: string; cls: string }> = {
                       <b>{{ ago(e.at) }}</b>
                       <small>{{ fmt(e.at) }}</small>
                     </td>
-                    <td class="ip">{{ e.ip || 'không rõ' }} @if (e.id === myId) { <span class="me-tag">Máy này</span> }</td>
+                    <td class="ip">{{ e.ip || 'không rõ' }} @if (e.ip) { <app-ip-geo [ip]="e.ip" /> } @if (e.id === myId) { <span class="me-tag">Máy này</span> }</td>
                     <td [title]="e.ua">{{ device(e.ua) }}</td>
                     <td><span class="kind" [class]="'kind ' + kind[e.kind].cls">{{ kind[e.kind].label }}</span></td>
                   </tr>

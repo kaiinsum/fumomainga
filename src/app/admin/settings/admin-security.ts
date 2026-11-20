@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { AdminToastService } from '../toast.service';
+import { IpGeoComponent } from './ip-geo';
 
 interface BlockedIp {
   ip: string;
@@ -23,8 +24,26 @@ interface Suspect {
 /** Tab Bảo mật: chặn IP thủ công + IP đáng ngờ (spam / nhập sai mật khẩu nhiều lần). */
 @Component({
   selector: 'app-admin-security',
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, IpGeoComponent],
   template: `
+    <section class="adm-box">
+      <h2>📍 Kiểm tra IP</h2>
+      <div class="box-body">
+        <form class="form" (submit)="$event.preventDefault(); checkIp.set(check.trim())">
+          <div class="field grow">
+            <label for="chk-ip">Địa chỉ IP</label>
+            <input id="chk-ip" name="chk" [(ngModel)]="check" placeholder="VD: 113.161.12.34" />
+          </div>
+          <button class="btn primary small" type="submit" [disabled]="!validIp(check)">🔎 Xem vị trí</button>
+          @if (myIp()) { <button class="btn ghost small" type="button" (click)="check = myIp(); checkIp.set(myIp())">IP của tôi</button> }
+        </form>
+        @for (c of checkIp() ? [checkIp()] : []; track c) {
+          <div class="chk-res">Kết quả cho <code>{{ c }}</code>: <app-ip-geo [ip]="c" [autoOpen]="true" /></div>
+        }
+        <p class="hint">Vị trí ước tính theo IP (tỉnh / thành phố, nhà mạng) và bản đồ Google Maps. Mỗi IP trong các bảng bên dưới cũng có nút 📍.</p>
+      </div>
+    </section>
+
     <section class="adm-box">
       <h2>🚨 IP đáng ngờ (24 giờ qua)</h2>
       <div class="box-body">
@@ -43,7 +62,7 @@ interface Suspect {
               <tbody>
                 @for (s of suspects(); track s.ip) {
                   <tr [class.danger]="s.level === 'danger'">
-                    <td class="ip">{{ s.level === 'danger' ? '🔴' : '🟠' }} {{ s.ip }}</td>
+                    <td class="ip">{{ s.level === 'danger' ? '🔴' : '🟠' }} {{ s.ip }} <app-ip-geo [ip]="s.ip" /></td>
                     <td class="num">{{ s.rateHits }}</td>
                     <td class="num">{{ s.loginFails }}</td>
                     <td class="paths">{{ s.paths.join(', ') }}</td>
@@ -100,7 +119,7 @@ interface Suspect {
           <ul class="blocked">
             @for (b of blocked(); track b.ip) {
               <li>
-                <code>{{ b.ip }}</code>
+                <code>{{ b.ip }}</code> <app-ip-geo [ip]="b.ip" />
                 <span class="reason">{{ b.reason }}</span>
                 <small>từ {{ b.at | date: 'HH:mm dd/MM/yyyy' }} · {{ b.until ? 'đến ' + (b.until | date: 'HH:mm dd/MM/yyyy') : 'vĩnh viễn' }}</small>
                 <button type="button" class="unblock" (click)="unblock(b.ip)" [disabled]="busy()">Bỏ chặn</button>
@@ -136,6 +155,7 @@ interface Suspect {
     .reason { flex: 1; min-width: 140px; }
     .blocked small { color: #646970; }
     h3 .all { margin-left: 8px; font-weight: 700; }
+    .chk-res { margin: 10px 0 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .unblock { border: 1px solid #c3c4c7; background: #fff; border-radius: 6px; padding: 4px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
     @media (max-width: 600px) { .adm-table th:nth-child(4), .adm-table td:nth-child(4) { display: none; } }
   `,
@@ -153,6 +173,9 @@ export class AdminSecurityComponent {
   readonly error = signal('');
   readonly tried = signal(false);
   ip = '';
+  /** Ô "Kiểm tra IP". */
+  check = '';
+  readonly checkIp = signal('');
   reason = '';
   hours = 168;
 
