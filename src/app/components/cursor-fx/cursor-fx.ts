@@ -17,16 +17,6 @@ interface Spark {
   rot: number;
   color: string;
 }
-interface Bubble {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  r: number;
-  life: number;
-  max: number;
-  color: string;
-}
 /** Hiệu ứng "công nghệ" khi bấm (giao diện tối): khung ngắm, lục giác, mạch điện, chữ số bay. */
 interface Tech {
   x: number;
@@ -38,21 +28,27 @@ interface Tech {
   lines: { a: number; l1: number; l2: number; turn: number }[];
   digits: { dx: number; dy: number; ch: string; vy: number }[];
 }
-interface Ring {
+/** Gợn sóng khi bấm (giao diện sáng). */
+interface Ripple {
   x: number;
   y: number;
   life: number;
-  max: number;
   color: string;
 }
+/** Thời gian 1 gợn sóng (giây). */
+const RIPPLE_LIFE = 0.75;
+/** Khoảng cách tối thiểu giữa 2 lần bấm có hiệu ứng (ms) — spam click không bị lag. */
+const CLICK_GAP = 90;
+/** Số hiệu ứng bấm tối đa cùng lúc. */
+const MAX_TECH = 3;
+const MAX_RIPPLE = 5;
 
-const NEON = ['#ff2d95', '#ff5fd2', '#b26bff', '#00e5ff'];
 const PASTEL = ['#60b5ff', '#ff9ec4', '#ffd23f', '#9be7c4', '#c9a7ff'];
 
 /**
  * Hiệu ứng con trỏ cho trang khách:
  *  - Vệt neon chạy theo chuột (máy tính) — bản tối sáng rực, bản sáng màu đậm hơn để nổi trên nền trắng.
- *  - Giao diện sáng: thêm bụi lấp lánh pastel; bấm / chạm → chùm bong bóng bung ra, bay lên rồi vỡ.
+ *  - Giao diện sáng: thêm bụi lấp lánh pastel; bấm / chạm → gợn sóng (ripple) lan ra.
  *  - Giao diện tối: bấm / chạm → hiệu ứng công nghệ (khung ngắm, lục giác, mạch điện, chữ số bay).
  * Canvas phủ màn hình nhưng không bắt chuột; chỉ vẽ khi có hiệu ứng. Tắt khi "giảm chuyển động".
  */
@@ -73,9 +69,9 @@ export class CursorFxComponent {
   private last = 0;
   private trail: TrailPt[] = [];
   private sparks: Spark[] = [];
-  private bubbles: Bubble[] = [];
-  private rings: Ring[] = [];
+  private ripples: Ripple[] = [];
   private techs: Tech[] = [];
+  private lastClick = 0;
   private mouse: { x: number; y: number } | null = null;
   private lastSpark = { x: 0, y: 0 };
   private hue = 0;
@@ -164,28 +160,16 @@ export class CursorFxComponent {
 
   private burst(x: number, y: number): void {
     if (!this.ensure()) return;
+    // Chống spam: bấm dồn dập thì bỏ bớt, chỉ giữ vài hiệu ứng mới nhất.
+    const now = performance.now();
+    if (now - this.lastClick < CLICK_GAP) return;
+    this.lastClick = now;
     if (this.dark()) {
       this.techBurst(x, y);
       return;
     }
-    const colors = PASTEL;
-    const n = perf.lite ? 6 : 10;
-    for (let i = 0; i < n; i++) {
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4;
-      const s = 60 + Math.random() * 140;
-      this.bubbles.push({
-        x,
-        y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        r: 4 + Math.random() * 10,
-        life: 0,
-        max: 0.7 + Math.random() * 0.6,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      });
-    }
-    this.rings.push({ x, y, life: 0, max: 0.45, color: colors[0] });
-    if (this.bubbles.length > 120) this.bubbles.splice(0, this.bubbles.length - 120);
+    this.ripples.push({ x, y, life: 0, color: PASTEL[Math.floor(Math.random() * PASTEL.length)] });
+    if (this.ripples.length > MAX_RIPPLE) this.ripples.shift();
     this.kick();
   }
 
@@ -211,12 +195,12 @@ export class CursorFxComponent {
         vy: 30 + Math.random() * 40,
       })),
     });
-    if (this.techs.length > 12) this.techs.shift();
+    if (this.techs.length > MAX_TECH) this.techs.shift();
     this.kick();
   }
 
   /** Vẽ 1 hiệu ứng công nghệ. */
-  private drawTech(x: CanvasRenderingContext2D, t: Tech): void {
+  private drawTech(x: CanvasRenderingContext2D, t: Tech, glow: boolean): void {
     const k = t.life / t.max;
     const ease = 1 - Math.pow(1 - Math.min(1, k * 1.6), 3);
     const fade = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
@@ -226,7 +210,8 @@ export class CursorFxComponent {
     x.globalCompositeOperation = 'lighter';
     x.translate(t.x, t.y);
     x.lineCap = 'round';
-    x.shadowBlur = 12;
+    // shadowBlur rất tốn CPU → chỉ bật khi có ít hiệu ứng trên màn hình.
+    x.shadowBlur = glow ? 12 : 0;
 
     // 1) Lục giác lan ra
     x.globalAlpha = fade * (1 - k * 0.6);
@@ -298,7 +283,7 @@ export class CursorFxComponent {
     }
 
     // 5) Chữ số nhị phân / hex bay lên
-    x.shadowBlur = 8;
+    x.shadowBlur = glow ? 8 : 0;
     x.shadowColor = cyan;
     x.fillStyle = cyan;
     x.font = '700 11px ui-monospace, Consolas, monospace';
@@ -313,7 +298,7 @@ export class CursorFxComponent {
       x.globalAlpha = 1 - k / 0.25;
       x.fillStyle = '#fff';
       x.shadowColor = cyan;
-      x.shadowBlur = 20;
+      x.shadowBlur = glow ? 20 : 0;
       x.beginPath();
       x.arc(0, 0, 4 + k * 20, 0, Math.PI * 2);
       x.fill();
@@ -343,14 +328,20 @@ export class CursorFxComponent {
         x.globalCompositeOperation = dark ? 'lighter' : 'source-over';
         x.lineCap = 'round';
         x.lineJoin = 'round';
+        // Quầng sáng: 1 nét rộng mờ cho cả vệt (rẻ hơn nhiều so với shadowBlur từng đoạn).
+        x.globalAlpha = dark ? 0.22 : 0.16;
+        x.strokeStyle = `hsl(${this.hue}, 100%, ${dark ? 62 : 55}%)`;
+        x.lineWidth = 14;
+        x.beginPath();
+        x.moveTo(this.trail[0].x, this.trail[0].y);
+        for (const p of this.trail) x.lineTo(p.x, p.y);
+        x.stroke();
         for (let i = 1; i < this.trail.length; i++) {
           const a = this.trail[i - 1];
           const b = this.trail[i];
           const k = i / this.trail.length;
           const col = dark ? `hsl(${(this.hue + k * 120) % 360}, 100%, 62%)` : `hsl(${(this.hue + k * 120) % 360}, 95%, 55%)`;
           x.strokeStyle = col;
-          x.shadowColor = col;
-          x.shadowBlur = dark ? 16 : 10;
           x.globalAlpha = k * (dark ? 0.9 : 0.75);
           x.lineWidth = 1.5 + k * 5;
           x.beginPath();
@@ -399,78 +390,42 @@ export class CursorFxComponent {
     this.sparks = this.sparks.filter((s) => s.life < s.max);
 
     // ----- Hiệu ứng công nghệ khi bấm (tối) -----
+    const glow = this.techs.length <= 1 && !perf.lite;
     for (const t of this.techs) {
       t.life += dt;
-      if (t.life < t.max) this.drawTech(x, t);
+      if (t.life < t.max) this.drawTech(x, t, glow);
     }
     this.techs = this.techs.filter((t) => t.life < t.max);
 
-    // ----- Bong bóng khi bấm (sáng) -----
-    for (const r of this.rings) {
+    // ----- Gợn sóng (ripple) khi bấm (sáng): đĩa mờ + 2 vòng lan ra lệch nhịp -----
+    for (const r of this.ripples) {
       r.life += dt;
-      const k = r.life / r.max;
-      x.save();
-      x.globalAlpha = Math.max(0, 1 - k);
-      x.strokeStyle = r.color;
-      x.lineWidth = 2;
-      if (dark) {
-        x.shadowColor = r.color;
-        x.shadowBlur = 12;
-      }
-      x.beginPath();
-      x.arc(r.x, r.y, 6 + k * 34, 0, Math.PI * 2);
-      x.stroke();
-      x.restore();
-    }
-    this.rings = this.rings.filter((r) => r.life < r.max);
-
-    for (const b of this.bubbles) {
-      b.life += dt;
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      b.vx *= 0.96;
-      b.vy = b.vy * 0.96 - 40 * dt; // bay lên nhẹ
-      const k = b.life / b.max;
+      const k = r.life / RIPPLE_LIFE;
       if (k >= 1) continue;
-      const r = b.r * (0.6 + k * 0.7);
+      const out = 1 - Math.pow(1 - k, 3); // chậm dần
       x.save();
-      x.globalAlpha = k > 0.85 ? (1 - k) / 0.15 : 1;
-      if (dark) {
-        x.shadowColor = b.color;
-        x.shadowBlur = 10;
+      x.fillStyle = r.color;
+      x.globalAlpha = 0.18 * (1 - k);
+      x.beginPath();
+      x.arc(r.x, r.y, 4 + out * 26, 0, Math.PI * 2);
+      x.fill();
+      x.strokeStyle = r.color;
+      for (const [delay, size, w] of [[0, 44, 2.5], [0.18, 30, 1.5]]) {
+        const kk = (k - delay) / (1 - delay);
+        if (kk <= 0) continue;
+        const e = 1 - Math.pow(1 - kk, 3);
+        x.globalAlpha = 1 - kk;
+        x.lineWidth = w * (1 - kk * 0.6);
+        x.beginPath();
+        x.arc(r.x, r.y, 4 + e * size, 0, Math.PI * 2);
+        x.stroke();
       }
-      // Thân bong bóng trong suốt + viền màu
-      const g = x.createRadialGradient(b.x - r * 0.3, b.y - r * 0.3, r * 0.1, b.x, b.y, r);
-      g.addColorStop(0, 'rgba(255,255,255,.55)');
-      g.addColorStop(0.6, dark ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.25)');
-      g.addColorStop(1, b.color + '55');
-      x.fillStyle = g;
-      x.strokeStyle = b.color;
-      x.lineWidth = 1.5;
-      x.beginPath();
-      x.arc(b.x, b.y, r, 0, Math.PI * 2);
-      x.fill();
-      x.stroke();
-      // Đốm sáng phản chiếu
-      x.fillStyle = 'rgba(255,255,255,.85)';
-      x.beginPath();
-      x.arc(b.x - r * 0.35, b.y - r * 0.35, Math.max(1, r * 0.18), 0, Math.PI * 2);
-      x.fill();
       x.restore();
-      // Vỡ: chấm nhỏ bắn ra lúc cuối
-      if (k > 0.93 && !perf.lite) {
-        x.fillStyle = b.color;
-        for (let i = 0; i < 4; i++) {
-          const a = (i / 4) * Math.PI * 2 + b.r;
-          x.fillRect(b.x + Math.cos(a) * r * 1.2, b.y + Math.sin(a) * r * 1.2, 2, 2);
-        }
-      }
     }
-    this.bubbles = this.bubbles.filter((b) => b.life < b.max);
+    this.ripples = this.ripples.filter((r) => r.life < RIPPLE_LIFE);
 
     // Còn gì để vẽ thì vẽ tiếp, không thì dừng (tiết kiệm pin).
-    // Chuột đứng yên (hết vệt) và không còn bụi / bong bóng → dừng hẳn.
-    const busy = this.sparks.length || this.bubbles.length || this.rings.length || this.techs.length || this.trail.length > 0;
+    const busy = this.sparks.length || this.ripples.length || this.techs.length || this.trail.length > 0;
     if (busy) {
       this.raf = requestAnimationFrame(this.frame);
     } else {

@@ -9,7 +9,7 @@ const MONO_FONT_URL = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:w
 
 /**
  * Chế độ sáng / tối cho trang công khai.
- * Mặc định theo cài đặt hệ điều hành; lựa chọn của khách được nhớ trong trình duyệt.
+ * Mặc định là giao diện sáng; lựa chọn của khách được nhớ trong trình duyệt.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -40,7 +40,8 @@ export class ThemeService {
     } catch {
       /* bỏ qua */
     }
-    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Lần đầu truy cập (chưa chọn) → luôn giao diện sáng.
+    return 'light';
   }
 
   private loadMonoFont(): void {
