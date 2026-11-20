@@ -79,6 +79,8 @@ export interface GuideSettings {
   noReply: string;
   /** Lời chào khi vào trang Mini game. */
   hubWelcome: string;
+  /** Câu giới thiệu khi người hướng dẫn vừa dẫn khách sang trang Mini game (hiện to ở giữa rồi thu về góc). */
+  hubIntro: string;
   /** Câu nói riêng khi rê chuột vào từng game (id game → câu). Trống = câu của phân loại. */
   gameLines: Record<string, string>;
 }
@@ -98,6 +100,7 @@ export const DEFAULT_GUIDE: GuideSettings = {
   okLabel: 'OK, đi thôi!',
   noReply: 'Vậy bạn cứ tiếp tục tìm hiểu về sản phẩm bên mình nha.',
   hubWelcome: 'Chào mừng đến với minigame! Rê chuột vào trò nào để mình giới thiệu nha~',
+  hubIntro: 'Đây là trang minigame nè! Ở đây có đủ trò chill, trò đấu trí, trò chiến thuật — chơi xong còn được lên bảng xếp hạng nữa đó~',
   gameLines: {},
 };
 

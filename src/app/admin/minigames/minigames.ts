@@ -4,6 +4,8 @@ import { ALWAYS_FREE_ID, DEFAULT_GAME_CATEGORIES, DEFAULT_LOCK_MSG, GAMES, GameC
 import { OrderApiService } from '../../services/order-api.service';
 import { GAME_PARAMS } from '../../models/game-params';
 import { SettingsService } from '../../services/settings.service';
+import { guideOf } from '../../models/site-settings';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminToastService } from '../toast.service';
 
 const STATUS: { id: GameStatus; label: string; hint: string }[] = [
@@ -15,7 +17,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
 /** Admin → Minigame: khoá / mở / ẩn, sắp xếp thứ tự và sửa nội dung thẻ của từng mini game. */
 @Component({
   selector: 'app-admin-minigames',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <div class="adm-head">
       <h1>Minigame</h1>
@@ -165,6 +167,11 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
                   <label [for]="'d-' + g.id">Mô tả ngắn</label>
                   <textarea [id]="'d-' + g.id" rows="3" maxlength="240" [placeholder]="def.desc" [ngModel]="g.desc" (ngModelChange)="set(i, 'desc', $event)"></textarea>
                   <small class="hint">{{ (g.desc || def.desc).length }}/240 ký tự</small>
+                </div>
+                <div class="field guide-line" [id]="'guide-' + g.id">
+                  <label [for]="'gl-' + g.id">🧚 Người hướng dẫn nói khi khách rê chuột vào game</label>
+                  <input [id]="'gl-' + g.id" maxlength="160" [placeholder]="catLine(g)" [ngModel]="lines()[g.id] || ''" (ngModelChange)="setLine(g.id, $event)" />
+                  <small class="hint">Để trống = dùng câu của phân loại: “{{ catLine(g) }}”. Nhân vật & lời thoại khác: <a routerLink="/admin/nguoi-huong-dan">Người hướng dẫn →</a></small>
                 </div>
                 <div class="field">
                   <label [for]="'l-' + g.id">Lời nhắn khi khoá</label>
@@ -414,6 +421,23 @@ export class AdminMinigames {
   readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧', piano: '🎹' };
 
   readonly draft = signal<GameSetting[]>(normalizeGameSettings(this.settingsSvc.settings().minigames));
+  /** Câu người hướng dẫn nói khi rê chuột vào từng game (lưu trong cài đặt người hướng dẫn). */
+  readonly lines = signal<Record<string, string>>({ ...guideOf(this.settingsSvc.settings()).gameLines });
+
+  setLine(id: string, value: string): void {
+    this.lines.update((l) => {
+      const n = { ...l };
+      if (value.trim()) n[id] = value;
+      else delete n[id];
+      return n;
+    });
+  }
+
+  /** Câu mặc định theo phân loại đầu tiên có câu thoại. */
+  catLine(g: GameSetting): string {
+    return (g.cats ?? []).map((id) => this.cats().find((c) => c.id === id)).find((c) => c?.line)?.line || 'Trò này vui lắm đó, chơi thử nha!';
+  }
+
   /** Phân loại minigame (bản nháp). */
   readonly cats = signal<GameCategory[]>(structuredClone(gameCategories(this.settingsSvc.settings().gameCategories)));
 
@@ -468,12 +492,23 @@ export class AdminMinigames {
       this.dailyFree() !== (s.minigameDailyFree ?? 0) ||
       JSON.stringify(this.roll() ?? null) !== JSON.stringify(s.minigameRoll ?? null) ||
       JSON.stringify(this.params()) !== JSON.stringify(s.gameParams ?? {}) ||
-      JSON.stringify(this.cats()) !== JSON.stringify(gameCategories(s.gameCategories))
+      JSON.stringify(this.cats()) !== JSON.stringify(gameCategories(s.gameCategories)) ||
+      JSON.stringify(this.lines()) !== JSON.stringify(guideOf(s).gameLines)
     );
   });
 
   constructor() {
     void this.loadCode();
+    // Mở từ trang Người hướng dẫn: ?sua=<id game> → mở khung sửa game đó và cuộn tới ô câu thoại.
+    const id = inject(ActivatedRoute).snapshot.queryParamMap.get('sua');
+    if (id && GAMES.some((g) => g.id === id)) {
+      this.toggleOpen(id);
+      setTimeout(() => {
+        const el = document.getElementById('guide-' + id);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.querySelector('input')?.focus({ preventScroll: true });
+      }, 400);
+    }
   }
 
   async loadCode(): Promise<void> {
@@ -647,6 +682,7 @@ export class AdminMinigames {
     this.roll.set(s.minigameRoll);
     this.params.set(structuredClone(s.gameParams ?? {}));
     this.cats.set(structuredClone(gameCategories(s.gameCategories)));
+    this.lines.set({ ...guideOf(s).gameLines });
   }
 
   async save(): Promise<void> {
@@ -661,6 +697,7 @@ export class AdminMinigames {
     }));
     const daily = Math.max(0, Math.round(this.dailyFree() || 0));
     const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll(), gameParams: this.params(),
+      guide: { ...guideOf(this.settingsSvc.settings()), gameLines: Object.fromEntries(Object.entries(this.lines()).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)) },
       gameCategories: this.cats().map((c) => ({ ...c, name: c.name.trim(), icon: c.icon.trim() || '🎮', line: c.line.trim() })).filter((c) => c.name) };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;
     this.draft.set(normalizeGameSettings(clean));

@@ -9,8 +9,11 @@ import { GuideService, guideStage } from './guide.service';
   selector: 'app-guide',
   template: `
     @let st = guide.step();
+    @if (st === 'intro') {
+      <div class="veil" (click)="toCorner()" aria-hidden="true"></div>
+    }
     @if (st !== 'hidden') {
-      <div class="guide" [class.hub]="st === 'hub'" [class.dark]="guide.dark()" role="dialog" [attr.aria-label]="guide.name() + ' nói'">
+      <div #box class="guide" [class.hub]="st === 'hub'" [class.intro]="st === 'intro'" [class.flying]="st === 'fly'" [class.dark]="guide.dark()" role="dialog" [attr.aria-label]="guide.name() + ' nói'">
         <img #fig class="fig" [src]="guide.image()" [alt]="guide.name()" draggable="false" />
         <div class="bubble" aria-live="polite">
           <button class="x" type="button" (click)="close()" aria-label="Đóng">✕</button>
@@ -28,6 +31,9 @@ import { GuideService, guideStage } from './guide.service';
             }
             @case ('no') {
               <div class="acts"><button class="b no" type="button" (click)="close()">Ừm!</button></div>
+            }
+            @case ('intro') {
+              <div class="acts"><button class="b yes" type="button" (click)="toCorner()">Bắt đầu chọn game ›</button></div>
             }
           }
         </div>
@@ -58,6 +64,16 @@ import { GuideService, guideStage } from './guide.service';
     .guide.dark .bubble { background: color-mix(in srgb, #ff2d55 6%, #0b0f14); border-color: #ff2d55;
       box-shadow: 0 0 22px rgba(255, 45, 85, .45); }
     .guide.dark .bubble::before { background: color-mix(in srgb, #ff2d55 6%, #0b0f14); border-color: #ff2d55; }
+    /* Đang bay vòng dẫn đường: ẩn bong bóng */
+    .guide.flying .bubble { display: none; }
+    .guide.flying .fig { animation: none; }
+    /* Vừa tới trang Mini game: đứng giữa màn hình giới thiệu */
+    .veil { position: fixed; inset: 0; z-index: 989; background: rgba(10, 14, 30, .35); backdrop-filter: blur(2px); animation: veil .4s ease both; }
+    .guide.intro { left: 50%; bottom: 50%; transform: translate(-50%, 50%); max-width: min(720px, calc(100vw - 24px)); align-items: center; }
+    .guide.intro .fig { height: min(340px, 46vh); }
+    .guide.intro .bubble { margin: 0 0 0 -24px; max-width: 340px; animation-delay: .1s; }
+    .guide.intro .bubble p { font-size: 1.05rem; }
+    @keyframes veil { from { opacity: 0; } }
     /* Trang Mini game: nhỏ gọn hơn */
     .guide.hub .fig { height: 170px; }
     .guide.hub .bubble { margin-bottom: 80px; }
@@ -69,6 +85,10 @@ import { GuideService, guideStage } from './guide.service';
       .guide.hub .fig { height: 110px; }
       .bubble { margin: 0 0 70px -14px; min-width: 0; max-width: calc(100vw - 130px); padding: 11px 12px; }
       .guide.hub .bubble { margin-bottom: 50px; }
+      .guide.intro { flex-direction: column; align-items: center; }
+      .guide.intro .fig { height: min(220px, 34vh); order: 2; }
+      .guide.intro .bubble { margin: 0 0 -6px; max-width: calc(100vw - 40px); order: 1; }
+      .guide.intro .bubble::before { left: 50%; bottom: -11px; transform: translateX(-50%) rotate(-45deg); }
       p { font-size: .84rem; }
       .b { font-size: .8rem; padding: 6px 11px; }
     }
@@ -78,6 +98,8 @@ import { GuideService, guideStage } from './guide.service';
 export class GuideComponent {
   readonly guide = inject(GuideService);
   private readonly fig = viewChild<ElementRef<HTMLImageElement>>('fig');
+  private readonly box = viewChild<ElementRef<HTMLElement>>('box');
+  private introTimer?: ReturnType<typeof setTimeout>;
   private shown = false;
 
   readonly text = computed(() => {
@@ -91,6 +113,8 @@ export class GuideComponent {
         return c.noReply;
       case 'hub':
         return this.guide.hubLine() || c.hubWelcome;
+      case 'intro':
+        return c.hubIntro;
       default:
         return '';
     }
@@ -111,6 +135,15 @@ export class GuideComponent {
           this.shown = false;
           guideStage.out = false;
         }
+      });
+    });
+    // Bấm OK → bay 1 vòng quanh màn hình rồi dẫn sang trang Mini game; tới nơi thì giới thiệu, lát sau tự thu về góc.
+    effect(() => {
+      const st = this.guide.step();
+      untracked(() => {
+        clearTimeout(this.introTimer);
+        if (st === 'fly') requestAnimationFrame(() => this.flyLoop());
+        if (st === 'intro') this.introTimer = setTimeout(() => this.guide.step() === 'intro' && this.toCorner(), 7000);
       });
     });
     // Câu "Không" tự ẩn sau vài giây. Trang Mini game trên điện thoại: chào xong tự thu lại để không che thẻ game.
@@ -146,7 +179,59 @@ export class GuideComponent {
     this.guide.goPlay();
   }
 
+  /** Bay 1 vòng quanh giữa màn hình, kết thúc ở giữa (chỗ sẽ đứng giới thiệu). */
+  private flyLoop(): void {
+    const el = this.box()?.nativeElement;
+    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return this.guide.arrive();
+    const r = el.getBoundingClientRect();
+    const cx = innerWidth / 2 - (r.left + r.width / 2);
+    const cy = innerHeight / 2 - (r.top + r.height / 2);
+    const rx = Math.min(innerWidth * 0.32, 420);
+    const ry = Math.min(innerHeight * 0.28, 240);
+    const N = 14;
+    const frames: Keyframe[] = [{ transform: 'translate(0, 0) rotate(0) scale(1)' }];
+    // Bắt đầu từ phía dưới bên trái vòng tròn, đi ngược chiều kim đồng hồ 1 vòng rồi vào giữa.
+    for (let k = 0; k <= N; k++) {
+      const a = Math.PI * 0.75 + (k / N) * Math.PI * 2;
+      const lift = Math.sin((k / N) * Math.PI) * 0.15;
+      frames.push({
+        transform: `translate(${cx + Math.cos(a) * rx}px, ${cy + Math.sin(a) * ry}px) rotate(${Math.sin(a * 2) * 14}deg) scale(${0.85 + lift})`,
+      });
+    }
+    frames.push({ transform: `translate(${cx}px, ${cy}px) rotate(0) scale(1.15)` });
+    const anim = el.animate(frames, { duration: 1900, easing: 'ease-in-out', fill: 'forwards' });
+    anim.onfinish = () => {
+      this.guide.arrive();
+      // Đợi giao diện "giới thiệu" vẽ xong rồi mới bỏ hiệu ứng (tránh nháy về góc).
+      requestAnimationFrame(() => requestAnimationFrame(() => anim.cancel()));
+    };
+  }
+
+  /** Giới thiệu xong: thu nhỏ và bay xuống góc cũ (FLIP: đo vị trí trước / sau rồi nội suy). */
+  toCorner(): void {
+    if (this.guide.step() !== 'intro') return;
+    clearTimeout(this.introTimer);
+    const el = this.fig()?.nativeElement;
+    const from = el?.getBoundingClientRect();
+    this.guide.settle();
+    if (!el || !from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    requestAnimationFrame(() => {
+      const to = el.getBoundingClientRect();
+      if (!to.height) return;
+      const s = from.height / to.height;
+      el.animate(
+        [
+          { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${s})` },
+          { transform: `translate(${(from.left - to.left) * 0.4}px, ${(from.top - to.top) * 0.4 - 60}px) scale(${1 + (s - 1) * 0.4}) rotate(-8deg)`, offset: 0.55 },
+          { transform: 'translate(0, 0) scale(1)' },
+        ],
+        { duration: 850, easing: 'cubic-bezier(.3, .8, .3, 1)' },
+      );
+    });
+  }
+
   close(): void {
+    if (this.guide.step() === 'intro') return this.toCorner();
     this.guide.close();
   }
 }

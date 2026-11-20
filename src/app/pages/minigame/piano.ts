@@ -85,7 +85,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
       <header class="head">
         <span class="chip">🎹 Âm nhạc · Nhịp điệu</span>
         <h1>Anime <span class="hl">Piano Tiles</span></h1>
-        <p class="muted">Tìm bài anime / J-pop yêu thích trên YouTube, ô nhạc tự sinh theo nhịp bài — gõ trúng vạch để ăn <b>Perfect</b> và combo!</p>
+        <p class="muted">Dán link bài anime / J-pop yêu thích trên YouTube, ô nhạc tự sinh theo nhịp bài — gõ trúng vạch để ăn <b>Perfect</b> và combo!</p>
       </header>
 
       <div class="layout">
@@ -124,7 +124,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
                 <small>Bàn phím: <b>{{ keysLabel }}</b> · điện thoại: chạm vào làn</small>
               } @else {
                 <h2>🎵 Chọn bài hát</h2>
-                <p>Tìm bài ở bảng bên cạnh (hoặc dán link YouTube) rồi bấm chọn.</p>
+                <p>Dán link YouTube của bài hát vào ô bên cạnh rồi bấm <b>Chọn bài</b>.</p>
               }
             </div>
           }
@@ -155,24 +155,14 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
         </div>
 
         <aside class="side card-surface">
-          <h2>🔎 Tìm bài hát</h2>
-          <form class="search" (submit)="$event.preventDefault(); search()">
-            <input [(ngModel)]="q" name="q" placeholder="Tên bài, anime, ca sĩ… hoặc dán link YouTube" maxlength="200" autocomplete="off" />
-            <button class="btn primary" type="submit" [disabled]="searching()">{{ searching() ? '…' : 'Tìm' }}</button>
+          <h2>🔗 Dán link bài hát</h2>
+          <form class="search" (submit)="$event.preventDefault(); useLink()">
+            <input [(ngModel)]="q" name="q" placeholder="https://www.youtube.com/watch?v=… hoặc youtu.be/…" maxlength="300" autocomplete="off" inputmode="url" />
+            <button class="btn primary" type="submit">Chọn bài</button>
           </form>
-          <div class="quick">
-            @for (k of quick; track k) { <button type="button" (click)="q = k; search()">{{ k }}</button> }
-          </div>
-          @if (searchErr()) { <p class="err">{{ searchErr() }}</p> }
-          <ul class="results">
-            @for (s of results(); track s.id) {
-              <li><button type="button" [class.on]="song()?.id === s.id" (click)="choose(s)">
-                <img [src]="s.thumb" alt="" loading="lazy" />
-                <span><b>{{ s.title }}</b><small>{{ s.channel }}{{ s.seconds ? ' · ' + mmss(s.seconds) : '' }}</small></span>
-              </button></li>
-            }
-          </ul>
-          @if (!results().length && recent().length) {
+          <small class="muted small">Mở YouTube, tìm bài anime / J-pop bạn thích → bấm <b>Chia sẻ</b> → <b>Sao chép đường liên kết</b> → dán vào đây.</small>
+          @if (linkErr()) { <p class="err">{{ linkErr() }}</p> }
+          @if (recent().length) {
             <h3>🕘 Chơi gần đây</h3>
             <ul class="results">
               @for (s of recent(); track s.id) {
@@ -240,8 +230,6 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
     .search { display: flex; gap: 6px; }
     .search input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); color: var(--text); }
     .search input:focus { outline: none; border-color: var(--primary); }
-    .quick { display: flex; flex-wrap: wrap; gap: 4px; }
-    .quick button { font: inherit; font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); cursor: pointer; }
     .err { margin: 0; color: #e53935; font-size: .85rem; font-weight: 700; }
     .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 330px; overflow-y: auto; }
     .results button { width: 100%; display: flex; gap: 8px; align-items: center; text-align: left; padding: 5px; border-radius: 10px; border: 2px solid transparent;
@@ -280,7 +268,6 @@ export class AnimePianoPage implements AfterViewInit {
     { id: 'normal', label: 'Thường' },
     { id: 'hard', label: 'Khó' },
   ];
-  readonly quick = ['Gurenge', 'Idol YOASOBI', 'Bad Apple', 'Unravel', 'Racing into the night', 'Kawaki wo Ameku', 'Touhou remix'];
 
   readonly state = signal<PianoState>('title');
   readonly result = signal<PianoResult | null>(null);
@@ -289,9 +276,7 @@ export class AnimePianoPage implements AfterViewInit {
   private lastCheer = 0;
 
   q = '';
-  readonly searching = signal(false);
-  readonly searchErr = signal('');
-  readonly results = signal<Song[]>([]);
+  readonly linkErr = signal('');
   readonly recent = signal<Song[]>(readRecent());
   readonly song = signal<Song | null>(null);
   readonly ready = signal(false);
@@ -351,32 +336,28 @@ export class AnimePianoPage implements AfterViewInit {
     if (Math.abs(t - est) > 0.08 || !this.clock.playing) this.clock = { yt: t, at: performance.now(), playing: this.clock.playing };
   }
 
-  // ---------- Tìm bài ----------
-  async search(): Promise<void> {
-    const text = this.q.trim();
-    if (!text) return;
-    this.searchErr.set('');
-    const id = youtubeId(text);
-    this.searching.set(true);
-    try {
-      if (id) {
-        const r = await fetch(`/api/yt?id=${id}`);
-        const j = r.ok ? ((await r.json()) as { item: Song }) : null;
-        const s: Song = j?.item ?? { id, title: 'Video YouTube', channel: '', thumb: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` };
-        this.results.set([s]);
-        void this.choose(s);
-      } else {
-        const r = await fetch(`/api/yt?q=${encodeURIComponent(text)}`);
-        const j = (await r.json().catch(() => ({}))) as { items?: Song[]; error?: string };
-        if (!r.ok) throw new Error(j.error || 'Không tìm được bài hát.');
-        this.results.set(j.items ?? []);
-        if (!j.items?.length) this.searchErr.set('Không thấy bài nào, thử từ khoá khác nhé.');
-      }
-    } catch (e) {
-      this.searchErr.set(e instanceof Error ? e.message : 'Không tìm được bài hát.');
-    } finally {
-      this.searching.set(false);
+  // ---------- Chọn bài bằng link YouTube (không cần API) ----------
+  useLink(): void {
+    const id = youtubeId(this.q);
+    if (!id) {
+      this.linkErr.set('Link chưa đúng — hãy dán link video YouTube (youtube.com/watch?v=… hoặc youtu.be/…).');
+      return;
     }
+    this.linkErr.set('');
+    this.q = '';
+    const known = this.recent().find((s) => s.id === id);
+    void this.choose(known ?? { id, title: 'Đang tải tên bài…', channel: '', thumb: `https://i.ytimg.com/vi/${id}/mqdefault.jpg` });
+  }
+
+  /** Lấy tên bài / kênh từ chính trình phát YouTube (không gọi API nào). */
+  private fillTitle(): void {
+    const d = (this.player as unknown as { getVideoData?: () => { title?: string; author?: string; video_id?: string } })?.getVideoData?.();
+    const s = this.song();
+    if (!d?.title || !s || (d.video_id && d.video_id !== s.id)) return;
+    const next = { ...s, title: d.title, channel: d.author ?? '' };
+    this.song.set(next);
+    this.recent.update((list) => list.map((x) => (x.id === next.id ? next : x)));
+    saveRecent(this.recent());
   }
 
   async choose(s: Song): Promise<void> {
@@ -397,7 +378,7 @@ export class AnimePianoPage implements AfterViewInit {
     try {
       this.yt ??= await loadYt();
     } catch (e) {
-      this.searchErr.set(e instanceof Error ? e.message : 'Không tải được YouTube.');
+      this.linkErr.set(e instanceof Error ? e.message : 'Không tải được YouTube.');
       return;
     }
     if (this.player) {
@@ -411,9 +392,15 @@ export class AnimePianoPage implements AfterViewInit {
         height: '100%',
         playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, modestbranding: 1, fs: 0, iv_load_policy: 3 },
         events: {
-          onReady: () => this.zone.run(() => this.ready.set(true)),
+          onReady: () => this.zone.run(() => {
+            this.ready.set(true);
+            this.fillTitle();
+          }),
           onStateChange: (e: { data: number }) => this.onYtState(e.data),
-          onError: () => this.zone.run(() => this.searchErr.set('Video này không cho phát trong web khác — chọn bài khác nhé.')),
+          onError: () => this.zone.run(() => {
+            this.ready.set(false);
+            this.linkErr.set('Video này không cho phát nhúng trong web khác (hoặc link sai) — thử bài khác nhé.');
+          }),
         },
       });
     });
@@ -421,7 +408,10 @@ export class AnimePianoPage implements AfterViewInit {
 
   private onYtState(st: number): void {
     const P = this.yt!.PlayerState;
-    if (st === P.CUED) this.zone.run(() => this.ready.set(true));
+    if (st === P.CUED) this.zone.run(() => {
+      this.ready.set(true);
+      this.fillTitle();
+    });
     if (st === P.PLAYING) {
       this.clock = { yt: this.player!.getCurrentTime(), at: performance.now(), playing: true };
       this.duration = this.player!.getDuration() || this.duration;

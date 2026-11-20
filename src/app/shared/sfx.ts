@@ -25,9 +25,25 @@ class Sfx {
 
   constructor() {
     if (typeof window === 'undefined') return;
-    const unlock = () => this.ensure()?.resume().catch(() => undefined);
-    addEventListener('pointerdown', unlock, { passive: true });
-    addEventListener('keydown', unlock);
+    // Lần chạm / bấm phím đầu tiên: mở khoá âm thanh của trình duyệt (phát 1 khung lặng để Safari / Chrome cho phép),
+    // đồng thời tải sẵn các file âm thanh → lần chơi đầu không bị mất tiếng / phát trễ.
+    const unlock = () => {
+      const ctx = this.ensure();
+      if (!ctx) return;
+      if (ctx.state !== 'running') void ctx.resume().catch(() => undefined);
+      try {
+        const src = ctx.createBufferSource();
+        src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+        src.connect(ctx.destination);
+        src.start();
+      } catch {
+        /* bỏ qua */
+      }
+      for (const f of PRELOAD) void this.loadFile(f);
+    };
+    addEventListener('pointerdown', unlock, { passive: true, capture: true });
+    addEventListener('keydown', unlock, { capture: true });
+    addEventListener('touchend', unlock, { passive: true, capture: true });
   }
 
   toggle(): void {
@@ -48,7 +64,60 @@ class Sfx {
     if (gap && now - (this.last.get(name) ?? 0) < gap) return;
     this.last.set(name, now);
     const ctx = this.ensure();
-    if (!ctx || ctx.state !== 'running') return;
+    if (!ctx) return;
+    if (ctx.state !== 'running') {
+      // Âm thanh đang "ngủ" (vừa mở trang / quay lại tab): đánh thức rồi phát ngay khi sẵn sàng thay vì bỏ mất tiếng.
+      void ctx
+        .resume()
+        .then(() => performance.now() - now < 400 && this.render(name))
+        .catch(() => undefined);
+      return;
+    }
+    this.render(name);
+  }
+
+  // ---------- Âm thanh từ file (giải mã sẵn vào Web Audio — phát tức thì, không trễ) ----------
+  private readonly buffers = new Map<string, Promise<AudioBuffer | null>>();
+
+  loadFile(src: string): Promise<AudioBuffer | null> {
+    const ctx = this.ensure();
+    if (!ctx) return Promise.resolve(null);
+    let p = this.buffers.get(src);
+    if (!p) {
+      p = fetch(src)
+        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+        .then((b) => ctx.decodeAudioData(b))
+        .catch(() => {
+          this.buffers.delete(src);
+          return null;
+        });
+      this.buffers.set(src, p);
+    }
+    return p;
+  }
+
+  playFile(src: string, volume: number): void {
+    if (this.muted()) return;
+    const ctx = this.ensure();
+    if (!ctx) return;
+    const asked = performance.now();
+    const go = (buf: AudioBuffer | null) => {
+      // Tải / mở khoá quá lâu thì thôi (tránh tiếng phát lệch hẳn khỏi lúc thua).
+      if (!buf || performance.now() - asked > 1500 || this.muted()) return;
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = volume / 0.6; // master đang ở 0.6
+      s.connect(g);
+      g.connect(this.master!);
+      s.start();
+    };
+    const ready = ctx.state === 'running' ? Promise.resolve() : ctx.resume().catch(() => undefined);
+    void ready.then(() => this.loadFile(src)).then(go);
+  }
+
+  private render(name: SfxName): void {
+    const ctx = this.ctx!;
     const t = ctx.currentTime + 0.005;
     switch (name) {
       case 'click': this.tone(t, 900, 0.05, 'triangle', 0.25); break;
@@ -188,30 +257,18 @@ function readMuted(): boolean {
 export const sfx = new Sfx();
 
 // ---------- Âm thanh từ file (mp3 ngắn) ----------
-const fileCache = new Map<string, HTMLAudioElement>();
 const fileLast = new Map<string, number>();
+const BAKA = 'sfx/baka-cirno.mp3';
+/** File tải sẵn ngay lần chạm đầu. */
+const PRELOAD = [BAKA];
 
 /** Phát 1 file âm thanh ngắn (tôn trọng nút tắt tiếng). `gapMs`: không phát lại cùng file trong khoảng này. */
 export function playFile(src: string, opts: { volume?: number; gapMs?: number } = {}): void {
-  if (sfx.muted()) return;
-  try {
-    const now = Date.now();
-    if (now - (fileLast.get(src) ?? 0) < (opts.gapMs ?? 600)) return;
-    fileLast.set(src, now);
-    let a = fileCache.get(src);
-    if (!a) {
-      a = new Audio(src);
-      a.preload = 'auto';
-      fileCache.set(src, a);
-    }
-    a.volume = opts.volume ?? 0.7;
-    a.currentTime = 0;
-    // Trình duyệt chặn khi khách chưa bấm gì vào trang → bỏ qua.
-    void a.play().catch(() => undefined);
-  } catch {
-    /* bỏ qua */
-  }
+  const now = Date.now();
+  if (now - (fileLast.get(src) ?? 0) < (opts.gapMs ?? 600)) return;
+  fileLast.set(src, now);
+  sfx.playFile(src, opts.volume ?? 0.7);
 }
 
 /** "Baka!" của Cirno — phát khi thua minigame và khi Cirno nhún ở trang chủ. */
-export const playBaka = () => playFile('sfx/baka-cirno.mp3', { volume: 0.75, gapMs: 1200 });
+export const playBaka = () => playFile(BAKA, { volume: 0.75, gapMs: 1200 });

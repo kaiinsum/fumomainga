@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { gameCategories, resolveGames } from '../../models/minigames';
 import { DEFAULT_GUIDE, GuideSettings, guideOf } from '../../models/site-settings';
 import { SettingsService } from '../../services/settings.service';
@@ -13,7 +14,7 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
 /** Admin → Marketing & tương tác → Người hướng dẫn. */
 @Component({
   selector: 'app-admin-guide',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <div class="adm-head">
       <h1>Người hướng dẫn</h1>
@@ -101,13 +102,24 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
               <label for="hub">Lời chào</label>
               <input id="hub" maxlength="160" [placeholder]="def.hubWelcome" [ngModel]="d().hubWelcome" (ngModelChange)="set('hubWelcome', $event)" />
             </div>
-            <p class="hint">Câu nói khi khách rê chuột vào từng game. Để trống = dùng câu của <b>phân loại</b> (chỉnh ở Admin → Minigame → Phân loại).</p>
-            @for (g of games(); track g.id) {
-              <div class="field game-line">
-                <label [for]="'gl-' + g.id">{{ g.title }} <small>{{ g.catNames }}</small></label>
-                <input [id]="'gl-' + g.id" maxlength="160" [placeholder]="g.fallback" [ngModel]="lineOf(g.id)" (ngModelChange)="setLine(g.id, $event)" />
-              </div>
-            }
+            <div class="field">
+              <label for="hubIntro">Giới thiệu khi vừa dẫn khách sang (hiện to giữa màn hình rồi thu về góc)</label>
+              <textarea id="hubIntro" rows="2" maxlength="220" [placeholder]="def.hubIntro" [ngModel]="d().hubIntro" (ngModelChange)="set('hubIntro', $event)"></textarea>
+            </div>
+            <div class="lines-head">
+              <b>Câu nói khi khách rê chuột vào từng game</b>
+              <a class="btn ghost small" routerLink="/admin/minigame">Chỉnh trong Cài đặt Minigame →</a>
+            </div>
+            <p class="hint">Câu thoại từng game nằm trong khung <b>✏️ Sửa thông tin</b> của mỗi game ở trang Minigame. Để trống = dùng câu của <b>phân loại</b>.</p>
+            <ul class="lines">
+              @for (g of games(); track g.id) {
+                <li>
+                  <span class="lg-name">{{ g.title }} <small>{{ g.catNames }}</small></span>
+                  <span class="lg-line" [class.fallback]="!d().gameLines[g.id]">“{{ d().gameLines[g.id] || g.fallback }}”</span>
+                  <a [routerLink]="['/admin/minigame']" [queryParams]="{ sua: g.id }">Sửa</a>
+                </li>
+              }
+            </ul>
           </div>
         </section>
       </div>
@@ -132,7 +144,14 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
     .pv-bubble p { margin: 2px 0 8px; font-weight: 700; font-size: .88rem; }
     .pv-btn { display: inline-block; font-size: .75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; border: 2px solid #60b5ff; color: #2271b1; }
     .pv-btn.yes { background: #60b5ff; color: #fff; }
-    .game-line label small { font-weight: 400; color: #646970; margin-left: 4px; }
+    .lines-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .lines { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+    .lines li { display: grid; grid-template-columns: minmax(120px, 34%) 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; background: #f6f7f7; font-size: .85rem; }
+    .lg-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lg-name small { font-weight: 400; color: #646970; }
+    .lg-line { color: #1d2327; font-style: italic; }
+    .lg-line.fallback { color: #8c8f94; }
+    @media (max-width: 600px) { .lines li { grid-template-columns: 1fr auto; } .lg-line { grid-column: 1 / -1; grid-row: 2; } }
     .hint { color: #646970; font-size: .8rem; }
     @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
     @media (max-width: 600px) { .row2, .chars { grid-template-columns: 1fr; } }
@@ -174,19 +193,6 @@ export class AdminGuideSettings {
     this.d.update((g) => ({ ...g, [key]: value }));
   }
 
-  lineOf(id: string): string {
-    return this.d().gameLines[id] || '';
-  }
-
-  setLine(id: string, value: string): void {
-    this.d.update((g) => {
-      const lines = { ...g.gameLines };
-      if (value.trim()) lines[id] = value;
-      else delete lines[id];
-      return { ...g, gameLines: lines };
-    });
-  }
-
   revert(): void {
     this.d.set(guideOf(this.settingsSvc.settings()));
   }
@@ -194,7 +200,7 @@ export class AdminGuideSettings {
   async save(): Promise<void> {
     const g = this.d();
     const clean: GuideSettings = { ...g };
-    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'lightName', 'darkName'] as const) {
+    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'hubIntro', 'lightName', 'darkName'] as const) {
       clean[k] = (g[k] || '').trim() || DEFAULT_GUIDE[k];
     }
     clean.delaySec = Math.max(10, Math.min(1800, Math.round(g.delaySec || 90)));

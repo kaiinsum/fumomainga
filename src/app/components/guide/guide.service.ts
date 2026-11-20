@@ -43,7 +43,8 @@ function safe<T>(f: () => T): T | null {
 const session = () => safe(() => sessionStorage);
 
 /** Các bước hội thoại. */
-export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'hub';
+/** fly: đang bay 1 vòng dẫn đường · intro: vừa tới trang Mini game, đứng giữa màn hình giới thiệu. */
+export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'fly' | 'intro' | 'hub';
 
 /**
  * Người hướng dẫn: Cirno (sáng) / Reimu (tối).
@@ -68,6 +69,8 @@ export class GuideService {
   private path = '';
   private timer?: ReturnType<typeof setInterval>;
   private started = false;
+  /** Đang dẫn khách sang trang Mini game. */
+  private touring = false;
 
   start(): void {
     if (this.started) return;
@@ -84,6 +87,12 @@ export class GuideService {
 
   private onRoute(): void {
     const onHub = this.path === '/mini-game';
+    if (onHub && this.touring) {
+      this.touring = false;
+      this.step.set('intro');
+      return;
+    }
+    if (this.step() === 'fly' || this.step() === 'intro') return;
     if (onHub && this.cfg().enabled && ls.get(HUB_HIDE_KEY, session()) !== '1') {
       this.hubLine.set(this.cfg().hubWelcome);
       this.step.set('hub');
@@ -116,9 +125,22 @@ export class GuideService {
     }
   }
 
+  /** Bấm OK: bay 1 vòng (component vẽ) rồi dẫn sang trang Mini game. */
   goPlay(): void {
-    this.step.set('hidden');
-    void this.router.navigateByUrl('/mini-game');
+    this.step.set('fly');
+  }
+
+  /** Bay xong vòng → sang trang Mini game, ở đó đứng giữa màn hình giới thiệu. */
+  arrive(): void {
+    this.touring = true;
+    if (this.path === '/mini-game') this.onRoute();
+    else void this.router.navigateByUrl('/mini-game');
+  }
+
+  /** Giới thiệu xong → thu nhỏ về góc, chuyển sang chế độ chào ở trang Mini game. */
+  settle(): void {
+    this.hubLine.set(this.cfg().hubWelcome);
+    this.step.set('hub');
   }
 
   close(): void {
