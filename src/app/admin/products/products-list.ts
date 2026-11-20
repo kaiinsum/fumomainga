@@ -1,3 +1,4 @@
+import { NoteService } from '../note.service';
 import { Component, ElementRef, computed, effect, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -79,6 +80,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature' | 'hide' | 's
               <td class="title-cell">
                 <a [routerLink]="['/admin/san-pham', p.id]">{{ p.name }}</a>
                 @if (p.hidden) { <span class="hid-tag">Đang ẩn</span> }
+                @if (notes.noteOf(p.id); as n) { <span class="note-tag" [title]="'Ghi chú (chỉ admin): ' + n.text">📝</span> }
                 <div class="row-actions">
                   <a [routerLink]="['/admin/san-pham', p.id]">Sửa</a>
                   <a [href]="'/san-pham/' + (p.slug || p.id)" target="_blank" rel="noopener">Xem</a>
@@ -117,6 +119,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature' | 'hide' | 's
     .eye-btn:hover { border-color: #2271b1; }
     .eye-btn.off { background: #f0f0f1; color: #646970; border-style: dashed; }
     tr.is-hidden td:not(:first-child):not(:nth-child(8)) { opacity: .5; }
+    .note-tag { margin-left: 6px; cursor: help; font-size: .85rem; }
     .hid-tag { display: inline-block; margin-left: 6px; font-size: .7rem; font-weight: 800; color: #fff; background: #8c8f94; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
     @media (max-width: 600px) {
       .adm-table th:nth-child(4), .adm-table td:nth-child(4),
@@ -130,6 +133,8 @@ export class AdminProductsList {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(ProductService);
   private readonly toast = inject(AdminToastService);
+  /** Ghi chú nội bộ (chỉ admin) — hiện 📝 cạnh tên, rê chuột để đọc. */
+  readonly notes = inject(NoteService);
 
   /** ?danhMuc=... (từ trang Danh mục) để lọc sẵn. */
   readonly danhMuc = input<string>();
@@ -142,6 +147,7 @@ export class AdminProductsList {
 
   constructor() {
     effect(() => this.category.set(this.danhMuc() ?? ''));
+    void this.notes.load();
   }
 
   readonly tabs = computed(() => {

@@ -1,5 +1,6 @@
 import { Component, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -24,6 +25,7 @@ import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { SEO_LIMITS, SeoReport, analyzeProductSeo, scoreLevel, slugify } from '../../shared/seo';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { CostService } from '../cost.service';
+import { NoteService } from '../note.service';
 import { AdminToastService } from '../toast.service';
 
 const MAX_IMAGES = 6;
@@ -60,7 +62,7 @@ function pctFromSale(price: number, saleRaw: unknown): number | null {
 
 @Component({
   selector: 'app-admin-product-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe, DatePipe],
   templateUrl: './product-form.html',
   styleUrl: './product-form.scss',
 })
@@ -76,6 +78,10 @@ export class AdminProductForm {
   readonly costSvc = inject(CostService);
   /** Bản nháp giá nhập: '' = giá nhập chung, còn lại = id biến thể. */
   readonly costDraft = signal<Record<string, number | null>>({});
+  /** Ghi chú nội bộ — CHỈ admin (lưu riêng trên máy chủ, không nằm trong dữ liệu công khai). */
+  readonly noteSvc = inject(NoteService);
+  readonly noteDraft = signal('');
+  readonly noteSaving = signal(false);
 
   readonly categories = inject(CategoryService).names;
   readonly maxImages = MAX_IMAGES;
@@ -208,6 +214,20 @@ export class AdminProductForm {
     this.costDraft.set(d);
   }
 
+  /** Lưu ghi chú nội bộ theo id sản phẩm. */
+  async saveNote(id = this.editing()?.id, quiet = true): Promise<void> {
+    if (!id) return;
+    this.noteSaving.set(true);
+    try {
+      await this.noteSvc.save(id, this.noteDraft());
+      if (!quiet) this.toast.ok('Đã lưu ghi chú');
+    } catch (e) {
+      this.toast.err('Chưa lưu được ghi chú: ' + (e instanceof Error ? e.message : ''));
+    } finally {
+      this.noteSaving.set(false);
+    }
+  }
+
   /** Lưu giá nhập theo id sản phẩm (gọi sau khi lưu sản phẩm). */
   private async saveCosts(id: string): Promise<void> {
     const d = this.costDraft();
@@ -245,6 +265,10 @@ export class AdminProductForm {
       const p = this.editing();
       this.fillCosts(p?.id, (p?.variants ?? []).map((v) => v.id));
     });
+    void this.noteSvc.load().then(() => {
+      const id = this.editing()?.id;
+      if (id && !this.noteDraft()) this.noteDraft.set(this.noteSvc.noteOf(id)?.text ?? '');
+    });
     // Gõ tên → đường dẫn tự cập nhật (khoảng trắng → -, bỏ dấu tiếng Việt).
     this.form.controls.name.valueChanges.subscribe((name) => {
       if (!this.slugManual()) this.slug.set(this.service.suggestSlug(name ?? '', this.editing()?.id));
@@ -274,6 +298,7 @@ export class AdminProductForm {
           });
           this.images.set([...p.images]);
           this.seo.set(productSeoOf(p));
+          this.noteDraft.set(this.noteSvc.noteOf(p.id)?.text ?? '');
           this.slug.set(p.slug ?? this.service.suggestSlug(p.name, p.id));
           // Đường dẫn đã sửa tay (khác tên) thì giữ nguyên khi đổi tên.
           this.slugManual.set(!!p.slug && slugify(p.name) !== p.slug.replace(/-\d+$/, '') && slugify(p.name) !== p.slug);
@@ -300,6 +325,7 @@ export class AdminProductForm {
           this.form.reset({ category: this.categories()[0] ?? '' });
           this.images.set([]);
           this.seo.set({ ...EMPTY_PRODUCT_SEO });
+          this.noteDraft.set('');
         }
         this.submitted.set(false);
       });
@@ -409,13 +435,16 @@ export class AdminProductForm {
 
     const current = this.editing();
     if (current) {
-      if (this.toast.run(() => this.service.update(current.id, data), 'Đã cập nhật sản phẩm')) void this.saveCosts(current.id);
+      if (this.toast.run(() => this.service.update(current.id, data), 'Đã cập nhật sản phẩm')) {
+        void this.saveCosts(current.id);
+        void this.saveNote(current.id);
+      }
     } else {
       let createdId = '';
       const ok = this.toast.run(() => (createdId = this.service.add(data).id), 'Đã đăng sản phẩm');
       if (ok) {
         const id = createdId;
-        void this.saveCosts(id).then(() => this.router.navigate(['/admin/san-pham', id]));
+        void Promise.all([this.saveCosts(id), this.saveNote(id)]).then(() => this.router.navigate(['/admin/san-pham', id]));
       }
     }
   }

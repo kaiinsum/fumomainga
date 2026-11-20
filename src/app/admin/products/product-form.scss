@@ -752,3 +752,20 @@
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
+
+.note-box textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+.note-box .box-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.note-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}

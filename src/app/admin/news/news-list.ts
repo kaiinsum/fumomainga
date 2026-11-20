@@ -6,9 +6,6 @@ import { animate } from 'animejs';
 import { EMPTY_SEO, NewsPost, NewsStatus, newsPath } from '../../models/news';
 import { NewsService } from '../../services/news.service';
 import { analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
-import { downloadBlob } from '../../shared/download';
-import { ProductService } from '../../services/product.service';
-import { buildNewsSitemap, buildRobotsTxt } from '../../shared/sitemap';
 import { AdminToastService } from '../toast.service';
 
 @Component({
@@ -24,17 +21,16 @@ import { AdminToastService } from '../toast.service';
     @if (sitemapHelp()) {
       <div class="adm-notice sitemap">
         <p>
-          <b>sitemap.xml</b> liệt kê {{ indexable() }} bài đã đăng (bỏ bài nháp và bài đặt noindex) để Google tìm thấy bài nhanh hơn.
+          <b>sitemap.xml</b> và <b>robots.txt</b> được <b>tạo tự động</b>: luôn có đủ sản phẩm, danh mục và bài đã đăng
+          (bỏ sản phẩm ẩn, bài nháp và mọi trang đặt noindex). Thêm / sửa sản phẩm hay bài viết là sitemap tự cập nhật (chậm nhất ~10 phút).
         </p>
         <ol>
-          <li>Tải 2 file bên dưới.</li>
-          <li>Chép cả 2 vào thư mục <code>public/</code> của mã nguồn (ghi đè file cũ), rồi push lên GitHub.</li>
-          <li>Vào Google Search Console → Sitemaps → nhập <code>{{ origin }}/sitemap.xml</code>.</li>
+          <li>Vào Google Search Console → <b>Sitemaps</b> → nhập <code>sitemap.xml</code> → Gửi (chỉ cần làm 1 lần).</li>
+          <li>Không cần tải file hay chép vào thư mục <code>public/</code> nữa (chép vào sẽ đè mất bản tự động).</li>
         </ol>
-        <p class="muted">Mỗi lần đăng hoặc sửa bài, tải lại sitemap.xml và làm lại bước 2.</p>
         <div class="row">
-          <button class="btn primary small" type="button" (click)="downloadSitemap()">⬇ sitemap.xml</button>
-          <button class="btn ghost small" type="button" (click)="downloadRobots()">⬇ robots.txt</button>
+          <a class="btn primary small" [href]="origin + '/sitemap.xml'" target="_blank" rel="noopener">Xem sitemap.xml ↗</a>
+          <a class="btn ghost small" [href]="origin + '/robots.txt'" target="_blank" rel="noopener">Xem robots.txt ↗</a>
         </div>
       </div>
     }
@@ -112,7 +108,6 @@ import { AdminToastService } from '../toast.service';
   `,
 })
 export class AdminNewsList {
-  private readonly products = inject(ProductService);
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(NewsService);
   private readonly toast = inject(AdminToastService);
@@ -144,14 +139,7 @@ export class AdminNewsList {
       .filter((n) => (tab === 'all' || n.status === tab) && (!term || n.title.toLowerCase().includes(term)));
   });
 
-  downloadSitemap(): void {
-    const xml = buildNewsSitemap(this.origin, this.service.posts(), this.products.products());
-    downloadBlob(new Blob([xml], { type: 'application/xml' }), 'sitemap.xml');
-  }
 
-  downloadRobots(): void {
-    downloadBlob(new Blob([buildRobotsTxt(this.origin)], { type: 'text/plain' }), 'robots.txt');
-  }
 
   setStatus(n: NewsPost, status: NewsStatus): void {
     this.toast.run(

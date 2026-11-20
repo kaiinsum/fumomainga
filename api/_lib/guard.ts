@@ -66,4 +66,4 @@ export const RULES: GuardRule[] = [
 /** Dung lượng tối đa dữ liệu gửi lên. API admin (đồng bộ sản phẩm, ảnh, kiến thức AI) được phép lớn hơn. */
 export const MAX_BODY_PUBLIC = 64 * 1024;
 export const MAX_BODY_ADMIN = 4.5 * 1024 * 1024;
-export const ADMIN_BODY_PATHS = /^(catalog|settings|ai\/(catalog|knowledge)|orders\/[^/]+|admin\/password|admin\/costs)$/;
+export const ADMIN_BODY_PATHS = /^(catalog|settings|ai\/(catalog|knowledge)|orders\/[^/]+|admin\/password|admin\/costs|admin\/notes)$/;

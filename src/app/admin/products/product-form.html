@@ -436,5 +436,23 @@
         <small class="hint">Dùng để tính lãi ròng ở mục <b>Doanh thu</b>. Khách không bao giờ thấy giá này.</small>
       </div>
     </section>
+    <section class="adm-box note-box">
+      <h2>📝 Ghi chú <small class="hint">(chỉ admin thấy)</small></h2>
+      <div class="box-body">
+        @if (noteSvc.error()) { <p class="error">{{ noteSvc.error() }}</p> }
+        <textarea rows="4" maxlength="2000" [value]="noteDraft()" (input)="noteDraft.set($any($event.target).value)"
+          placeholder="VD: nhập từ shop X, còn 2 bé lỗi nhẹ, khách Y đặt giữ…" aria-label="Ghi chú nội bộ"></textarea>
+        <div class="note-foot">
+          @if (editing(); as p) {
+            @if (noteSvc.noteOf(p.id); as n) { <small class="hint">Sửa lần cuối {{ n.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small> } @else { <span></span> }
+            <button type="button" class="btn ghost small" [disabled]="noteSaving() || (noteSvc.noteOf(p.id)?.text ?? '') === noteDraft().trim()"
+              (click)="saveNote(p.id, false)">{{ noteSaving() ? 'Đang lưu…' : 'Lưu ghi chú' }}</button>
+          } @else {
+            <small class="hint">Ghi chú được lưu khi bấm Đăng sản phẩm.</small>
+          }
+        </div>
+        <small class="hint">Lưu riêng trên máy chủ — khách không bao giờ thấy, kể cả khi xem mã nguồn trang.</small>
+      </div>
+    </section>
   </aside>
 </form>

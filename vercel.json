@@ -16,6 +16,14 @@
       "destination": "/api?__path=$1"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "/api?__path=sitemap"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api?__path=sitemap&kind=robots"
+    },
+    {
       "source": "/((?!api(?:/|$)).*)",
       "has": [
         {
