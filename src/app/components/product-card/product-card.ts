@@ -106,7 +106,9 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
 
     .info { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
     .cat { font-size: .78rem; color: var(--muted); font-weight: 700; }
-    h3 { font-size: 1.05rem; margin: 4px 0 10px; transition: color .3s ease; }
+    h3 { font-size: 1.05rem; margin: 4px 0 10px; transition: color .3s ease;
+      /* Tên dài → tối đa 2 dòng để các thẻ cao bằng nhau */
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .card.lift h3 { color: var(--primary-dark); }
     .bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
     strong { color: var(--primary-dark); font-size: 1.1rem; }
@@ -136,6 +138,18 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
       .pt { font-size: .86rem; }
       strong { font-size: .86rem; }
       .go { width: 24px; height: 24px; font-size: .75rem; }
+    }
+
+    /* Thẻ nhỏ (vd. sản phẩm liên quan trên điện thoại: 3 thẻ / hàng) */
+    @media (max-width: 600px) {
+      :host(.compact) .info { padding: 6px 7px 8px; }
+      :host(.compact) .cat { display: none; }
+      :host(.compact) h3 { font-size: .74rem; margin: 0 0 4px; }
+      :host(.compact) .pt, :host(.compact) strong { font-size: .74rem; }
+      :host(.compact) .go { display: none; }
+      :host(.compact) .badge { font-size: .55rem; padding: 1px 5px; top: 5px; left: 5px; }
+      :host(.compact) .star { display: none; }
+      :host(.compact) .card { border-radius: 10px; }
     }
 
     @media (prefers-reduced-motion: reduce) {

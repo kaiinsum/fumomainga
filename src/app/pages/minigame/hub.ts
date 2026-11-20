@@ -1,7 +1,8 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { GameArt, resolveGames } from '../../models/minigames';
+import { GameArt, GameCategory, gameCategories, resolveGames } from '../../models/minigames';
+import { GuideService } from '../../components/guide/guide.service';
 import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 import { startFireworks } from './fireworks';
@@ -39,6 +40,7 @@ interface GameCard {
   art: GameArt | 'soon';
   /** Có nội dung = game đang bị khoá. */
   lockMsg: string;
+  cats: GameCategory[];
 }
 
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
@@ -84,22 +86,30 @@ interface GameCard {
           <button type="button" role="radio" [attr.aria-checked]="view() === 'list'" [class.on]="view() === 'list'" (click)="setView('list')">▦ Danh sách</button>
         </div>
       }
+      @if (!intro() && cats().length) {
+        <div class="cat-filter" role="radiogroup" aria-label="Lọc theo phân loại">
+          <button type="button" role="radio" [attr.aria-checked]="!catFilter()" [class.on]="!catFilter()" (click)="catFilter.set(null)">Tất cả</button>
+          @for (c of cats(); track c.id) {
+            <button type="button" role="radio" [attr.aria-checked]="catFilter() === c.id" [class.on]="catFilter() === c.id" (click)="catFilter.set(c.id)">{{ c.icon }} {{ c.name }}</button>
+          }
+        </div>
+      }
       <div class="carousel" [class.show]="!intro()" [class.list]="view() === 'list'">
         @if (view() === 'scroll') {
           <button class="arrow left" type="button" (click)="scroll(-1)" aria-label="Game trước">‹</button>
         }
-        <div class="track" #track>
-          @for (g of games(); track $index) {
+        <div class="track" #track (mouseleave)="guide.hoverGame(null)">
+          @for (g of shown(); track g.id) {
             @if (g.path && g.needCode) {
-              <button type="button" class="card need-code" (click)="askCode(g)" [attr.aria-label]="g.title + ' — cần code hôm nay'">
+              <button type="button" class="card need-code" (mouseenter)="guide.hoverGame(g.id)" (focus)="guide.hoverGame(g.id)" (click)="askCode(g)" [attr.aria-label]="g.title + ' — cần code hôm nay'">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
               </button>
             } @else if (g.path) {
-              <a class="card" [routerLink]="g.path" [attr.aria-label]="'Chơi ' + g.title">
+              <a class="card" (mouseenter)="guide.hoverGame(g.id)" (focus)="guide.hoverGame(g.id)" [routerLink]="g.path" [attr.aria-label]="'Chơi ' + g.title">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
               </a>
             } @else {
-              <div class="card locked" aria-disabled="true">
+              <div class="card locked" aria-disabled="true" (mouseenter)="guide.hoverGame(g.id)">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
               </div>
             }
@@ -174,6 +184,13 @@ interface GameCard {
             </span>
             <span class="cr-zap"></span>
           }
+          @case ('piano') {
+            <span class="pn-lanes"><i></i><i></i><i></i><i></i></span>
+            <span class="pn-tile t1"></span><span class="pn-tile t2"></span><span class="pn-tile t3"></span>
+            <img class="pn-fumo" src="jp-type/cirno.webp" alt="" />
+            <span class="pn-note n1">♪</span><span class="pn-note n2">♫</span>
+            <span class="pn-perfect">PERFECT!</span>
+          }
           @case ('gacha') {
             <span class="ray"></span>
             <span class="bag"><b>?</b></span>
@@ -198,6 +215,9 @@ interface GameCard {
       </div>
       <div class="info">
         <span class="tag">{{ g.tag }}</span>
+        @if (g.cats.length) {
+          <span class="cats">@for (c of g.cats; track c.id) { <i>{{ c.icon }} {{ c.name }}</i> }</span>
+        }
         @if (g.freeToday) { <span class="free-badge">🎟 Miễn phí hôm nay</span> }
         <h2>{{ g.title }}</h2>
         <p>{{ g.desc }}</p>
@@ -208,6 +228,30 @@ interface GameCard {
   `,
   styles: `
     .wrap { padding: 28px 0 64px; }
+    /* Lọc theo phân loại */
+    .cat-filter { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px auto 2px; }
+    .cat-filter button { font: inherit; font-weight: 700; font-size: .85rem; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); transition: background .2s, color .2s, border-color .2s; }
+    .cat-filter button.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    .cat-filter button:not(.on):hover { border-color: var(--primary); color: var(--primary-dark); }
+    .cats { display: flex; flex-wrap: wrap; gap: 4px; }
+    .cats i { font-style: normal; font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+      background: color-mix(in srgb, var(--primary) 12%, var(--surface)); color: var(--primary-dark); }
+    /* --- Ảnh minh hoạ: piano tiles --- */
+    .art-piano { background: linear-gradient(160deg, #2b1055, #7597de); }
+    .pn-lanes { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .pn-lanes i { border-right: 1px solid rgba(255, 255, 255, .18); }
+    .pn-tile { position: absolute; width: 25%; height: 70px; background: linear-gradient(#111, #333); border: 2px solid #ff7ac6;
+      box-shadow: 0 0 14px #ff7ac6; border-radius: 6px; top: -80px; animation: pn-fall 2.4s linear infinite paused; }
+    .pn-tile.t1 { left: 0; } .pn-tile.t2 { left: 50%; animation-delay: -.8s; } .pn-tile.t3 { left: 75%; animation-delay: -1.6s; border-color: #7af0ff; box-shadow: 0 0 14px #7af0ff; }
+    .pn-fumo { position: absolute; left: 6%; bottom: 6px; height: 92px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+    .pn-note { position: absolute; color: #fff; font-size: 1.5rem; text-shadow: 0 0 8px #ff7ac6; animation: pn-note 2s ease-in-out infinite paused; }
+    .pn-note.n1 { left: 30%; top: 40%; } .pn-note.n2 { left: 40%; top: 25%; animation-delay: -1s; }
+    .pn-perfect { position: absolute; right: 8%; bottom: 18%; font-weight: 900; font-style: italic; color: #ffe066; text-shadow: 0 0 10px #ff7ac6, 2px 2px 0 #b0005b;
+      font-size: 1.2rem; transform: rotate(-8deg); }
+    a.card:hover .art-piano *, a.card:focus-visible .art-piano * { animation-play-state: running; }
+    @keyframes pn-fall { to { top: 110%; } }
+    @keyframes pn-note { 50% { transform: translateY(-14px) rotate(10deg); opacity: .6; } }
     .head { text-align: center; margin-bottom: 28px; }
     .head h1 { margin: 8px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); }
     .hl { color: var(--primary); }
@@ -412,8 +456,21 @@ interface GameCard {
     @keyframes twinkle { 50% { opacity: .2; transform: scale(.6); } }
 
     /* Màn hình cảm ứng không có hover: hiện màu sẵn. */
-    @media (max-width: 600px) { .track { padding: 24px 16px; scroll-padding-inline: 16px; } .arrow { display: none; }
-      .carousel.list .track { padding: 16px 0; gap: 14px; } .carousel.list .card { max-width: none; } }
+    @media (max-width: 600px) { .track { padding: 18px 16px; scroll-padding-inline: 16px; gap: 12px; } .arrow { display: none; }
+      /* Điện thoại: thẻ nhỏ gọn như thẻ sản phẩm — cuộn ngang ~1.7 thẻ / màn, danh sách 2 cột */
+      .card { flex: 0 0 min(200px, 56vw); border-radius: 16px; }
+      .art { height: 120px; }
+      .info { padding: 10px 11px 12px; gap: 4px; }
+      .info h2 { font-size: .98rem; line-height: 1.25; }
+      .info p { font-size: .76rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .tag, .free-badge { font-size: .6rem; padding: 2px 7px; }
+      .cats i { font-size: .58rem; padding: 1px 6px; }
+      .play { margin-top: 4px; font-size: .78rem; padding: 6px 12px; }
+      .lock-msg { font-size: .72rem; }
+      .carousel.list .track { padding: 14px 0; gap: 10px; }
+      .carousel.list .card { flex: 1 1 calc(50% - 5px); max-width: calc(50% - 5px); }
+      .pn-fumo { height: 60px; } .pn-tile { height: 44px; } .pn-perfect { font-size: .85rem; }
+      .cat-filter button { font-size: .76rem; padding: 5px 11px; } }
     @media (hover: none) { .card:not(.locked) { filter: none; opacity: 1; transform: none; } .card:not(.locked) .art * { animation-play-state: running; } }
     @media (prefers-reduced-motion: reduce) { .art * { animation: none !important; } .card { transition: filter .3s, opacity .3s; } }
   `,
@@ -465,6 +522,15 @@ export class MiniGameHubPage implements AfterViewInit {
   }
 
   private readonly settings = inject(SettingsService).settings;
+  readonly guide = inject(GuideService);
+  /** Phân loại (lọc). */
+  readonly cats = computed(() => gameCategories(this.settings().gameCategories));
+  readonly catFilter = signal<string | null>(null);
+  /** Thẻ đang hiện theo bộ lọc phân loại. */
+  readonly shown = computed(() => {
+    const f = this.catFilter();
+    return f ? this.games().filter((g) => g.cats.some((c) => c.id === f)) : this.games();
+  });
   readonly access = inject(MinigameAccessService);
   private readonly router = inject(Router);
   private readonly codeInput = viewChild<ElementRef<HTMLInputElement>>('codeInput');
@@ -484,9 +550,10 @@ export class MiniGameHubPage implements AfterViewInit {
         desc: g.desc,
         art: g.art,
         lockMsg: g.status === 'locked' ? g.lockMsg : '',
+        cats: g.cats.map((id) => this.cats().find((c) => c.id === id)).filter((c): c is GameCategory => !!c),
       }));
     if (this.settings().minigameComingSoon) {
-      list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '' });
+      list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '', cats: [] });
     }
     // Trò đang chơi được lên trước, trò cần code / bị khoá dồn ra sau (trong mỗi nhóm giữ thứ tự admin xếp).
     const rank = (g: GameCard) => (g.id === 'soon' ? 3 : !g.path ? 2 : g.needCode ? 1 : 0);

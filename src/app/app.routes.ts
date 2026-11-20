@@ -79,6 +79,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/minigame/ninja').then((m) => m.FumoNinjaPage),
       },
       {
+        path: 'mini-game/anime-piano',
+        canActivate: [minigameGuard('piano')],
+        title: 'Anime Piano Tiles',
+        loadComponent: () => import('./pages/minigame/piano').then((m) => m.AnimePianoPage),
+      },
+      {
         path: 'mini-game/merge-fumo',
         canActivate: [minigameGuard('merge')],
         title: 'Merge Fumo',

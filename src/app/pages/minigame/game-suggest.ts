@@ -4,7 +4,7 @@ import { GameArt, resolveGames } from '../../models/minigames';
 import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 
-const ART_ICON: Record<GameArt, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧' };
+const ART_ICON: Record<GameArt, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧', piano: '🎹' };
 
 /** Cuối mỗi trang minigame: gợi ý các trò khác (kèm trạng thái miễn phí / cần code / tạm khoá). */
 @Component({

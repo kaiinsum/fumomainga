@@ -572,22 +572,51 @@ h1 {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 36px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  padding: 30px 16px;
   text-align: center;
 }
 
 .stat {
-  strong {
-    display: block;
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 900;
-    color: var(--primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  min-width: 0;
+
+  & + & {
+    border-left: 1px dashed var(--border);
   }
 
-  span {
+  .st-ic {
+    font-size: 1.6rem;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  strong {
+    display: block;
+    font-size: clamp(1.7rem, 4.5vw, 2.8rem);
+    line-height: 1.1;
+    font-weight: 900;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  > span:last-child {
     color: var(--muted);
     font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  small {
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    opacity: 0.85;
   }
 }
 
@@ -628,9 +657,46 @@ h1 {
     gap: 12px;
   }
 
+  /* Số liệu: 2 × 2 gọn gàng thay vì xếp dọc 1 cột */
   .stats {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 6px;
+    padding: 20px 10px;
+  }
+
+  .stat + .stat {
+    border-left: 0;
+  }
+
+  .stat .st-ic {
+    font-size: 1.3rem;
+  }
+
+  .stat > span:last-child {
+    font-size: 0.8rem;
+  }
+
+  /* Danh mục: thẻ thấp & gọn hơn */
+  .cats {
+    gap: 10px;
+  }
+
+  .cat {
+    min-height: 118px;
+    padding: 16px 8px;
+
+    .icon {
+      font-size: 2rem;
+    }
+
+    strong {
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
+    small {
+      font-size: 0.75rem;
+    }
   }
 }
 
@@ -914,7 +980,7 @@ h1 {
 .mascot-circle:hover .mascot-fx,
 .neon-card:hover .mascot-fx {
   &.fx-1 { animation: fx-jelly 0.9s ease both; }
-  &.fx-2 { animation: fx-hop 0.9s ease both; }
+  &.fx-2 { animation: fx-psychic 2.4s ease-in-out infinite; }
   &.fx-3 { animation: fx-wiggle 0.8s ease-in-out infinite; }
   &.fx-4 { animation: fx-heart 1s ease-in-out infinite; }
 }
@@ -933,13 +999,12 @@ h1 {
   70% { transform: scale(0.97, 1.03); }
 }
 
-// Bé 2: nhảy lộn một vòng
-@keyframes fx-hop {
-  0% { transform: translateY(0) rotate(0); }
-  30% { transform: translateY(-38px) rotate(-180deg) scale(1.05); }
-  60% { transform: translateY(-20px) rotate(-360deg); }
-  80% { transform: translateY(0) scale(1.08, 0.92); }
-  100% { transform: translateY(0) rotate(-360deg) scale(1); }
+// Bé 2 (Satori): "đọc suy nghĩ" — bay bổng lơ lửng, đung đưa nhẹ, toả hào quang hồng nhấp nháy như con mắt thứ ba.
+@keyframes fx-psychic {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1); filter: drop-shadow(0 0 0 rgba(255, 105, 180, 0)); }
+  20% { transform: translateY(-16px) rotate(-3deg) scale(1.03); filter: drop-shadow(0 0 14px rgba(255, 105, 180, .75)); }
+  45% { transform: translateY(-24px) rotate(3deg) scale(1.05); filter: drop-shadow(0 0 22px rgba(255, 105, 180, .95)) hue-rotate(-12deg); }
+  70% { transform: translateY(-14px) rotate(-2deg) scale(1.03); filter: drop-shadow(0 0 12px rgba(190, 120, 255, .8)); }
 }
 
 // Bé 3: lắc lư vẫy chào

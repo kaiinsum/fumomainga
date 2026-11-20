@@ -126,6 +126,18 @@
             <label for="heroSub">Mô tả</label>
             <textarea id="heroSub" rows="3" [(ngModel)]="draft.heroSubtitle"></textarea>
           </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="happy">Số khách hàng vui vẻ</label>
+              <input id="happy" type="number" min="0" step="1" [(ngModel)]="draft.happyCustomers" />
+              <small class="hint">Hiện ở dải số liệu cuối trang chủ (kèm dấu +).</small>
+            </div>
+            <div class="field">
+              <label for="years">Số năm kinh nghiệm</label>
+              <input id="years" type="number" min="0" max="100" step="1" [(ngModel)]="draft.yearsExperience" />
+              <small class="hint">"… năm kinh nghiệm trên thị trường fumo". Để 0 thì ẩn.</small>
+            </div>
+          </div>
         </div>
       </section>
     }

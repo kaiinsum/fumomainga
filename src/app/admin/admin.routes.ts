@@ -30,8 +30,13 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./dashboard/dashboard').then((m) => m.AdminDashboard),
       },
       {
+        path: 'doanh-thu',
+        title: 'Doanh thu',
+        loadComponent: () => import('./revenue/revenue').then((m) => m.AdminRevenue),
+      },
+      {
         path: 'phan-tich',
-        title: 'Phân tích',
+        title: 'Hiệu suất',
         loadComponent: () => import('./insights/insights').then((m) => m.AdminInsights),
       },
       {
@@ -73,6 +78,11 @@ export const ADMIN_ROUTES: Routes = [
         path: 'minigame',
         title: 'Minigame',
         loadComponent: () => import('./minigames/minigames').then((m) => m.AdminMinigames),
+      },
+      {
+        path: 'nguoi-huong-dan',
+        title: 'Người hướng dẫn',
+        loadComponent: () => import('./guide/guide-settings').then((m) => m.AdminGuideSettings),
       },
       {
         path: 'danh-muc',

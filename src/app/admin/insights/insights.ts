@@ -5,6 +5,8 @@ import { GAMES } from '../../models/minigames';
 import { Order } from '../../models/order';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { ProductService } from '../../services/product.service';
+import { NewsService } from '../../services/news.service';
+import { newsPath } from '../../models/news';
 import { VndPipe } from '../../shared/vnd.pipe';
 
 interface GameStat {
@@ -46,13 +48,13 @@ export function fmtDuration(sec: number): string {
   return `${h} giờ${m % 60 ? ' ' + (m % 60) + ' phút' : ''}`;
 }
 
-/** Admin → Phân tích: minigame (người chơi, thời gian chơi) và sản phẩm (đặt nhiều, doanh thu, lượt xem). */
+/** Admin → Hiệu suất: minigame (người chơi, thời gian chơi) và sản phẩm (đặt nhiều, doanh thu, lượt xem). */
 @Component({
   selector: 'app-admin-insights',
   imports: [DecimalPipe, RouterLink, VndPipe],
   template: `
     <div class="adm-head">
-      <h1>Phân tích</h1>
+      <h1>Hiệu suất</h1>
       <div class="seg" role="radiogroup" aria-label="Khoảng thời gian">
         @for (r of ranges; track r.days) {
           <button type="button" role="radio" [attr.aria-checked]="days() === r.days" [class.on]="days() === r.days" (click)="setDays(r.days)">{{ r.label }}</button>
@@ -71,7 +73,7 @@ export function fmtDuration(sec: number): string {
           <div class="tiles">
             <div class="tile"><span>Người chơi</span><b>{{ gameTotals().players | number }}</b><small>khách khác nhau (cộng theo từng game)</small></div>
             <div class="tile"><span>Lượt chơi</span><b>{{ gameTotals().plays | number }}</b><small>lần vào trang game</small></div>
-            <div class="tile"><span>Tổng thời gian chơi</span><b>{{ dur(gameTotals().seconds) }}</b><small>tính theo thời gian mở trang game</small></div>
+            <div class="tile"><span>Tổng thời gian chơi</span><b>{{ dur(gameTotals().seconds) }}</b><small>chỉ tính lúc đang chơi thật</small></div>
             <div class="tile"><span>Chơi lâu nhất</span><b>{{ gameRows()[0]?.title ?? '—' }}</b><small>{{ gameRows()[0] ? dur(gameRows()[0].seconds) : 'chưa có dữ liệu' }}</small></div>
           </div>
 
@@ -107,7 +109,63 @@ export function fmtDuration(sec: number): string {
           } @else if (!loading()) {
             <p class="hint">Chưa có ai chơi minigame trong khoảng này.</p>
           }
-          <p class="hint">Thời gian chơi tính khi khách mở trang game (mỗi 30 giây một lần, chỉ khi tab đang hiện). Bắt đầu ghi từ khi cập nhật tính năng này.</p>
+          <p class="hint">Thời gian chơi <b>không tính lúc treo máy</b>: chỉ đếm khi tab đang hiện và khách có thao tác (chuột, phím, chạm) trong 20 giây gần nhất. Số liệu trước bản cập nhật này vẫn tính theo thời gian mở trang.</p>
+        }
+      </div>
+    </section>
+
+    <!-- ================= BÀI VIẾT ================= -->
+    <section class="adm-box">
+      <h2>📰 Bài viết</h2>
+      <div class="box-body">
+        @if (gameError()) {
+          <p class="err">{{ gameError() }}</p>
+        } @else {
+          <div class="tiles">
+            <div class="tile"><span>Lượt đọc</span><b>{{ newsTotals().plays | number }}</b><small>lần mở bài viết</small></div>
+            <div class="tile"><span>Người đọc</span><b>{{ newsTotals().players | number }}</b><small>khách khác nhau (cộng theo từng bài)</small></div>
+            <div class="tile"><span>Thời gian đọc TB</span><b>{{ dur(newsTotals().plays ? newsTotals().seconds / newsTotals().plays : 0) }}</b><small>mỗi lượt đọc</small></div>
+            <div class="tile"><span>Xem nhiều nhất</span><b [title]="newsTop()[0]?.title ?? ''">{{ newsTop()[0]?.title ?? '—' }}</b><small>{{ newsTop()[0] ? newsTop()[0].plays + ' lượt' : 'chưa có dữ liệu' }}</small></div>
+          </div>
+          @if (newsRows().length) {
+            <h3>Lượt xem theo bài</h3>
+            <div class="bars" role="list">
+              @for (n of newsTop(); track n.slug) {
+                <div class="bar-row" role="listitem" [title]="n.title + ': ' + n.plays + ' lượt · ' + n.players + ' người · TB ' + dur(n.avg)">
+                  <span class="lbl">@if (n.cover) { <img [src]="n.cover" alt="" /> }{{ n.title }}</span>
+                  <span class="track"><span class="fill" [style.width.%]="pct(n.plays, newsTop()[0].plays)"></span></span>
+                  <span class="val">{{ n.plays | number }}</span>
+                </div>
+              }
+            </div>
+            <div class="adm-table-wrap">
+              <table class="adm-table">
+                <thead>
+                  <tr>
+                    <th>Bài viết</th>
+                    <th class="num sort" (click)="newsSort.set('plays')" [class.on]="newsSort() === 'plays'">Lượt xem</th>
+                    <th class="num sort" (click)="newsSort.set('players')" [class.on]="newsSort() === 'players'">Người đọc</th>
+                    <th class="num sort" (click)="newsSort.set('avg')" [class.on]="newsSort() === 'avg'">Ở lại TB</th>
+                    <th class="num sort" (click)="newsSort.set('seconds')" [class.on]="newsSort() === 'seconds'">Tổng thời gian</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (n of newsRows(); track n.slug) {
+                    <tr>
+                      <td class="pname">@if (n.cover) { <img [src]="n.cover" alt="" /> }@if (n.link) { <a [routerLink]="n.link">{{ n.title }}</a> } @else { {{ n.title }} }</td>
+                      <td class="num">{{ n.plays | number }}</td>
+                      <td class="num">{{ n.players | number }}</td>
+                      <td class="num">{{ dur(n.avg) }}</td>
+                      <td class="num">{{ dur(n.seconds) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (!loading()) {
+            <p class="hint">Chưa có lượt đọc bài viết trong khoảng này.</p>
+          }
+          <p class="hint">Thời gian ở lại chỉ tính khi tab đang hiện và khách có thao tác (cuộn, chuột, phím) trong 90 giây gần nhất. Bắt đầu ghi từ bản cập nhật này.</p>
         }
       </div>
     </section>
@@ -118,9 +176,9 @@ export function fmtDuration(sec: number): string {
       <div class="box-body">
         @if (orderError()) { <p class="err">{{ orderError() }}</p> }
         <div class="tiles">
-          <div class="tile"><span>Đơn hàng</span><b>{{ orderTotals().orders | number }}</b><small>không tính đơn đã huỷ</small></div>
+          <div class="tile"><span>Đơn hoàn thành</span><b>{{ orderTotals().orders | number }}</b><small>không tính đơn huỷ / đang xử lý</small></div>
           <div class="tile"><span>Bé đã bán</span><b>{{ orderTotals().qty | number }}</b><small>tổng số lượng</small></div>
-          <div class="tile"><span>Doanh thu</span><b>{{ orderTotals().revenue | vnd }}</b><small>theo giá trong đơn</small></div>
+          <div class="tile"><span>Doanh thu</span><b>{{ orderTotals().revenue | vnd }}</b><small>đơn đã hoàn thành · <a routerLink="/admin/doanh-thu">xem lãi ròng →</a></small></div>
           <div class="tile"><span>Đặt nhiều nhất</span><b>{{ topQty()[0]?.name ?? '—' }}</b><small>{{ topQty()[0] ? topQty()[0].qty + ' bé' : 'chưa có đơn' }}</small></div>
         </div>
 
@@ -230,6 +288,9 @@ export class AdminInsights {
   readonly gameError = signal('');
   readonly orderError = signal('');
   readonly games = signal<GameStat[]>([]);
+  readonly news = signal<(GameStat & { slug: string })[]>([]);
+  readonly newsSort = signal<'plays' | 'players' | 'avg' | 'seconds'>('plays');
+  private readonly newsSvc = inject(NewsService);
   readonly views = signal<PageStat[]>([]);
   readonly orders = signal<Order[]>([]);
   readonly sort = signal<'qty' | 'orders' | 'revenue' | 'views' | 'rate'>('qty');
@@ -249,7 +310,7 @@ export class AdminInsights {
   }
 
   readonly gameRows = computed(() => {
-    const icon: Record<string, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧' };
+    const icon: Record<string, string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧', piano: '🎹' };
     return this.games()
       .map((g) => {
         const def = GAMES.find((d) => d.path === '/mini-game/' + g.game);
@@ -262,11 +323,36 @@ export class AdminInsights {
     this.games().reduce((t, g) => ({ players: t.players + g.players, plays: t.plays + g.plays, seconds: t.seconds + g.seconds }), { players: 0, plays: 0, seconds: 0 }),
   );
 
-  /** Đơn trong khoảng thời gian, không tính đơn huỷ. */
+  /** Bài viết: gộp theo bài (slug hoặc id), kèm tiêu đề / ảnh bìa. */
+  readonly newsRows = computed(() => {
+    const posts = this.newsSvc.posts();
+    const find = (slug: string) => posts.find((p) => p.seo?.slug === slug || p.id === slug);
+    const rows = new Map<string, { slug: string; title: string; cover: string; link: string; plays: number; players: number; seconds: number; avg: number }>();
+    for (const n of this.news()) {
+      const slug = decodeURIComponent(n.slug);
+      const p = find(slug);
+      const k = p?.id ?? slug;
+      const r = rows.get(k) ?? { slug: k, title: p?.title ?? slug, cover: p?.cover ?? '', link: p ? newsPath(p) : '', plays: 0, players: 0, seconds: 0, avg: 0 };
+      r.plays += n.plays;
+      r.players += n.players;
+      r.seconds += n.seconds;
+      rows.set(k, r);
+    }
+    const key = this.newsSort();
+    return [...rows.values()]
+      .map((r) => ({ ...r, avg: r.plays ? r.seconds / r.plays : 0 }))
+      .sort((a, b) => b[key] - a[key] || b.plays - a.plays);
+  });
+  readonly newsTop = computed(() => [...this.newsRows()].sort((a, b) => b.plays - a.plays).slice(0, 10));
+  readonly newsTotals = computed(() =>
+    this.news().reduce((t, g) => ({ players: t.players + g.players, plays: t.plays + g.plays, seconds: t.seconds + g.seconds }), { players: 0, plays: 0, seconds: 0 }),
+  );
+
+  /** Đơn ĐÃ HOÀN THÀNH trong khoảng thời gian (doanh thu chỉ tính đơn hoàn thành). */
   private readonly ordersInRange = computed(() => {
     const d = this.days();
     const from = d ? Date.now() - d * 86_400_000 : 0;
-    return this.orders().filter((o) => o.status !== 'cancelled' && o.createdAt >= from);
+    return this.orders().filter((o) => o.status === 'done' && o.createdAt >= from);
   });
   readonly orderTotals = computed(() => {
     const list = this.ordersInRange();
@@ -340,9 +426,10 @@ export class AdminInsights {
         : e instanceof Error ? e.message : 'Không tải được dữ liệu.';
     await Promise.all([
       this.api
-        .call<{ games: GameStat[]; productViews: PageStat[] }>('GET', `/api/analytics?insights=1&days=${this.days()}`, undefined, true)
+        .call<{ games: GameStat[]; news?: (GameStat & { slug: string })[]; productViews: PageStat[] }>('GET', `/api/analytics?insights=1&days=${this.days()}`, undefined, true)
         .then((r) => {
           this.games.set(r.games);
+          this.news.set(r.news ?? []);
           this.views.set(r.productViews);
         })
         .catch((e) => this.gameError.set(msg(e))),

@@ -1,4 +1,4 @@
-import { DEFAULT_GAME_SETTINGS, GameSetting } from './minigames';
+import { DEFAULT_GAME_CATEGORIES, DEFAULT_GAME_SETTINGS, GameCategory, GameSetting } from './minigames';
 
 export interface AboutValue {
   icon: string;
@@ -60,6 +60,50 @@ export interface Announcement {
   btn2?: { text: string; link?: string };
 }
 
+/** Người hướng dẫn bay ra từ ảnh nền: hỏi khách có muốn chơi minigame, chào ở trang Mini game. */
+export interface GuideSettings {
+  enabled: boolean;
+  /** Lướt web bao lâu (giây) thì người hướng dẫn xuất hiện. */
+  delaySec: number;
+  /** Khách bấm "Không" → bao nhiêu giờ sau mới hỏi lại. */
+  snoozeHours: number;
+  lightName: string;
+  lightImage: string;
+  darkName: string;
+  darkImage: string;
+  askText: string;
+  yesLabel: string;
+  noLabel: string;
+  yesReply: string;
+  okLabel: string;
+  noReply: string;
+  /** Lời chào khi vào trang Mini game. */
+  hubWelcome: string;
+  /** Câu nói riêng khi rê chuột vào từng game (id game → câu). Trống = câu của phân loại. */
+  gameLines: Record<string, string>;
+}
+
+export const DEFAULT_GUIDE: GuideSettings = {
+  enabled: true,
+  delaySec: 90,
+  snoozeHours: 24,
+  lightName: 'Cirno',
+  lightImage: 'bg/cirno.webp',
+  darkName: 'Reimu',
+  darkImage: 'bg/reimu-1.webp',
+  askText: 'Nãy giờ lướt hơi mệt rồi hả, muốn giải trí tí không?',
+  yesLabel: 'Có chứ!',
+  noLabel: 'Không, cảm ơn',
+  yesReply: 'Vậy giờ mình qua minigame nhé!',
+  okLabel: 'OK, đi thôi!',
+  noReply: 'Vậy bạn cứ tiếp tục tìm hiểu về sản phẩm bên mình nha.',
+  hubWelcome: 'Chào mừng đến với minigame! Rê chuột vào trò nào để mình giới thiệu nha~',
+  gameLines: {},
+};
+
+/** Cấu hình người hướng dẫn (gộp với mặc định). */
+export const guideOf = (s: Pick<SiteSettings, 'guide'>): GuideSettings => ({ ...DEFAULT_GUIDE, ...(s.guide ?? {}), gameLines: { ...(s.guide?.gameLines ?? {}) } });
+
 export interface SiteSettings {
   // Chung
   shopName: string;
@@ -74,6 +118,10 @@ export interface SiteSettings {
   /** Bọc từ bằng *dấu sao* để tô màu nổi bật. */
   heroTitle: string;
   heroSubtitle: string;
+  /** Số "khách hàng vui vẻ" hiện ở trang chủ. */
+  happyCustomers?: number;
+  /** Số năm kinh nghiệm trên thị trường fumo (trang chủ). */
+  yearsExperience?: number;
   // Giới thiệu
   aboutTitle: string;
   aboutIntro: string;
@@ -106,6 +154,10 @@ export interface SiteSettings {
   // Mini game
   /** Thứ tự + khoá / mở / ẩn + nội dung thẻ của từng mini game. */
   minigames: GameSetting[];
+  /** Phân loại minigame (Giải trí, Trí tuệ, Chiến thuật...). */
+  gameCategories?: GameCategory[];
+  /** Người hướng dẫn (Cirno / Reimu) — Marketing & tương tác → Người hướng dẫn. */
+  guide?: GuideSettings;
   /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
   minigameComingSoon: boolean;
   /** Số trò được chơi miễn phí mỗi ngày (0 = mở tất cả). Có code trong ngày thì mở hết. */
@@ -142,6 +194,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 
   heroBadge: '✨ Bộ sưu tập mùa đông 2026',
   heroTitle: 'Thế giới *Fumo* dễ thương',
+  happyCustomers: 1200,
+  yearsExperience: 3,
   heroSubtitle:
     'Nơi trưng bày thú bông fumo, móc khóa, figure và phụ kiện. Khám phá và tìm bé fumo hợp với bạn nhất.',
 
@@ -205,6 +259,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bankAccountName: 'MAI NGA',
   bankName: 'Timo Digital Bank by BVBank',
   minigames: DEFAULT_GAME_SETTINGS,
+  gameCategories: DEFAULT_GAME_CATEGORIES,
+  guide: undefined,
   minigameComingSoon: true,
   minigameDailyFree: 0,
   notifyEnabled: true,

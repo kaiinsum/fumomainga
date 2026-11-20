@@ -265,5 +265,29 @@
         </div>
       </div>
     </section>
+    <section class="adm-box cost-box">
+      <h2>🔒 Giá nhập <small class="hint">(chỉ admin thấy)</small></h2>
+      <div class="box-body">
+        @if (costSvc.error()) { <p class="error">{{ costSvc.error() }}</p> }
+        <div class="field">
+          <label for="cost">Giá nhập {{ variants().length ? 'chung' : '' }} (VNĐ / 1 bé)</label>
+          <input id="cost" type="number" min="0" step="1000" placeholder="Chưa nhập" [value]="costDraft()[''] ?? ''" (input)="setCost('', $any($event.target).value)" />
+          @if (!variants().length && margin(salePrice.value ?? form.controls.price.value, ''); as m) {
+            <small class="hint" [class.neg]="m < 0">Lãi mỗi bé: <b>{{ m | vnd }}</b></small>
+          }
+        </div>
+        @if (variants().length) {
+          <p class="hint">Giá nhập riêng từng biến thể (trống = dùng giá nhập chung):</p>
+          @for (v of variants(); track v.id) {
+            <div class="cost-row">
+              <span>{{ v.name || '(chưa đặt tên)' }}</span>
+              <input type="number" min="0" step="1000" [placeholder]="costDraft()[''] ?? '—'" [value]="costDraft()[v.id] ?? ''" (input)="setCost(v.id, $any($event.target).value)" [attr.aria-label]="'Giá nhập ' + v.name" />
+              @if (margin(v.sale ?? v.price, v.id); as m) { <small class="hint" [class.neg]="m < 0">lãi {{ m | vnd }}</small> }
+            </div>
+          }
+        }
+        <small class="hint">Dùng để tính lãi ròng ở mục <b>Doanh thu</b>. Khách không bao giờ thấy giá này.</small>
+      </div>
+    </section>
   </aside>
 </form>

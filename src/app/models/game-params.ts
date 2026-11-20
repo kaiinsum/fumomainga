@@ -16,6 +16,12 @@ export interface ParamDef {
 }
 
 export const GAME_PARAMS: Record<string, ParamDef[]> = {
+  piano: [
+    { key: 'lives', label: 'Số lần trượt được phép', unit: 'lần', min: 3, max: 30, step: 1, def: 10, hint: 'Trượt quá số này là thua.' },
+    { key: 'window', label: 'Độ rộng khung "Perfect"', unit: 'ms', min: 30, max: 120, step: 5, def: 60, hint: 'Rộng = dễ ăn Perfect hơn.' },
+    { key: 'speed', label: 'Tốc độ ô rơi', unit: '%', min: 60, max: 160, step: 5, def: 100 },
+    { key: 'cheerEvery', label: 'Fumo khen sau mỗi … combo', unit: 'combo', min: 5, max: 100, step: 5, def: 20 },
+  ],
   merge: [
     { key: 'cooldown', label: 'Thời gian chờ giữa 2 lần thả', unit: 'giây', min: 0.2, max: 1.5, step: 0.05, def: 0.55, hint: 'Ngắn = thả liên tục được, dễ hơn.' },
     { key: 'dangerTime', label: 'Vượt vạch đỏ bao lâu thì thua', unit: 'giây', min: 1, max: 6, step: 0.5, def: 2 },

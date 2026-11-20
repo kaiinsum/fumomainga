@@ -3,7 +3,7 @@
  * để rơi 3 bé là thua. Càng chơi càng nhiều, càng nhanh.
  */
 
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 
 export const W = 900;
 /** Font chữ trong game (giống font web, hiển thị dấu tiếng Việt chuẩn). */
@@ -299,6 +299,7 @@ export class NinjaGame {
   private gameOver(reason: NinjaResult['reason']): void {
     if (this.overAt) return;
     this.overReason = reason;
+    playBaka();
     this.overAt = this.time + (reason === 'bomb' ? 70 : 30);
     if (reason === 'bomb') {
       this.flash = 40;

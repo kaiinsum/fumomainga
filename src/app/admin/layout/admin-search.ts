@@ -21,7 +21,10 @@ const INDEX: Entry[] = [
   { icon: '🗺', label: 'Bản đồ nhiệt đơn hàng', where: 'Bảng tin', path: '/admin', keys: 'heatmap khu vuc dat hang ip vi tri' },
   { icon: '📈', label: 'Thống kê truy cập', where: 'Tổng quan', path: '/admin/thong-ke', keys: 'luot xem online nguoi truy cap ip bieu do' },
   { icon: '🧹', label: 'Dọn dữ liệu cũ / bộ nhớ', where: 'Thống kê', path: '/admin/thong-ke', query: { don: '1' }, keys: 'xoa du lieu dung luong storage day bo nho' },
-  { icon: '📊', label: 'Phân tích', where: 'Tổng quan', path: '/admin/phan-tich', keys: 'thoi gian choi minigame san pham ban chay doanh thu ti le dat' },
+  { icon: '🧚', label: 'Người hướng dẫn (Cirno / Reimu)', where: 'Marketing & tương tác', path: '/admin/nguoi-huong-dan', keys: 'nguoi huong dan cirno reimu loi thoai moi choi minigame mascot nhan vat' },
+  { icon: '🏷', label: 'Phân loại minigame', where: 'Minigame', path: '/admin/minigame', keys: 'phan loai giai tri tri tue chien thuat the loai' },
+  { icon: '🚀', label: 'Hiệu suất', where: 'Tổng quan', path: '/admin/phan-tich', keys: 'phan tich thoi gian choi minigame san pham ban chay ti le dat bai viet luot doc' },
+  { icon: '💰', label: 'Doanh thu & lãi ròng', where: 'Tổng quan', path: '/admin/doanh-thu', keys: 'doanh thu lai rong loi nhuan chi phi gia nhap tien bi giam chua thanh toan' },
   // Bán hàng
   { icon: '🧾', label: 'Đơn hàng', where: 'Quản lý bán hàng', path: '/admin/don-hang', keys: 'don cho duyet thanh toan giao hang' },
   { icon: '🧸', label: 'Tất cả sản phẩm', where: 'Quản lý bán hàng', path: '/admin/san-pham', keys: 'san pham an hien het hang noi bat' },

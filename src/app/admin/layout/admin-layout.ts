@@ -46,8 +46,9 @@ export class AdminLayout implements AfterViewInit {
       title: 'Tổng quan',
       items: [
         { icon: '📊', label: 'Bảng tin', path: '/admin', exact: true },
-        { icon: '📈', label: 'Thống kê', path: '/admin/thong-ke' },
-        { icon: '🔍', label: 'Phân tích', path: '/admin/phan-tich' },
+        { icon: '💰', label: 'Doanh thu', path: '/admin/doanh-thu' },
+        { icon: '🚀', label: 'Hiệu suất', path: '/admin/phan-tich' },
+        { icon: '📈', label: 'Thống kê truy cập', path: '/admin/thong-ke' },
       ],
     },
     {
@@ -86,6 +87,7 @@ export class AdminLayout implements AfterViewInit {
       title: 'Marketing & tương tác',
       items: [
         { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
+        { icon: '🧚', label: 'Người hướng dẫn', path: '/admin/nguoi-huong-dan' },
         { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },
         { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
       ],

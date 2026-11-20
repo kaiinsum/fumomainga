@@ -4,7 +4,7 @@
  * Lõi game độc lập với Angular: component chỉ tạo, điều khiển và nhận sự kiện đổi trạng thái.
  */
 
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 
 export const W = 480;
 /** Font chữ trong game (giống font web, hiển thị dấu tiếng Việt chuẩn). */
@@ -284,6 +284,7 @@ export class DanmakuGame {
         /* bỏ qua */
       }
     }
+    if (!win) playBaka();
     this.setState(win ? 'win' : 'over', { score: this.score, hi: this.hi, newHi });
   }
 

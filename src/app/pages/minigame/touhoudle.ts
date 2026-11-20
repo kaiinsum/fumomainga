@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { GameSuggestComponent } from './game-suggest';
 import { ThAvatarComponent } from './th-avatar';
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { CHARACTERS, Character, GAMES, stageOrder } from './touhoudle-data';
 
@@ -130,7 +130,7 @@ interface Saved {
             <span class="muted">Gợi ý mở sau {{ hintAfter - rows().length }} lần đoán nữa</span>
           }
           @if (mode() === 'endless' && rows().length) {
-            <button class="link" type="button" (click)="gaveUp.set(true)">Chịu thua</button>
+            <button class="link" type="button" (click)="giveUp()">Chịu thua</button>
           }
         </div>
       }
@@ -307,6 +307,11 @@ export class TouhoudlePage {
       e.preventDefault();
       this.active.set(Math.max(0, this.active() - 1));
     } else if (e.key === 'Escape') this.open.set(false);
+  }
+
+  giveUp(): void {
+    this.gaveUp.set(true);
+    playBaka();
   }
 
   closeSoon(): void {

@@ -151,15 +151,131 @@
 
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 6px 16px;
   flex-wrap: wrap;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.9rem;
+
+  .act-label {
+    color: var(--muted);
+    font-weight: 700;
+    width: 100%;
+    font-size: 0.8rem;
+  }
+
+  .act-link {
+    font-weight: 700;
+    color: var(--primary-dark);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 1.5px solid transparent;
+    transition: border-color 0.2s;
+
+    &:hover {
+      border-bottom-color: currentColor;
+    }
+  }
+}
+
+// ---------- Khu mua hàng ----------
+.buy-box {
+  display: grid;
+  gap: 10px;
   margin-top: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  border: 1.5px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+}
+
+.buy-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.cart-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff8a3d, #ff5c8a);
+  box-shadow: 0 8px 22px -6px rgba(255, 106, 90, 0.6);
+  transition: transform 0.15s, box-shadow 0.25s, filter 0.2s;
+
+  white-space: nowrap;
+
+  .cb-ic {
+    font-size: 1.25rem;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -6px rgba(255, 106, 90, 0.7);
+    filter: brightness(1.05);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  &.done {
+    background: linear-gradient(135deg, #22b573, #14a0a0);
+    box-shadow: 0 8px 22px -6px rgba(20, 160, 120, 0.55);
+  }
+}
+
+.buy-now {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
 }
 
 .related {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 1000px) {
+  .related {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Điện thoại: 3 thẻ nhỏ / hàng */
+@media (max-width: 600px) {
+  .related {
+    gap: 8px;
+  }
+
+  .buy-box {
+    padding: 12px;
+  }
+
+  .cart-btn {
+    font-size: 0.95rem;
+    min-height: 48px;
+    padding: 0 12px;
+    gap: 6px;
+
+    .cb-more {
+      display: none;
+    }
+  }
 }
 
 .missing {
@@ -187,14 +303,6 @@
   .specs {
     grid-template-columns: 1fr;
   }
-}
-
-.buy {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 8px;
 }
 
 .qty {

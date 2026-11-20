@@ -8,7 +8,7 @@
  * hết chương 5 thì sang "vòng" mới mạnh hơn.
  */
 
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 import { perf } from '../../core/perf';
 
 export const W = 720;
@@ -1016,6 +1016,7 @@ export class CrushGame {
     if (this.state !== 'playing') return;
     this.hp = 0;
     this.state = 'over';
+    playBaka();
     const newBest = this.score > this.best;
     if (newBest) {
       this.best = this.score;

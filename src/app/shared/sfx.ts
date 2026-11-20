@@ -186,3 +186,32 @@ function readMuted(): boolean {
 }
 
 export const sfx = new Sfx();
+
+// ---------- Âm thanh từ file (mp3 ngắn) ----------
+const fileCache = new Map<string, HTMLAudioElement>();
+const fileLast = new Map<string, number>();
+
+/** Phát 1 file âm thanh ngắn (tôn trọng nút tắt tiếng). `gapMs`: không phát lại cùng file trong khoảng này. */
+export function playFile(src: string, opts: { volume?: number; gapMs?: number } = {}): void {
+  if (sfx.muted()) return;
+  try {
+    const now = Date.now();
+    if (now - (fileLast.get(src) ?? 0) < (opts.gapMs ?? 600)) return;
+    fileLast.set(src, now);
+    let a = fileCache.get(src);
+    if (!a) {
+      a = new Audio(src);
+      a.preload = 'auto';
+      fileCache.set(src, a);
+    }
+    a.volume = opts.volume ?? 0.7;
+    a.currentTime = 0;
+    // Trình duyệt chặn khi khách chưa bấm gì vào trang → bỏ qua.
+    void a.play().catch(() => undefined);
+  } catch {
+    /* bỏ qua */
+  }
+}
+
+/** "Baka!" của Cirno — phát khi thua minigame và khi Cirno nhún ở trang chủ. */
+export const playBaka = () => playFile('sfx/baka-cirno.mp3', { volume: 0.75, gapMs: 1200 });

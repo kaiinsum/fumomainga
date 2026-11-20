@@ -534,3 +534,9 @@
   color: #b32d2e;
   margin: -4px 0 6px;
 }
+
+.cost-box h2 small { font-weight: 400; }
+.cost-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 4px 8px; align-items: center; margin-bottom: 6px; font-size: .85rem; }
+.cost-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.cost-row small { grid-column: 2; }
+.hint.neg, .neg { color: #b32d2e; }

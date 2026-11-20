@@ -62,7 +62,7 @@ import { SeasonService } from '../../services/season.service';
       @if (season.active(); as se) {
         <p class="season"><button type="button" (click)="season.open()">{{ se.icon }} Xem lại lời chúc {{ se.name }}</button></p>
       }
-      <p class="copy">© {{ year }} {{ s.shopName }} - Designed San Nii.</p>
+      <p class="copy">© 2026 Fumo Mai Nga - Designed by San Nii</p>
     </footer>
   `,
   styles: `
@@ -90,7 +90,23 @@ import { SeasonService } from '../../services/season.service';
     .season button:hover { background: rgba(255, 255, 255, .16); border-color: var(--primary); }
     .copy { text-align: center; margin-top: 32px; font-size: .85rem; opacity: .7; }
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; gap: 20px; } }
+    /* Điện thoại: gọn lại — chữ nhỏ hơn, 2 cột link, liên hệ trải ngang. */
+    @media (max-width: 600px) {
+      .footer { padding: 26px 0 14px; margin-top: 28px; font-size: .82rem; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 16px 14px; }
+      .grid > div:first-child, .contact { grid-column: 1 / -1; }
+      h3 { font-size: 1.05rem; margin: 0 0 4px; }
+      h4 { font-size: .85rem; margin: 0 0 6px; }
+      a { padding: 2px 0; font-size: .8rem; }
+      p { font-size: .8rem; line-height: 1.45; }
+      .social { margin-top: 8px; gap: 8px; }
+      .soc { width: 30px; height: 30px; }
+      .soc svg { width: 16px; height: 16px; }
+      .contact p { margin: 0 0 4px; gap: 6px; }
+      .season { margin-top: 16px; }
+      .season button { font-size: .78rem; padding: 6px 14px; }
+      .copy { margin-top: 18px; font-size: .72rem; }
+    }
   `,
 })
 export class FooterComponent {

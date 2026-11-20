@@ -95,8 +95,11 @@ export const GET = handle(async (req) => {
     const fromMs = days ? truncVN(Date.now(), 'day') - (days - 1) * 86_400_000 : null;
     const fromDay = fromMs === null ? null : new Date(fromMs + 7 * 3600_000).toISOString().slice(0, 10);
     try {
-      const [games, productViews] = await Promise.all([store.games(fromDay), store.pages(fromMs, '/san-pham/', 200)]);
-      return json({ days, fromDay, games, productViews });
+      const [all, productViews] = await Promise.all([store.games(fromDay), store.pages(fromMs, '/san-pham/', 200)]);
+      // Bài viết dùng chung bảng với minigame (khoá 'news:<slug>').
+      const games = all.filter((g) => !g.game.startsWith('news:'));
+      const news = all.filter((g) => g.game.startsWith('news:')).map((g) => ({ ...g, slug: g.game.slice(5) }));
+      return json({ days, fromDay, games, news, productViews });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/game_stats|analytics_games|analytics_pages_prefix|does not exist|schema cache/i.test(msg)) {
@@ -151,6 +154,15 @@ export const GET = handle(async (req) => {
 // ---------- Ghi lượt truy cập (trước đây là /api/track) ----------
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|headless|lighthouse|pingdom|uptime/i;
 const empty = () => new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
+/** 1 lần báo thời gian tối đa (giây) — trình duyệt báo ~30 giây/lần. */
+const MAX_TIME_SEC = 120;
+/** /mini-game/<slug> → '<slug>', /tin-tuc/<slug> → 'news:<slug>', trang khác → null. */
+function timedKey(path: string): string | null {
+  const g = /^\/mini-game\/([a-z0-9-]{2,40})$/.exec(path);
+  if (g) return g[1];
+  const n = /^\/tin-tuc\/([^/]{1,80})$/.exec(path);
+  return n ? 'news:' + n[1] : null;
+}
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 export const POST = handle(async (req) => {
@@ -170,14 +182,20 @@ export const POST = handle(async (req) => {
   if (!store) return empty();
   const rawIp = (req.headers.get('x-real-ip') || clientIp(req)).slice(0, 64);
   const ip = rawIp === 'unknown' ? '' : rawIp;
-  const ping = store.ping({ vid, path, ip, ua });
-  // Đang ở trang chơi minigame: lượt vào = 1 lượt chơi, mỗi ping (30 giây) = 30 giây chơi.
-  const gm = /^\/mini-game\/([a-z0-9-]{2,40})$/.exec(path);
-  if (gm) {
-    const day = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
-    const isView = body['t'] === 'view';
-    await store.game(day, gm[1], vid, isView ? 1 : 0, isView ? 0 : 30).catch((e) => console.error('game track:', e instanceof Error ? e.message : e));
+  // Trang được đo thời gian (minigame, bài viết) → khoá trong bảng game_stats.
+  const key = timedKey(path);
+  const day = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+  const logTime = (plays: number, sec: number) =>
+    key ? store.game(day, key, vid, plays, sec).catch((e) => console.error('game track:', e instanceof Error ? e.message : e)) : Promise.resolve();
+  // 'time': trình duyệt báo số giây khách THỰC SỰ hoạt động (đã trừ thời gian treo máy / ẩn tab).
+  if (body['t'] === 'time') {
+    const sec = Math.round(Number(body['sec']));
+    if (key && Number.isFinite(sec) && sec > 0) await logTime(0, Math.min(MAX_TIME_SEC, sec));
+    return empty();
   }
+  const ping = store.ping({ vid, path, ip, ua });
+  // Lượt vào trang game / bài viết = 1 lượt chơi / lượt đọc.
+  if (body['t'] === 'view') await logTime(1, 0);
   try {
     if (body['t'] === 'view') {
       await Promise.all([

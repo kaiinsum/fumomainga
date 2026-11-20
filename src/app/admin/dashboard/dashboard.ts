@@ -50,7 +50,7 @@ import { OrderHeatmapComponent } from './order-heatmap';
 
     <!-- Phân tích nhanh 7 ngày: minigame + sản phẩm đặt nhiều -->
     <section class="adm-box quick-insights">
-      <h2>📊 7 ngày qua <a routerLink="/admin/phan-tich">Xem phân tích chi tiết →</a></h2>
+      <h2>📊 7 ngày qua <span class="lnks"><a routerLink="/admin/doanh-thu">Doanh thu →</a> <a routerLink="/admin/phan-tich">Hiệu suất →</a></span></h2>
       <div class="box-body qi">
         <div class="qi-tile"><span>🎮 Người chơi minigame</span><b>{{ qi().players ?? '—' }}</b></div>
         <div class="qi-tile"><span>⏱ Thời gian chơi</span><b>{{ qi().seconds === null ? '—' : dur(qi().seconds!) }}</b></div>

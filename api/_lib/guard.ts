@@ -61,9 +61,11 @@ export const RULES: GuardRule[] = [
   { path: /^minigame$/, method: 'POST', max: 15, windowMs: MIN },
   { path: /^admin\/login$/, method: 'POST', max: 10, windowMs: MIN },
   { path: /^leaderboard$/, method: 'POST', max: 6, windowMs: MIN },
+  // Tìm bài YouTube (tốn quota API) → giới hạn chặt.
+  { path: /^yt$/, max: 15, windowMs: MIN },
 ];
 
 /** Dung lượng tối đa dữ liệu gửi lên. API admin (đồng bộ sản phẩm, ảnh, kiến thức AI) được phép lớn hơn. */
 export const MAX_BODY_PUBLIC = 64 * 1024;
 export const MAX_BODY_ADMIN = 4.5 * 1024 * 1024;
-export const ADMIN_BODY_PATHS = /^(catalog|settings|ai\/(catalog|knowledge)|orders\/[^/]+|admin\/password)$/;
+export const ADMIN_BODY_PATHS = /^(catalog|settings|ai\/(catalog|knowledge)|orders\/[^/]+|admin\/password|admin\/costs)$/;

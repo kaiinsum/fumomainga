@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Order } from '../../models/order';
 import { ApiError, OrderApiService } from '../../services/order-api.service';
 import { VndPipe } from '../../shared/vnd.pipe';
@@ -50,6 +50,21 @@ interface Place {
   source: 'ip' | 'address';
 }
 
+function pref(k: string): string | null {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+}
+function savePref(k: string, v: string): void {
+  try {
+    localStorage.setItem(k, v);
+  } catch {
+    /* bỏ qua */
+  }
+}
+
 const RANGES = [
   { days: 30, label: '30 ngày' },
   { days: 90, label: '90 ngày' },
@@ -70,6 +85,10 @@ const RANGES = [
               <button type="button" role="radio" [attr.aria-checked]="days() === r.days" [class.on]="days() === r.days" (click)="days.set(r.days)">{{ r.label }}</button>
             }
           </span>
+          <span class="seg">
+            <button type="button" [class.on]="showHeat()" [attr.aria-pressed]="showHeat()" (click)="toggleHeat()" title="Bật / tắt lớp nhiệt (tắt thì hiện chấm tròn theo số liệu)">🔥 Nhiệt {{ showHeat() ? 'bật' : 'tắt' }}</button>
+            <button type="button" [attr.aria-pressed]="!showMap()" (click)="toggleMap()">{{ showMap() ? '🙈 Ẩn bản đồ' : '🗺 Hiện bản đồ' }}</button>
+          </span>
           <span class="seg" role="radiogroup" aria-label="Đo theo">
             <button type="button" role="radio" [attr.aria-checked]="metric() === 'orders'" [class.on]="metric() === 'orders'" (click)="metric.set('orders')">Số đơn</button>
             <button type="button" role="radio" [attr.aria-checked]="metric() === 'revenue'" [class.on]="metric() === 'revenue'" (click)="metric.set('revenue')">Doanh thu</button>
@@ -80,8 +99,8 @@ const RANGES = [
         @if (error()) {
           <p class="err">{{ error() }}</p>
         } @else {
-          <div class="wrap">
-            <div class="map" #map aria-label="Bản đồ nhiệt đơn hàng"></div>
+          <div class="wrap" [class.nomap]="!showMap()">
+            <div class="map" #map aria-label="Bản đồ nhiệt đơn hàng" [hidden]="!showMap()"></div>
             <div class="side">
               <h3>Khu vực đặt nhiều</h3>
               @if (places().length) {
@@ -102,7 +121,7 @@ const RANGES = [
               </p>
             </div>
           </div>
-          <p class="hint">Vị trí theo IP là ước tính (thường đúng tới tỉnh / thành phố). Đơn đặt trước khi có tính năng này được đoán theo địa chỉ giao hàng. Không tính đơn đã huỷ.</p>
+          <p class="hint">Lăn chuột trên bản đồ để phóng to / thu nhỏ. Vị trí theo IP là ước tính (thường đúng tới tỉnh / thành phố). Đơn đặt trước khi có tính năng này được đoán theo địa chỉ giao hàng. Không tính đơn đã huỷ.</p>
         }
       </div>
     </section>
@@ -115,6 +134,8 @@ const RANGES = [
     .seg button:last-child { border-right: 0; }
     .seg button.on { background: #2271b1; color: #fff; font-weight: 700; }
     .wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr); gap: 16px; }
+    .wrap.nomap { grid-template-columns: 1fr; }
+    .map[hidden] { display: none; }
     .map { height: 380px; border-radius: 10px; border: 1px solid #dcdcde; background: #eef3f7; z-index: 0; }
     h3 { margin: 0 0 8px; font-size: .95rem; }
     .rank { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; counter-reset: r; }
@@ -142,6 +163,22 @@ export class OrderHeatmapComponent implements AfterViewInit {
   private L?: LeafletNs;
   private map?: LMap;
   private layers: LLayer[] = [];
+  /** Bật / tắt lớp nhiệt và ẩn cả bản đồ — nhớ trong trình duyệt. */
+  readonly showHeat = signal(pref('fumo.adm.heat') !== '0');
+  readonly showMap = signal(pref('fumo.adm.map') !== '0');
+
+  toggleHeat(): void {
+    this.showHeat.update((v) => !v);
+    savePref('fumo.adm.heat', this.showHeat() ? '1' : '0');
+    this.draw(false);
+  }
+
+  toggleMap(): void {
+    this.showMap.update((v) => !v);
+    savePref('fumo.adm.map', this.showMap() ? '1' : '0');
+    // Leaflet cần đo lại kích thước khi khung vừa hiện ra.
+    if (this.showMap()) setTimeout(() => this.map?.invalidateSize(), 0);
+  }
 
   constructor() {
     void this.api
@@ -164,7 +201,7 @@ export class OrderHeatmapComponent implements AfterViewInit {
       this.L = await loadLeaflet();
       const el = this.el()?.nativeElement;
       if (!el) return;
-      this.map = this.L.map(el, { scrollWheelZoom: false, attributionControl: true });
+      this.map = this.L.map(el, { scrollWheelZoom: true, wheelPxPerZoomLevel: 90, attributionControl: true });
       this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 12,
         attribution: '&copy; OpenStreetMap',
@@ -202,7 +239,7 @@ export class OrderHeatmapComponent implements AfterViewInit {
       const key = `${place.name}|${place.lat.toFixed(2)}|${place.lon.toFixed(2)}`;
       const cur = map.get(key) ?? { ...place, orders: 0, revenue: 0 };
       cur.orders++;
-      cur.revenue += o.total;
+      if (o.status === 'done') cur.revenue += o.total; // doanh thu chỉ tính đơn hoàn thành
       map.set(key, cur);
     }
     return { list: [...map.values()], stats: { ip, address, unknown } };
@@ -218,7 +255,8 @@ export class OrderHeatmapComponent implements AfterViewInit {
     return max ? Math.max(2, (p[this.metric()] / max) * 100) : 0;
   }
 
-  private draw(): void {
+  /** fit = false → giữ nguyên vị trí / mức zoom hiện tại (vd. chỉ bật / tắt lớp nhiệt). */
+  private draw(fit = true): void {
     const L = this.L;
     const map = this.map;
     if (!L || !map) return;
@@ -228,18 +266,29 @@ export class OrderHeatmapComponent implements AfterViewInit {
     if (!list.length) return;
     const k = this.metric();
     const max = Math.max(...list.map((p) => p[k]));
+    const heatOn = untracked(this.showHeat);
     // Nhiệt một tông màu (cam nhạt → đỏ đậm), không dùng cầu vồng.
-    const heat = L.heatLayer(
-      list.map((p) => [p.lat, p.lon, Math.max(0.35, p[k] / max)] as [number, number, number]),
-      { radius: 34, blur: 20, maxZoom: 9, max: 1, minOpacity: 0.45, gradient: { 0.25: '#fdd49e', 0.5: '#fc8d59', 0.75: '#d7301f', 1: '#7f0000' } },
-    ).addTo(map);
-    // Điểm trong suốt để rê chuột xem số liệu.
+    const heat = heatOn
+      ? [
+          L.heatLayer(
+            list.map((p) => [p.lat, p.lon, Math.max(0.35, p[k] / max)] as [number, number, number]),
+            { radius: 34, blur: 20, maxZoom: 9, max: 1, minOpacity: 0.45, gradient: { 0.25: '#fdd49e', 0.5: '#fc8d59', 0.75: '#d7301f', 1: '#7f0000' } },
+          ).addTo(map),
+        ]
+      : [];
+    // Bật nhiệt: điểm trong suốt để rê chuột xem số liệu. Tắt nhiệt: chấm tròn to nhỏ theo số liệu.
     const dots = list.map((p) =>
-      L.circleMarker([p.lat, p.lon], { radius: 12, stroke: false, fillOpacity: 0 })
+      L.circleMarker(
+        [p.lat, p.lon],
+        heatOn
+          ? { radius: 12, stroke: false, fillOpacity: 0 }
+          : { radius: 5 + Math.sqrt(p[k] / max) * 15, color: '#fff', weight: 1.5, fillColor: '#d7301f', fillOpacity: 0.75 },
+      )
         .bindTooltip(`<b>${p.name}</b><br>${p.orders} đơn · ${p.revenue.toLocaleString('vi-VN')} ₫${p.source === 'address' ? '<br><small>Đoán từ địa chỉ giao hàng</small>' : ''}`, { direction: 'top' })
         .addTo(map),
     );
-    this.layers = [heat, ...dots];
+    this.layers = [...heat, ...dots];
+    if (!fit) return;
     if (list.length > 1) map.fitBounds(L.latLngBounds(list.map((p) => [p.lat, p.lon])), { padding: [30, 30], maxZoom: 8 });
     else map.setView([list[0].lat, list[0].lon], 7);
   }

@@ -58,22 +58,30 @@
           </div>
         }
 
-        <div class="buy">
-          <div class="qty" aria-label="Số lượng">
-            <button type="button" (click)="qty.set(qty() > 1 ? qty() - 1 : 1)" aria-label="Giảm">−</button>
-            <span>{{ qty() }}</span>
-            <button type="button" (click)="qty.set(qty() < 99 ? qty() + 1 : 99)" aria-label="Tăng">+</button>
+        <!-- Khu mua hàng: tách riêng, nút "Thêm vào giỏ" nổi bật -->
+        <div class="buy-box">
+          <div class="buy-row">
+            <div class="qty" aria-label="Số lượng">
+              <button type="button" (click)="qty.set(qty() > 1 ? qty() - 1 : 1)" aria-label="Giảm">−</button>
+              <span>{{ qty() }}</span>
+              <button type="button" (click)="qty.set(qty() < 99 ? qty() + 1 : 99)" aria-label="Tăng">+</button>
+            </div>
+            <button class="cart-btn" [class.done]="added()" type="button" (click)="addToCart()">
+              <span class="cb-ic" aria-hidden="true">{{ added() ? '✓' : '🛒' }}</span>
+              {{ added() ? 'Đã thêm vào giỏ' : 'Thêm vào giỏ' }}<span class="cb-more">{{ added() ? '' : ' hàng' }}</span>
+            </button>
           </div>
-          <button class="btn ghost" type="button" (click)="addToCart()">{{ added() ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ' }}</button>
-          <button class="btn primary" type="button" (click)="addToCart(true)">Mua ngay</button>
+          <button class="btn primary buy-now" type="button" (click)="addToCart(true)">⚡ Mua ngay</button>
+          @if (!p.inStock) {
+            <p class="stock-note">Sản phẩm đang hết hàng — bạn vẫn có thể đặt trước, shop sẽ liên hệ báo thời gian có hàng.</p>
+          }
         </div>
-        @if (!p.inStock) {
-          <p class="stock-note">Sản phẩm đang hết hàng — bạn vẫn có thể đặt trước, shop sẽ liên hệ báo thời gian có hàng.</p>
-        }
 
+        <!-- Lựa chọn phụ: tách khỏi khu mua hàng -->
         <div class="actions">
-          <a class="btn ghost" routerLink="/lien-he">💬 Liên hệ tư vấn</a>
-          <a class="btn ghost" routerLink="/san-pham">← Xem sản phẩm khác</a>
+          <span class="act-label">Cần thêm thông tin?</span>
+          <a class="act-link" routerLink="/lien-he">💬 Liên hệ tư vấn</a>
+          <a class="act-link" routerLink="/san-pham">← Xem sản phẩm khác</a>
         </div>
       </div>
     </article>
@@ -83,7 +91,7 @@
         <h2 class="section-title" appAnimateIn>Sản phẩm <span>liên quan</span></h2>
         <div class="related">
           @for (r of related(); track r.id; let i = $index) {
-            <app-product-card [product]="r" appAnimateIn [animDelay]="i * 90" />
+            <app-product-card class="compact" [product]="r" appAnimateIn [animDelay]="i * 90" />
           }
         </div>
       </section>

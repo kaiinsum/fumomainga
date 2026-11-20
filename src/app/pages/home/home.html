@@ -24,7 +24,7 @@
     <div class="mascot">
       @if (isDark()) {
         <!-- Khung neon kiểu màn hình máy tính: viền sáng chạy quanh, bé fumo luân phiên bật ra. -->
-        <div class="neon-card" (click)="pokeMascot()" title="Bấm để đổi bé fumo">
+        <div class="neon-card" (click)="pokeMascot()" (mouseenter)="mascotHover()" title="Bấm để đổi bé fumo">
           <div class="neon-inner">
             <div class="hud">
               <span><i class="rec"></i>LIVE</span>
@@ -52,7 +52,7 @@
           </div>
         </div>
       } @else {
-        <div class="mascot-circle" (click)="pokeMascot()" title="Bấm để đổi bé fumo">
+        <div class="mascot-circle" (click)="pokeMascot()" (mouseenter)="mascotHover()" title="Bấm để đổi bé fumo">
           <span class="sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
           <span class="mascot-pop">
             <span class="mascot-fx" [class]="'mascot-fx fx-' + mascotNo()">
@@ -191,10 +191,13 @@
 <section class="section">
   <div class="container stats card-surface">
     @for (s of stats; track s.label) {
-      <div class="stat">
-        <strong>{{ s.value() }}{{ s.label === 'Khách hàng vui vẻ' ? '+' : '' }}</strong>
-        <span>{{ s.label }}</span>
-      </div>
+      @if (s.show()) {
+        <div class="stat">
+          <span class="st-ic" aria-hidden="true">{{ s.icon }}</span>
+          <strong>{{ s.value() }}{{ s.plus ? '+' : '' }}</strong>
+          <span>{{ s.label }}@if (s.label === 'Năm kinh nghiệm') { <small>trên thị trường fumo</small> }</span>
+        </div>
+      }
     }
   </div>
 </section>

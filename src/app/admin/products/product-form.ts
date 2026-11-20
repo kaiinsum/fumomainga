@@ -9,6 +9,7 @@ import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { slugify } from '../../shared/seo';
 import { VndPipe } from '../../shared/vnd.pipe';
+import { CostService } from '../cost.service';
 import { AdminToastService } from '../toast.service';
 
 const MAX_IMAGES = 6;
@@ -57,6 +58,10 @@ export class AdminProductForm {
   private readonly service = inject(ProductService);
   private readonly router = inject(Router);
   private readonly toast = inject(AdminToastService);
+  /** Giá nhập (chỉ admin) — lưu riêng, không nằm trong dữ liệu sản phẩm công khai. */
+  readonly costSvc = inject(CostService);
+  /** Bản nháp giá nhập: '' = giá nhập chung, còn lại = id biến thể. */
+  readonly costDraft = signal<Record<string, number | null>>({});
 
   readonly categories = inject(CategoryService).names;
   readonly maxImages = MAX_IMAGES;
@@ -113,7 +118,45 @@ export class AdminProductForm {
     return list.length ? finalPrice(cheapest({ price: 0, variants: list })) : 0;
   });
 
+  setCost(key: string, raw: string): void {
+    const v = raw === '' ? null : Math.max(0, Number(raw));
+    this.costDraft.update((d) => ({ ...d, [key]: v === null || Number.isFinite(v) ? v : null }));
+  }
+
+  /** Lãi dự kiến 1 đơn vị (giá bán sau giảm − giá nhập). */
+  margin(sell: number | null | undefined, key: string): number | null {
+    const c = this.costDraft()[key] ?? (key ? this.costDraft()[''] : null) ?? null;
+    if (c === null || sell === null || sell === undefined) return null;
+    return Number(sell) - c;
+  }
+
+  private fillCosts(id: string | undefined, variantIds: string[]): void {
+    const c = this.costSvc.costs();
+    const d: Record<string, number | null> = { '': id && id in c ? c[id] : null };
+    for (const vid of variantIds) d[vid] = id && `${id}::${vid}` in c ? c[`${id}::${vid}`] : null;
+    this.costDraft.set(d);
+  }
+
+  /** Lưu giá nhập theo id sản phẩm (gọi sau khi lưu sản phẩm). */
+  private async saveCosts(id: string): Promise<void> {
+    const d = this.costDraft();
+    const changes: Record<string, number | null> = { [id]: d[''] ?? null };
+    const keep = new Set(this.variants().map((v) => v.id));
+    for (const vid of keep) changes[`${id}::${vid}`] = d[vid] ?? null;
+    // Biến thể đã xoá → bỏ giá nhập cũ.
+    for (const k of Object.keys(this.costSvc.costs())) if (k.startsWith(id + '::') && !keep.has(k.slice(id.length + 2))) changes[k] = null;
+    try {
+      await this.costSvc.save(changes);
+    } catch (e) {
+      this.toast.err('Chưa lưu được giá nhập: ' + (e instanceof Error ? e.message : ''));
+    }
+  }
+
   constructor() {
+    void this.costSvc.load().then(() => {
+      const p = this.editing();
+      this.fillCosts(p?.id, (p?.variants ?? []).map((v) => v.id));
+    });
     // Gõ tên → đường dẫn tự cập nhật (khoảng trắng → -, bỏ dấu tiếng Việt).
     this.form.controls.name.valueChanges.subscribe((name) => {
       if (!this.slugManual()) this.slug.set(this.service.suggestSlug(name ?? '', this.editing()?.id));
@@ -147,6 +190,7 @@ export class AdminProductForm {
           this.slugManual.set(!!p.slug && slugify(p.name) !== p.slug.replace(/-\d+$/, '') && slugify(p.name) !== p.slug);
           this.salePrice.setValue(onSale(p) ? (p.salePrice as number) : null);
           this.salePercent.setValue(onSale(p) ? discountPercent(p) : null);
+          this.fillCosts(p.id, (p.variants ?? []).map((v) => v.id));
           this.variants.set(
             (p.variants ?? []).map((v) => ({
               id: v.id,
@@ -159,6 +203,7 @@ export class AdminProductForm {
           );
         } else {
           this.variants.set([]);
+          this.costDraft.set({});
           this.slug.set('');
           this.slugManual.set(false);
           this.salePrice.setValue(null);
@@ -273,11 +318,14 @@ export class AdminProductForm {
 
     const current = this.editing();
     if (current) {
-      this.toast.run(() => this.service.update(current.id, data), 'Đã cập nhật sản phẩm');
+      if (this.toast.run(() => this.service.update(current.id, data), 'Đã cập nhật sản phẩm')) void this.saveCosts(current.id);
     } else {
       let createdId = '';
       const ok = this.toast.run(() => (createdId = this.service.add(data).id), 'Đã đăng sản phẩm');
-      if (ok) this.router.navigate(['/admin/san-pham', createdId]);
+      if (ok) {
+        const id = createdId;
+        void this.saveCosts(id).then(() => this.router.navigate(['/admin/san-pham', id]));
+      }
     }
   }
 

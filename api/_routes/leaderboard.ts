@@ -17,6 +17,7 @@ const GAMES: Record<string, number> = {
   ninja: 2_000_000,
   crush: 50_000_000,
   merge: 2_000_000,
+  piano: 5_000_000,
 };
 
 interface Entry {

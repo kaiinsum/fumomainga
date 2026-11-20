@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ALWAYS_FREE_ID, DEFAULT_LOCK_MSG, GAMES, GameDef, GameSetting, GameStatus, dailyFreeIds, dailyPool, normalizeGameSettings, resolveGames, rollFor, vnToday } from '../../models/minigames';
+import { ALWAYS_FREE_ID, DEFAULT_GAME_CATEGORIES, DEFAULT_LOCK_MSG, GAMES, GameCategory, GameDef, GameSetting, GameStatus, gameCategories, dailyFreeIds, dailyPool, normalizeGameSettings, resolveGames, rollFor, vnToday } from '../../models/minigames';
 import { OrderApiService } from '../../services/order-api.service';
 import { GAME_PARAMS } from '../../models/game-params';
 import { SettingsService } from '../../services/settings.service';
@@ -69,6 +69,26 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
       </div>
     </section>
 
+    <!-- Phân loại minigame -->
+    <section class="adm-box cats-box">
+      <h2>🏷 Phân loại minigame <small>1 game được nhiều phân loại · khách lọc theo phân loại ở trang Mini game</small></h2>
+      <div class="box-body">
+        @for (c of cats(); track c.id; let ci = $index) {
+          <div class="cat-row">
+            <input class="c-ic" maxlength="4" [ngModel]="c.icon" (ngModelChange)="setCat(ci, 'icon', $event)" aria-label="Biểu tượng" />
+            <input class="c-nm" maxlength="30" placeholder="Tên phân loại" [ngModel]="c.name" (ngModelChange)="setCat(ci, 'name', $event)" aria-label="Tên phân loại" />
+            <input class="c-ln" maxlength="140" placeholder="Câu người hướng dẫn nói khi khách rê chuột vào game loại này" [ngModel]="c.line" (ngModelChange)="setCat(ci, 'line', $event)" aria-label="Câu người hướng dẫn" />
+            <span class="c-count" title="Số game thuộc phân loại này">{{ catCount(c.id) }} game</span>
+            <button type="button" class="mini del" (click)="removeCat(ci)" title="Xoá phân loại">✕</button>
+          </div>
+        }
+        <div class="cat-actions">
+          <button type="button" class="btn ghost small" (click)="addCat()">➕ Thêm phân loại</button>
+          <button type="button" class="link" (click)="resetCats()">↺ Về 3 phân loại mặc định</button>
+        </div>
+      </div>
+    </section>
+
     <p class="intro">
       Kéo thả (hoặc bấm ↑ ↓) để đổi thứ tự hiện trên trang Mini game. Ô nào để trống sẽ dùng nội dung mặc định.
       Đang mở <b>{{ counts().open }}</b> · khoá <b>{{ counts().locked }}</b> · ẩn <b>{{ counts().hidden }}</b>.
@@ -94,6 +114,13 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
             <div class="name">
               <b>{{ g.title || def.title }}</b>
               <a [href]="def.path" target="_blank" rel="noopener">{{ def.path }}</a>
+              <span class="g-cats">
+                @for (c of cats(); track c.id) {
+                  <label class="g-cat" [class.on]="(g.cats ?? []).includes(c.id)">
+                    <input type="checkbox" [checked]="(g.cats ?? []).includes(c.id)" (change)="toggleGameCat(i, c.id)" />{{ c.icon }} {{ c.name || '…' }}
+                  </label>
+                }
+              </span>
             </div>
             <div class="seg" role="radiogroup" [attr.aria-label]="'Trạng thái ' + def.title">
               @for (s of statuses; track s.id) {
@@ -238,6 +265,18 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     </section>
   `,
   styles: `
+    .cats-box h2 small { font-weight: 400; color: #646970; font-size: .78rem; margin-left: 6px; }
+    .cat-row { display: grid; grid-template-columns: 52px minmax(120px, 180px) 1fr auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .cat-row input { min-width: 0; }
+    .c-ic { text-align: center; font-size: 1.1rem; }
+    .c-count { font-size: .78rem; color: #646970; white-space: nowrap; }
+    .cat-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .g-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .g-cat { display: inline-flex; align-items: center; gap: 3px; font-size: .72rem; font-weight: 700; padding: 2px 8px 2px 4px; border-radius: 999px;
+      border: 1px solid #c3c4c7; cursor: pointer; color: #50575e; background: #fff; }
+    .g-cat input { margin: 0; width: 12px; height: 12px; }
+    .g-cat.on { background: #e5f1fa; border-color: #2271b1; color: #135e96; }
+    @media (max-width: 700px) { .cat-row { grid-template-columns: 46px 1fr auto; } .c-ln { grid-column: 1 / -1; } .c-count { display: none; } }
     .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .intro { color: #50575e; margin: 0 0 14px; }
     .games { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -372,9 +411,42 @@ export class AdminMinigames {
   readonly codeBusy = signal(false);
   readonly defaultLock = DEFAULT_LOCK_MSG;
   readonly notifyDays = this.settingsSvc.settings().notifyDays || 14;
-  readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧' };
+  readonly artIcon: Record<GameDef['art'], string> = { jp: '⌨️', gacha: '🎁', dle: '🔎', ninja: '🗡️', shmup: '🚀', crush: '💎', merge: '🫧', piano: '🎹' };
 
   readonly draft = signal<GameSetting[]>(normalizeGameSettings(this.settingsSvc.settings().minigames));
+  /** Phân loại minigame (bản nháp). */
+  readonly cats = signal<GameCategory[]>(structuredClone(gameCategories(this.settingsSvc.settings().gameCategories)));
+
+  setCat(i: number, key: keyof GameCategory, value: string): void {
+    this.cats.update((list) => list.map((c, j) => (j === i ? { ...c, [key]: value } : c)));
+  }
+
+  addCat(): void {
+    const id = 'c' + Date.now().toString(36);
+    this.cats.update((list) => [...list, { id, name: '', icon: '🎮', line: '' }]);
+  }
+
+  removeCat(i: number): void {
+    const c = this.cats()[i];
+    if (this.catCount(c.id) && !confirm(`Xoá phân loại "${c.name}"? ${this.catCount(c.id)} game sẽ bỏ phân loại này.`)) return;
+    this.cats.update((list) => list.filter((_, j) => j !== i));
+    this.draft.update((list) => list.map((g) => ({ ...g, cats: (g.cats ?? []).filter((x) => x !== c.id) })));
+  }
+
+  resetCats(): void {
+    this.cats.set(structuredClone(DEFAULT_GAME_CATEGORIES));
+    this.draft.update((list) => list.map((g) => ({ ...g, cats: [...(GAMES.find((d) => d.id === g.id)?.cats ?? [])] })));
+  }
+
+  catCount(id: string): number {
+    return this.draft().filter((g) => (g.cats ?? []).includes(id)).length;
+  }
+
+  toggleGameCat(i: number, id: string): void {
+    this.draft.update((list) =>
+      list.map((g, j) => (j === i ? { ...g, cats: (g.cats ?? []).includes(id) ? (g.cats ?? []).filter((x) => x !== id) : [...(g.cats ?? []), id] } : g)),
+    );
+  }
   readonly comingSoon = signal(this.settingsSvc.settings().minigameComingSoon ?? true);
   readonly openId = signal<string | null>(null);
   readonly overIndex = signal(-1);
@@ -395,7 +467,8 @@ export class AdminMinigames {
       this.comingSoon() !== (s.minigameComingSoon ?? true) ||
       this.dailyFree() !== (s.minigameDailyFree ?? 0) ||
       JSON.stringify(this.roll() ?? null) !== JSON.stringify(s.minigameRoll ?? null) ||
-      JSON.stringify(this.params()) !== JSON.stringify(s.gameParams ?? {})
+      JSON.stringify(this.params()) !== JSON.stringify(s.gameParams ?? {}) ||
+      JSON.stringify(this.cats()) !== JSON.stringify(gameCategories(s.gameCategories))
     );
   });
 
@@ -482,7 +555,7 @@ export class AdminMinigames {
   }
 
   // ---------- Bảng xếp hạng ----------
-  readonly lbGames = ['merge', 'crush', 'jp-type', 'ninja', 'shmup'];
+  readonly lbGames = ['piano', 'merge', 'crush', 'jp-type', 'ninja', 'shmup'];
   readonly lb = signal<Record<string, { name: string; score: number; at: number }[]>>({});
   readonly lbErr = signal<Record<string, string>>({});
   readonly lbBusy = signal(false);
@@ -573,6 +646,7 @@ export class AdminMinigames {
     this.dailyFree.set(s.minigameDailyFree ?? 0);
     this.roll.set(s.minigameRoll);
     this.params.set(structuredClone(s.gameParams ?? {}));
+    this.cats.set(structuredClone(gameCategories(s.gameCategories)));
   }
 
   async save(): Promise<void> {
@@ -586,7 +660,8 @@ export class AdminMinigames {
       notice: (g.notice ?? '').trim(),
     }));
     const daily = Math.max(0, Math.round(this.dailyFree() || 0));
-    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll(), gameParams: this.params() };
+    const next = { ...this.settingsSvc.settings(), minigames: clean, minigameComingSoon: this.comingSoon(), minigameDailyFree: daily, minigameRoll: this.roll(), gameParams: this.params(),
+      gameCategories: this.cats().map((c) => ({ ...c, name: c.name.trim(), icon: c.icon.trim() || '🎮', line: c.line.trim() })).filter((c) => c.name) };
     if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu cài đặt minigame')) return;
     this.draft.set(normalizeGameSettings(clean));
     this.saving.set(true);

@@ -3,7 +3,7 @@
  * Bé nào nằm vượt vạch đỏ quá 2 giây là thua. Gộp 2 bé lớn nhất → nổ tung, ăn điểm thưởng.
  * Vật lý hình tròn tự viết (trọng lực + va chạm), không dùng thư viện ngoài.
  */
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 import { perf } from '../../core/perf';
 
 export const W = 600;
@@ -387,6 +387,7 @@ export class MergeGame {
 
   private gameOver(): void {
     this.state = 'over';
+    playBaka();
     const newBest = this.score > this.best;
     if (newBest) {
       this.best = this.score;

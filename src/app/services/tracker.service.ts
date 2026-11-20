@@ -36,20 +36,64 @@ export class TrackerService {
   private path = '';
   private firstRef = document.referrer;
 
+  /** Lần cuối khách thao tác (chuột, phím, chạm, cuộn). */
+  private lastInput = Date.now();
+  /** Số giây hoạt động thật trên trang hiện tại, chưa gửi. */
+  private activeSec = 0;
+
   start(): void {
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
       const path = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0] || '/';
       if (path === this.path) return;
+      this.flushTime(); // gửi nốt thời gian của trang cũ
       this.path = path;
+      this.lastInput = Date.now();
       if (!path.startsWith('/admin')) this.send('view');
     });
     setInterval(() => {
-      if (document.visibilityState === 'visible') this.send('ping');
+      if (document.visibilityState === 'visible') {
+        this.send('ping');
+        this.flushTime();
+      }
     }, PING_MS);
-    // Quay lại tab → báo online ngay.
+    // Quay lại tab → báo online ngay. Rời tab / đóng trang → gửi nốt thời gian.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') this.send('ping');
+      if (document.visibilityState === 'visible') {
+        this.lastInput = Date.now();
+        this.send('ping');
+      } else this.flushTime();
     });
+    addEventListener('pagehide', () => this.flushTime());
+
+    // Đếm thời gian hoạt động: mỗi giây, nếu tab đang hiện và khách vừa thao tác gần đây.
+    const mark = () => (this.lastInput = Date.now());
+    for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'scroll', 'touchstart']) {
+      addEventListener(ev, mark, { passive: true, capture: true });
+    }
+    setInterval(() => {
+      const idle = this.idleLimit();
+      if (!idle || document.visibilityState !== 'visible') return;
+      if (Date.now() - this.lastInput <= idle) this.activeSec++;
+    }, 1000);
+  }
+
+  /**
+   * Trang có đo thời gian và ngưỡng treo máy (ms): không thao tác lâu hơn ngưỡng thì không tính giờ.
+   * Minigame: 20 giây (đang chơi là phải bấm liên tục). Bài viết: 90 giây (đọc thì ít khi đụng chuột).
+   */
+  private idleLimit(): number {
+    if (/^\/mini-game\/[a-z0-9-]+$/.test(this.path)) return 20_000;
+    if (/^\/tin-tuc\/[^/]+$/.test(this.path)) return 90_000;
+    return 0;
+  }
+
+  /** Gửi số giây hoạt động thật đã gom được của trang hiện tại. */
+  private flushTime(): void {
+    const sec = this.activeSec;
+    this.activeSec = 0;
+    if (sec <= 0 || !this.idleLimit()) return;
+    const body = JSON.stringify({ t: 'time', vid: this.vid, sid: this.sid, path: this.path, sec });
+    fetch('/api/analytics', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => undefined);
   }
 
   private send(t: 'view' | 'ping'): void {

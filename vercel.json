@@ -17,6 +17,17 @@
     },
     {
       "source": "/((?!api(?:/|$)).*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|meta-externalagent|Twitterbot|Slackbot|Discordbot|TelegramBot|WhatsApp|LinkedInBot|Zalo|zalo|SkypeUriPreview|Pinterest|redditbot|Embedly|vkShare|KAKAOTALK).*"
+        }
+      ],
+      "destination": "/api?__path=og&p=/$1"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
   ],

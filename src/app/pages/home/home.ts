@@ -11,6 +11,7 @@ import { SettingsService } from '../../services/settings.service';
 import { DatePipe } from '@angular/common';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
+import { playBaka } from '../../shared/sfx';
 
 /** Các bé fumo luân phiên làm mascot ở phần đầu trang chủ (chế độ sáng). */
 const MASCOTS = [
@@ -106,6 +107,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
   }
 
+  /** Rê chuột vào mascot: Cirno (bé 1) nhún kèm tiếng "Baka!". */
+  mascotHover(): void {
+    if (this.mascotIndex() === 0) playBaka();
+  }
+
   /** Bấm vào mascot → đổi ngay sang bé khác (và tính lại giờ tự đổi). */
   pokeMascot(): void {
     clearInterval(this.mascotTimer);
@@ -172,10 +178,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
   }
 
+  /** Dải số liệu cuối trang chủ (số khách vui vẻ + năm kinh nghiệm chỉnh trong Cài đặt). */
   readonly stats = [
-    { label: 'Sản phẩm', target: () => this.service.shop().length, value: signal(0) },
-    { label: 'Danh mục', target: () => this.categorySvc.categories().length, value: signal(0) },
-    { label: 'Khách hàng vui vẻ', target: () => 1200, value: signal(0) },
+    { icon: '🧸', label: 'Sản phẩm', plus: false, target: () => this.service.shop().length, value: signal(0), show: () => true },
+    { icon: '🗂️', label: 'Danh mục', plus: false, target: () => this.categorySvc.categories().length, value: signal(0), show: () => true },
+    { icon: '💖', label: 'Khách hàng vui vẻ', plus: true, target: () => Math.max(0, this.settings().happyCustomers ?? 1200), value: signal(0), show: () => true },
+    { icon: '🏅', label: 'Năm kinh nghiệm', plus: true, target: () => Math.max(0, this.settings().yearsExperience ?? 3), value: signal(0), show: () => (this.settings().yearsExperience ?? 3) > 0 },
   ];
 
   ngAfterViewInit(): void {

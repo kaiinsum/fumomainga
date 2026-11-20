@@ -14,6 +14,13 @@ import { ProductCardComponent } from '../../components/product-card/product-card
 import { PriceTagComponent } from '../../shared/price-tag';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 
+/** Từ khoá trong 1 đoạn chữ (bỏ dấu, bỏ từ quá ngắn / quá chung). */
+const STOP = new Set(['fumo', 'plush', 'cho', 'cua', 'the', 'and', 'voi', 'mot', 'cac', 'nhung', 'size', 'cm', 'ban']);
+function keywords(text: string): Set<string> {
+  const norm = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  return new Set(norm.split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)));
+}
+
 @Component({
   selector: 'app-product-detail',
   imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent],
@@ -84,13 +91,37 @@ export class ProductDetailPage {
     const v = this.variants().find((x) => x.image === img);
     if (v) this.variantId.set(v.id);
   }
+  /**
+   * Gợi ý tối đa 5 sản phẩm liên quan — chấm điểm, không bó buộc cùng danh mục:
+   * trùng thẻ (tag) +3 mỗi thẻ · cùng danh mục +2 · trùng từ khoá trong tên/mô tả +1 mỗi từ · còn hàng / nổi bật cộng nhẹ.
+   */
   readonly related = computed(() => {
     const p = this.product();
     if (!p) return [];
-    return this.service
+    const words = keywords(p.name + ' ' + p.tags.join(' '));
+    const tags = new Set(p.tags.map((t) => t.toLowerCase()));
+    const scored = this.service
       .shop()
-      .filter((x) => x.id !== p.id && (x.category === p.category || x.tags.some((t) => p.tags.includes(t))))
-      .slice(0, 4);
+      .filter((x) => x.id !== p.id)
+      .map((x) => {
+        let score = 0;
+        for (const t of x.tags) if (tags.has(t.toLowerCase())) score += 3;
+        if (x.category === p.category) score += 2;
+        const xw = keywords(x.name + ' ' + x.tags.join(' ') + ' ' + x.description.slice(0, 200));
+        for (const w of words) if (xw.has(w)) score += 1;
+        if (score > 0) score += (x.inStock ? 0.5 : 0) + (x.featured ? 0.3 : 0);
+        return { x, score };
+      })
+      .sort((a, b) => b.score - a.score || b.x.createdAt - a.x.createdAt);
+    const picks = scored.filter((s) => s.score > 0).slice(0, 5).map((s) => s.x);
+    // Ít quá → thêm vài bé nổi bật / còn hàng cho đủ 5.
+    if (picks.length < 5) {
+      for (const s of scored) {
+        if (picks.length >= 5) break;
+        if (!picks.includes(s.x) && s.x.inStock) picks.push(s.x);
+      }
+    }
+    return picks;
   });
 
   constructor() {

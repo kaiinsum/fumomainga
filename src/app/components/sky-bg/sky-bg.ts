@@ -1,3 +1,4 @@
+import { guideStage } from '../guide/guide.service';
 import { Component, DestroyRef, ElementRef, NgZone, afterNextRender, effect, inject, input } from '@angular/core';
 import { Theme } from '../../services/theme.service';
 import { perf } from '../../core/perf';
@@ -392,8 +393,8 @@ export class SkyBackgroundComponent {
   private drawSprites(): void {
     const { ctx } = this;
     const small = this.w < 700;
-    for (const sp of this.sprites) {
-      if (!sp.img) continue;
+    this.sprites.forEach((sp, i) => {
+      if (!sp.img) return;
       const h = Math.min(sp.maxH * (small ? 0.6 : 1), this.h * sp.fh * (small ? 0.7 : 1));
       const w = (h * sp.img.width) / sp.img.height;
       // Nhún nhẹ lên xuống; khi cuộn thì phồng to một chút.
@@ -402,6 +403,11 @@ export class SkyBackgroundComponent {
       const cx = this.w * sp.fx;
       const cy = this.h * sp.fy + bob;
       sp.box = { x: cx - w / 2, y: cy - h / 2, w, h };
+      // Nhân vật chính (Cirno / Reimu) là người hướng dẫn: báo vị trí, và tạm ẩn khi đang "bay ra" phía trước.
+      if (i === 0) {
+        guideStage.box = sp.box;
+        if (guideStage.out) return;
+      }
       ctx.save();
       ctx.globalAlpha = SPRITE_ALPHA[this.theme()] * (small ? 0.75 : 1);
       ctx.translate(cx, cy);
@@ -409,7 +415,7 @@ export class SkyBackgroundComponent {
       ctx.scale(scale, scale);
       ctx.drawImage(sp.img, -w / 2, -h / 2, w, h);
       ctx.restore();
-    }
+    });
   }
 
   private drawSparks(): void {

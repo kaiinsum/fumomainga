@@ -12,10 +12,11 @@ import { SeasonService } from '../services/season.service';
 import { AnnounceToastComponent } from '../components/announce-toast/announce-toast';
 import { AnnounceModalComponent } from '../components/announce-toast/announce-modal';
 import { CursorFxComponent } from '../components/cursor-fx/cursor-fx';
+import { GuideComponent } from '../components/guide/guide';
 
 @Component({
   selector: 'app-public-layout',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent, AnnounceToastComponent, AnnounceModalComponent, CursorFxComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, SkyBackgroundComponent, FloatBubblesComponent, SeasonFxComponent, SeasonPopupComponent, AnnounceToastComponent, AnnounceModalComponent, CursorFxComponent, GuideComponent],
   // Chế độ tối chỉ áp dụng cho trang công khai (trang admin giữ giao diện sáng).
   host: { '[class.dark]': 'theme.theme() === "dark"' },
   template: `
@@ -30,6 +31,7 @@ import { CursorFxComponent } from '../components/cursor-fx/cursor-fx';
     <app-season-popup />
     <app-announce-toast />
     <app-announce-modal />
+    <app-guide />
     <app-cursor-fx [dark]="theme.theme() === 'dark'" />
   `,
   styles: `

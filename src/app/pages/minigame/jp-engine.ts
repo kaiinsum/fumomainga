@@ -3,7 +3,7 @@
  * để tiêu diệt. Chạm đất 3 lần là thua. Có fumo đặc biệt (hồi tim, bom, đóng băng) và boss định kỳ:
  * boss tung chiêu mang chữ, gõ đúng chữ đó để ném ngược chiêu về boss. Chơi vô hạn tới khi thua.
  */
-import { sfx } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
 import { JpLevel, JpWord, WORDS, isMatch, isPrefix } from './jp-words';
 
 export const W = 900;
@@ -578,6 +578,7 @@ export class JpTypingGame {
   }
 
   private gameOver(): void {
+    playBaka();
     const key = `fumo.jptype.best.${this.level}`;
     const prev = JpTypingGame.best(this.level);
     const newBest = this.score > prev;
