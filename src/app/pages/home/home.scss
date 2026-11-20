@@ -45,6 +45,8 @@ h1 {
 }
 
 .mascot {
+  /* Cho phép vuốt ngang trên điện thoại (để "chém" mascot) mà vẫn cuộn dọc được. */
+  touch-action: pan-y;
   display: grid;
   place-items: center;
   opacity: 0;

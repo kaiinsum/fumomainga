@@ -81,6 +81,11 @@ export interface GuideSettings {
   hubWelcome: string;
   /** Câu giới thiệu khi người hướng dẫn vừa dẫn khách sang trang Mini game (hiện to ở giữa rồi thu về góc). */
   hubIntro: string;
+  /** Lướt qua lướt lại mascot trang chủ → fumo bị chém đôi, người hướng dẫn mời chơi Fumo Ninja. */
+  slashEnabled: boolean;
+  slashAsk: string;
+  /** Fumo Ninja hôm nay cần code → câu nói khi dẫn khách tới ô nhập code. */
+  slashCode: string;
   /** Câu nói riêng khi rê chuột vào từng game (id game → câu). Trống = câu của phân loại. */
   gameLines: Record<string, string>;
 }
@@ -101,6 +106,9 @@ export const DEFAULT_GUIDE: GuideSettings = {
   noReply: 'Vậy bạn cứ tiếp tục tìm hiểu về sản phẩm bên mình nha.',
   hubWelcome: 'Chào mừng đến với minigame! Rê chuột vào trò nào để mình giới thiệu nha~',
   hubIntro: 'Đây là trang minigame nè! Ở đây có đủ trò chill, trò đấu trí, trò chiến thuật — chơi xong còn được lên bảng xếp hạng nữa đó~',
+  slashEnabled: true,
+  slashAsk: 'Bạn chơi khá đấy! Muốn thử trò Fumo Ninja không?',
+  slashCode: 'Hôm nay Fumo Ninja cần code mới chơi được — nhập code ở đây nha!',
   gameLines: {},
 };
 

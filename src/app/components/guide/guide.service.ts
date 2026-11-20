@@ -3,6 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { gameCategories, resolveGames } from '../../models/minigames';
 import { guideOf } from '../../models/site-settings';
+import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
 
@@ -44,7 +45,8 @@ const session = () => safe(() => sessionStorage);
 
 /** Các bước hội thoại. */
 /** fly: đang bay 1 vòng dẫn đường · intro: vừa tới trang Mini game, đứng giữa màn hình giới thiệu. */
-export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'fly' | 'intro' | 'hub';
+/** slash: khách vừa chém đôi mascot trang chủ → mời chơi Fumo Ninja. */
+export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'fly' | 'intro' | 'hub' | 'slash';
 
 /**
  * Người hướng dẫn: Cirno (sáng) / Reimu (tối).
@@ -57,6 +59,9 @@ export class GuideService {
   private readonly settings = inject(SettingsService).settings;
   private readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly access = inject(MinigameAccessService);
+  /** Câu sẽ nói khi tới trang Mini game (vd. nhắc nhập code). */
+  private pendingHubLine = '';
 
   readonly cfg = computed(() => guideOf(this.settings()));
   readonly dark = computed(() => this.theme.theme() === 'dark');
@@ -93,6 +98,16 @@ export class GuideService {
       return;
     }
     if (this.step() === 'fly' || this.step() === 'intro') return;
+    if (onHub && this.pendingHubLine) {
+      this.hubLine.set(this.pendingHubLine);
+      this.pendingHubLine = '';
+      this.step.set('hub');
+      return;
+    }
+    if (this.step() === 'slash' && !onHub) {
+      this.step.set('hidden');
+      return;
+    }
     if (onHub && this.cfg().enabled && ls.get(HUB_HIDE_KEY, session()) !== '1') {
       this.hubLine.set(this.cfg().hubWelcome);
       this.step.set('hub');
@@ -160,6 +175,33 @@ export class GuideService {
     const cats = gameCategories(s.gameCategories);
     const cat = game?.cats.map((cid) => cats.find((x) => x.id === cid)).find((x) => x?.line);
     this.hubLine.set(cat?.line || `${game?.title ?? 'Trò này'} vui lắm đó, chơi thử nha!`);
+  }
+
+  /** Fumo Ninja đang mở (không bị admin khoá / ẩn)? */
+  ninjaOpen(): boolean {
+    return resolveGames(this.settings().minigames).find((g) => g.id === 'ninja')?.status === 'open';
+  }
+
+  /** Khách vừa chém đôi mascot trang chủ → mời chơi Fumo Ninja (chỉ khi game đang mở). */
+  offerNinja(): boolean {
+    const c = this.cfg();
+    if (!c.enabled || !c.slashEnabled || !this.ninjaOpen()) return false;
+    if (this.step() !== 'hidden' && this.step() !== 'no' && this.step() !== 'ask') return false;
+    this.step.set('slash');
+    return true;
+  }
+
+  /** Trả lời lời mời Fumo Ninja: chơi được ngay → vào game; hôm nay cần code → tới ô nhập code ở trang Mini game. */
+  answerNinja(yes: boolean): void {
+    if (!yes) return this.step.set('hidden');
+    if (this.access.canPlay('ninja')) {
+      this.step.set('hidden');
+      void this.router.navigateByUrl('/mini-game/fumo-ninja');
+      return;
+    }
+    this.pendingHubLine = this.cfg().slashCode;
+    this.step.set('hidden');
+    void this.router.navigate(['/mini-game'], { queryParams: { code: 'ninja' } });
   }
 
   /** Admin xem thử. */

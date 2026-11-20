@@ -96,6 +96,23 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
         </section>
 
         <section class="adm-box">
+          <h2>🗡️ Chém đôi mascot trang chủ</h2>
+          <div class="box-body">
+            <label class="switch"><input type="checkbox" [ngModel]="d().slashEnabled" (ngModelChange)="set('slashEnabled', $event)" /><span class="track"></span>
+              Lướt chuột / vuốt qua lại mascot nhiều lần → bé fumo bị chém đôi, người hướng dẫn mời chơi <b>Fumo Ninja</b></label>
+            <div class="field">
+              <label for="slashAsk">Câu mời</label>
+              <input id="slashAsk" maxlength="160" [placeholder]="def.slashAsk" [ngModel]="d().slashAsk" (ngModelChange)="set('slashAsk', $event)" />
+            </div>
+            <div class="field">
+              <label for="slashCode">Khi Fumo Ninja hôm nay cần code (dẫn tới ô nhập code)</label>
+              <input id="slashCode" maxlength="160" [placeholder]="def.slashCode" [ngModel]="d().slashCode" (ngModelChange)="set('slashCode', $event)" />
+            </div>
+            <p class="hint">Chỉ mời khi Fumo Ninja đang <b>mở</b>. Game bị khoá / ẩn thì chỉ có hiệu ứng chém, không mời.</p>
+          </div>
+        </section>
+
+        <section class="adm-box">
           <h2>🎮 Ở trang Mini game</h2>
           <div class="box-body">
             <div class="field">
@@ -200,7 +217,7 @@ export class AdminGuideSettings {
   async save(): Promise<void> {
     const g = this.d();
     const clean: GuideSettings = { ...g };
-    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'hubIntro', 'lightName', 'darkName'] as const) {
+    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'hubIntro', 'slashAsk', 'slashCode', 'lightName', 'darkName'] as const) {
       clean[k] = (g[k] || '').trim() || DEFAULT_GUIDE[k];
     }
     clean.delaySec = Math.max(10, Math.min(1800, Math.round(g.delaySec || 90)));

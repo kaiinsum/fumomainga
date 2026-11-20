@@ -32,6 +32,12 @@ import { GuideService, guideStage } from './guide.service';
             @case ('no') {
               <div class="acts"><button class="b no" type="button" (click)="close()">Ừm!</button></div>
             }
+            @case ('slash') {
+              <div class="acts">
+                <button class="b yes" type="button" (click)="guide.answerNinja(true)">🗡️ Chơi luôn!</button>
+                <button class="b no" type="button" (click)="guide.answerNinja(false)">Để sau</button>
+              </div>
+            }
             @case ('intro') {
               <div class="acts"><button class="b yes" type="button" (click)="toCorner()">Bắt đầu chọn game ›</button></div>
             }
@@ -115,6 +121,8 @@ export class GuideComponent {
         return this.guide.hubLine() || c.hubWelcome;
       case 'intro':
         return c.hubIntro;
+      case 'slash':
+        return c.slashAsk;
       default:
         return '';
     }

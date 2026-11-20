@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div class="mascot">
+    <div class="mascot" (pointerenter)="swipeStart($event)" (pointermove)="swipeMove($event)">
       @if (isDark()) {
         <!-- Khung neon kiểu màn hình máy tính: viền sáng chạy quanh, bé fumo luân phiên bật ra. -->
         <div class="neon-card" (click)="pokeMascot()" (mouseenter)="mascotHover()" title="Bấm để đổi bé fumo">

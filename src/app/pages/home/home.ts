@@ -11,7 +11,8 @@ import { SettingsService } from '../../services/settings.service';
 import { DatePipe } from '@angular/common';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
-import { playBaka } from '../../shared/sfx';
+import { playBaka, sfx } from '../../shared/sfx';
+import { GuideService } from '../../components/guide/guide.service';
 
 /** Các bé fumo luân phiên làm mascot ở phần đầu trang chủ (chế độ sáng). */
 const MASCOTS = [
@@ -94,6 +95,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
   readonly mascotCount = MASCOTS.length;
   private mascotTimer?: ReturnType<typeof setInterval>;
   private swapping = false;
+  private readonly guide = inject(GuideService);
+  /** Lướt qua lại trên mascot: đếm số lần đổi chiều (mỗi nhát đủ dài) trong ~2.5 giây. */
+  private swipe = { x: 0, dir: 0, dist: 0, flips: [] as number[] };
+  private slicedAt = 0;
 
 
   constructor() {
@@ -105,6 +110,117 @@ export class HomePage implements AfterViewInit, OnDestroy {
     // Tải trước cả 4 ảnh để lúc đổi không bị nháy trống.
     for (const m of MASCOTS) new Image().src = m.src;
     this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
+  }
+
+  swipeStart(e: PointerEvent): void {
+    this.swipe = { x: e.clientX, dir: 0, dist: 0, flips: this.swipe.flips };
+  }
+
+  /** Lướt chuột / vuốt qua lại nhanh nhiều lần trên mascot → chém đôi bé fumo. */
+  swipeMove(e: PointerEvent): void {
+    const s = this.swipe;
+    const dx = e.clientX - s.x;
+    s.x = e.clientX;
+    if (Math.abs(dx) < 1) return;
+    const d = Math.sign(dx);
+    if (d === s.dir || s.dir === 0) {
+      s.dir = d;
+      s.dist += Math.abs(dx);
+      return;
+    }
+    // Đổi chiều: tính là 1 nhát nếu nhát vừa rồi đủ dài.
+    const now = performance.now();
+    if (s.dist >= 45) s.flips = [...s.flips.filter((t) => now - t < 2500), now];
+    s.dir = d;
+    s.dist = Math.abs(dx);
+    if (s.flips.length >= 6) {
+      s.flips = [];
+      this.sliceMascot();
+    }
+  }
+
+  /** Bé fumo bị chém làm đôi (2 nửa văng ra), lát sau lành lại; người hướng dẫn hiện ra mời chơi Fumo Ninja. */
+  private sliceMascot(): void {
+    const now = Date.now();
+    if (now - this.slicedAt < 8000 || this.swapping) return;
+    const pop = this.host.querySelector<HTMLElement>('.mascot-pop');
+    const img = pop?.querySelector<HTMLImageElement>('img');
+    if (!pop || !img) return;
+    this.slicedAt = now;
+    this.swapping = true;
+    clearInterval(this.mascotTimer);
+    sfx.play('slice');
+    const r = img.getBoundingClientRect();
+    const layer = document.createElement('div');
+    layer.setAttribute('aria-hidden', 'true');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:980;overflow:hidden';
+    document.body.appendChild(layer);
+    // Đường chém chéo hơi lệch ngẫu nhiên.
+    const a = 35 + Math.random() * 30;
+    const b = 35 + Math.random() * 30;
+    const half = (clip: string) => {
+      const h = document.createElement('img');
+      h.src = img.currentSrc || img.src;
+      h.alt = '';
+      h.style.cssText = `position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;clip-path:${clip};will-change:transform;filter:drop-shadow(0 8px 14px rgba(0,0,0,.25))`;
+      layer.appendChild(h);
+      return h;
+    };
+    const top = half(`polygon(0 0, 100% 0, 100% ${b}%, 0 ${a}%)`);
+    const bottom = half(`polygon(0 ${a}%, 100% ${b}%, 100% 100%, 0 100%)`);
+    pop.style.visibility = 'hidden';
+    // Vệt chém sáng
+    const slash = document.createElement('div');
+    const cy = r.top + (r.height * (a + b)) / 200;
+    const ang = (Math.atan2(((b - a) / 100) * r.height, r.width) * 180) / Math.PI;
+    slash.style.cssText = `position:absolute;left:${r.left - r.width * 0.25}px;top:${cy - 3}px;width:${r.width * 1.5}px;height:6px;border-radius:6px;
+      background:linear-gradient(90deg,transparent,#fff 30%,#bfe9ff 70%,transparent);box-shadow:0 0 18px #9be7ff,0 0 6px #fff;transform-origin:50% 50%;transform:rotate(${ang}deg) scaleX(0)`;
+    layer.appendChild(slash);
+    slash.animate(
+      [
+        { transform: `rotate(${ang}deg) scaleX(0)`, opacity: 1 },
+        { transform: `rotate(${ang}deg) scaleX(1)`, opacity: 1, offset: 0.4 },
+        { transform: `rotate(${ang}deg) scaleX(1.1)`, opacity: 0 },
+      ],
+      { duration: 380, easing: 'ease-out', fill: 'forwards' },
+    );
+    const ease = 'cubic-bezier(.2,.7,.3,1)';
+    top.animate(
+      [
+        { transform: 'none' },
+        { transform: 'translate(6px,-4px) rotate(-2deg)', offset: 0.18 },
+        { transform: `translate(${r.width * 0.28}px, ${-r.height * 0.22}px) rotate(-16deg)`, opacity: 1, offset: 0.75 },
+        { transform: `translate(${r.width * 0.34}px, ${-r.height * 0.18}px) rotate(-20deg)`, opacity: 0 },
+      ],
+      { duration: 1300, delay: 120, easing: ease, fill: 'forwards' },
+    );
+    bottom.animate(
+      [
+        { transform: 'none' },
+        { transform: 'translate(-6px,4px) rotate(2deg)', offset: 0.18 },
+        { transform: `translate(${-r.width * 0.2}px, ${r.height * 0.3}px) rotate(12deg)`, opacity: 1, offset: 0.75 },
+        { transform: `translate(${-r.width * 0.24}px, ${r.height * 0.42}px) rotate(16deg)`, opacity: 0 },
+      ],
+      { duration: 1300, delay: 120, easing: ease, fill: 'forwards' },
+    );
+    // Người hướng dẫn hiện ra mời chơi Fumo Ninja.
+    setTimeout(() => this.guide.offerNinja(), 650);
+    // Lành lại: bé fumo bật ra như mới.
+    setTimeout(() => {
+      layer.remove();
+      pop.style.visibility = '';
+      animate(pop, {
+        scale: [0, 1],
+        rotate: [-20, 0],
+        opacity: [0, 1],
+        duration: 650,
+        ease: 'outElastic(1, .6)',
+        onComplete: () => {
+          this.swapping = false;
+          this.mascotTimer = setInterval(() => this.swapMascot(), MASCOT_INTERVAL);
+        },
+      });
+    }, 2200);
   }
 
   /** Rê chuột vào mascot: Cirno (bé 1) nhún kèm tiếng "Baka!". */
