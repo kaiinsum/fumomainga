@@ -78,8 +78,8 @@ interface Draft {
       @if (view() === 'orders') {
       <nav class="adm-tabs">
         @for (t of tabs(); track t.key) {
-          <button type="button" [class.on]="tab() === t.key" (click)="tab.set(t.key)">
-            {{ t.label }} <span class="count">({{ t.count }})</span>
+          <button type="button" [class]="'st-tab st-' + t.key" [class.on]="tab() === t.key" (click)="tab.set(t.key)">
+            <i class="dot" aria-hidden="true"></i>{{ t.label }} <span class="count">({{ t.count }})</span>
           </button>
         }
       </nav>
@@ -194,7 +194,7 @@ interface Draft {
             </thead>
             <tbody>
               @for (o of rows(); track o.code) {
-                <tr>
+                <tr [class]="'row-st st-' + o.status">
                   <td>
                     <b class="mono">{{ o.code }}</b>
                     @if (o.status === 'pending' && o.paidClaimAt) {
@@ -211,7 +211,7 @@ interface Draft {
                     <div class="sub">{{ o.items.length }} sản phẩm</div>
                   </td>
                   <td>
-                    <select class="status-select" [ngModel]="o.status" (ngModelChange)="quickStatus(o, $event)" [attr.aria-label]="'Trạng thái đơn ' + o.code">
+                    <select [class]="'status-select st-' + o.status" [ngModel]="o.status" (ngModelChange)="quickStatus(o, $event)" [attr.aria-label]="'Trạng thái đơn ' + o.code">
                       @for (s of statuses; track s) { <option [value]="s">{{ label[s] }}</option> }
                     </select>
                   </td>
@@ -241,7 +241,22 @@ interface Draft {
     .mono { font-family: ui-monospace, Consolas, monospace; letter-spacing: .04em; }
     .sub { font-size: .8rem; color: #646970; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .flag { display: inline-block; margin-top: 4px; font-size: .72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--primary-100); color: var(--primary-ink); }
-    .status-select { font: inherit; font-size: .85rem; padding: 5px 8px; border: 1px solid #c3c4c7; border-radius: 8px; background: #fff; }
+    .status-select { font: inherit; font-size: .85rem; font-weight: 700; padding: 5px 8px; border: 1.5px solid var(--sc, #c3c4c7); border-radius: 999px;
+      background: var(--sb, #fff); color: var(--sc, inherit); cursor: pointer; }
+    .status-select option { background: #fff; color: #1d2327; font-weight: 400; }
+    /* Màu theo trạng thái đơn: chờ = vàng · đã xác nhận TT = xanh dương · đang giao = tím · hoàn thành = xanh lá · huỷ = đỏ */
+    .st-pending { --sc: #996800; --sb: #fcf3d6; }
+    .st-paid { --sc: #135e96; --sb: #e5f1fa; }
+    .st-shipping { --sc: #6b3fa0; --sb: #f1eafb; }
+    .st-done { --sc: #00731d; --sb: #e6f6ea; }
+    .st-cancelled { --sc: #b32d2e; --sb: #fcecec; }
+    .st-all { --sc: #2271b1; --sb: #fff; }
+    tr.row-st > td:first-child { box-shadow: inset 4px 0 0 var(--sc); }
+    tr.row-st.st-cancelled > td { opacity: .72; }
+    tr.row-st.st-cancelled .status-select { opacity: 1; }
+    .st-tab .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--sc); margin-right: 6px; vertical-align: 1px; }
+    .st-tab.st-all .dot { display: none; }
+    .st-tab.on { background: var(--sb) !important; color: var(--sc) !important; border-color: var(--sc) !important; box-shadow: inset 0 -3px 0 var(--sc); }
     .row-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
     .mini { font: inherit; font-size: .8rem; padding: 4px 10px; border: 1px solid #c3c4c7; border-radius: 6px; background: #fff; cursor: pointer; }
     .mini:hover { border-color: var(--primary); color: var(--primary-dark); }
