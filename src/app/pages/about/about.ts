@@ -4,6 +4,7 @@ import { JSAnimation, animate, stagger } from 'animejs';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
+import { IconComponent } from '../../shared/icon';
 
 /** Ảnh nhân vật hai bên phần Hành trình — cùng bộ ảnh nền của từng giao diện. */
 const FIGURES = {
@@ -13,7 +14,7 @@ const FIGURES = {
 
 @Component({
   selector: 'app-about',
-  imports: [RouterLink, AnimateInDirective],
+  imports: [RouterLink, AnimateInDirective, IconComponent],
   host: { '[class.dark]': "theme() === 'dark'", '[class.played]': 'played()' },
   template: `
     <section class="hero">
@@ -30,7 +31,7 @@ const FIGURES = {
       <div class="container values">
         @for (v of s().aboutValues; track $index; let i = $index) {
           <div class="value card-surface" appAnimateIn [animDelay]="i * 120">
-            <span class="icon">{{ v.icon }}</span>
+            <span class="icon"><app-icon [icon]="v.icon" /></span>
             <h3>{{ v.title }}</h3>
             <p>{{ v.text }}</p>
           </div>

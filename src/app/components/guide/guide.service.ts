@@ -3,6 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { gameCategories, resolveGames } from '../../models/minigames';
 import { guideOf } from '../../models/site-settings';
+import { perf } from '../../core/perf';
 import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
@@ -17,6 +18,7 @@ const SNOOZE_KEY = 'fumo.guide.snoozeUntil';
 const ELAPSED_KEY = 'fumo.guide.elapsed';
 const ASKED_KEY = 'fumo.guide.asked';
 const HUB_HIDE_KEY = 'fumo.guide.hubHidden';
+const PERF_ASKED_KEY = 'fumo.guide.perfAsked';
 
 const ls = {
   get(k: string, s: Storage | null = safe(() => localStorage)): string | null {
@@ -46,7 +48,8 @@ const session = () => safe(() => sessionStorage);
 /** Các bước hội thoại. */
 /** fly: đang bay 1 vòng dẫn đường · intro: vừa tới trang Mini game, đứng giữa màn hình giới thiệu. */
 /** slash: khách vừa chém đôi mascot trang chủ → mời chơi Fumo Ninja. */
-export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'fly' | 'intro' | 'hub' | 'slash';
+/** perf: hỏi bật cấu hình cao · perfOff: hỏi lại trước khi tắt · menu: được gọi ra bằng nút triệu hồi · say: nói 1 câu rồi tự ẩn. */
+export type GuideStep = 'hidden' | 'ask' | 'yes' | 'no' | 'fly' | 'intro' | 'hub' | 'slash' | 'perf' | 'perfOff' | 'menu' | 'say';
 
 /**
  * Người hướng dẫn: Cirno (sáng) / Reimu (tối).
@@ -71,6 +74,12 @@ export class GuideService {
   readonly step = signal<GuideStep>('hidden');
   /** Câu đang nói ở trang Mini game (đổi khi rê chuột vào game). */
   readonly hubLine = signal('');
+  /** Câu đang nói ở bước 'say'. */
+  readonly sayText = signal('');
+  /** Đang chạy chế độ nhẹ? (cập nhật khi đổi) */
+  readonly lite = signal(perf.lite);
+  /** Đường dẫn hiện tại (để ẩn nút triệu hồi trong màn chơi game). */
+  readonly route = signal('');
   private path = '';
   private timer?: ReturnType<typeof setInterval>;
   private started = false;
@@ -81,11 +90,19 @@ export class GuideService {
     if (this.started) return;
     this.started = true;
     this.path = this.router.url.split(/[?#]/)[0];
+    this.route.set(this.path);
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
       this.path = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
+      this.route.set(this.path);
       this.onRoute();
     });
     this.onRoute();
+    // Máy yếu (đang ở chế độ nhẹ do web tự đoán / tự đo) → hỏi có muốn bật cấu hình cao không.
+    perf.onChange((lite) => {
+      this.lite.set(lite);
+      if (lite) setTimeout(() => this.askPerf(), 1200);
+    });
+    setTimeout(() => this.askPerf(), 3500);
     // Đếm thời gian lướt web (chỉ khi tab đang hiện), lưu theo phiên để tải lại trang vẫn tính tiếp.
     this.timer = setInterval(() => this.tick(), 1000);
   }
@@ -175,6 +192,52 @@ export class GuideService {
     const cats = gameCategories(s.gameCategories);
     const cat = game?.cats.map((cid) => cats.find((x) => x.id === cid)).find((x) => x?.line);
     this.hubLine.set(cat?.line || `${game?.title ?? 'Trò này'} vui lắm đó, chơi thử nha!`);
+  }
+
+  /** Hỏi bật cấu hình cao (1 lần, chỉ khi web tự chuyển chế độ nhẹ và khách chưa tự chọn). */
+  private askPerf(): void {
+    const c = this.cfg();
+    if (!c.enabled || !c.perfAskEnabled || !perf.lite || perf.forced()) return;
+    if (this.step() !== 'hidden' || this.path.startsWith('/admin') || /^\/mini-game\/./.test(this.path)) return;
+    if (ls.get(PERF_ASKED_KEY) === '1') return;
+    ls.set(PERF_ASKED_KEY, '1');
+    this.step.set('perf');
+  }
+
+  /** Trả lời "bật cấu hình cao?" — Không thì giữ chế độ nhẹ (và không hỏi lại). */
+  answerPerf(yes: boolean): void {
+    perf.set(yes ? 'full' : 'lite');
+    this.lite.set(perf.lite);
+    if (yes) this.say(this.cfg().perfOnReply);
+    else this.say('Ok, mình giữ chế độ nhẹ cho mượt nha. Muốn bật thì gọi mình ở nút bên trái!');
+  }
+
+  /** Trả lời "tắt cấu hình cao?" */
+  answerPerfOff(yes: boolean): void {
+    if (yes) {
+      perf.set('lite');
+      this.lite.set(true);
+      this.say(this.cfg().perfOffReply);
+    } else this.say('Ok, vẫn giữ hiệu ứng đầy đủ nha~');
+  }
+
+  /** Nói 1 câu rồi tự ẩn (component hẹn giờ). */
+  say(text: string): void {
+    this.sayText.set(text);
+    this.step.set('say');
+  }
+
+  /** Nút triệu hồi bên trái: gọi người hướng dẫn ra kèm các lựa chọn. */
+  summon(): void {
+    if (this.step() === 'fly' || this.step() === 'intro') return;
+    this.step.set('menu');
+  }
+
+  /** Lựa chọn trong menu triệu hồi. */
+  menuPick(what: 'play' | 'perf'): void {
+    if (what === 'perf') return this.step.set(perf.lite ? 'perf' : 'perfOff');
+    if (this.path === '/mini-game') return this.settle();
+    this.goPlay();
   }
 
   /** Fumo Ninja đang mở (không bị admin khoá / ẩn)? */

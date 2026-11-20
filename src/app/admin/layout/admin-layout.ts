@@ -10,6 +10,7 @@ import { AdminToastService } from '../toast.service';
 import { AdminInboxService } from '../inbox.service';
 import { AdminBellComponent } from './admin-bell';
 import { AdminSearchComponent } from './admin-search';
+import { IconComponent } from '../../shared/icon';
 
 interface MenuItem {
   icon: string;
@@ -23,7 +24,7 @@ interface MenuItem {
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AdminBellComponent, AdminSearchComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AdminBellComponent, AdminSearchComponent, IconComponent],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss',
 })

@@ -1,9 +1,11 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { SEASON_ART } from '../../models/seasons';
 import { SeasonService } from '../../services/season.service';
+import { IconComponent } from '../../shared/icon';
 
 /** Thiệp chào theo chủ đề: hiện lần đầu vào web, nền phía sau làm mờ. Mở lại bằng nút ở chân trang. */
 @Component({
+  imports: [IconComponent],
   selector: 'app-season-popup',
   template: `
     @if (svc.popupOpen() && svc.active(); as s) {
@@ -12,9 +14,9 @@ import { SeasonService } from '../../services/season.service';
           [style.--c1]="s.colors[0]" [style.--c2]="s.colors[1]">
           <button type="button" class="x" (click)="close()" aria-label="Đóng">✕</button>
           <div class="art" aria-hidden="true">
-            @if (s.art) { <img [src]="art[s.art]" alt="" /> } @else { <span>{{ s.icon }}</span> }
+            @if (s.art) { <img [src]="art[s.art]" alt="" /> } @else { <span><app-icon [icon]="s.icon" /></span> }
           </div>
-          <span class="chip">{{ s.icon }} {{ s.name }} · {{ dates() }}</span>
+          <span class="chip"><app-icon [icon]="s.icon" /> {{ s.name }} · {{ dates() }}</span>
           <h2>{{ s.title }}</h2>
           <p>{{ s.message }}</p>
           <label class="hide">
@@ -22,7 +24,7 @@ import { SeasonService } from '../../services/season.service';
             Không hiện lại lần sau
           </label>
           <button type="button" class="btn primary go" (click)="close()">Vào shop thôi ✨</button>
-          <small class="hint">Muốn xem lại? Kéo xuống cuối trang, bấm nút "{{ s.icon }} Xem lại lời chúc".</small>
+          <small class="hint">Muốn xem lại? Kéo xuống cuối trang, bấm nút "<app-icon [icon]="s.icon" /> Xem lại lời chúc".</small>
         </div>
       </div>
     }

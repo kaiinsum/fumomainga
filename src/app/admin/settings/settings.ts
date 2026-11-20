@@ -14,6 +14,7 @@ import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
 import { AdminLoginsComponent } from './admin-logins';
 import { AdminSecurityComponent } from './admin-security';
+import { IconComponent, IconPickerComponent } from '../../shared/icon';
 
 type TabKey = 'chung' | 'trang-chu' | 'gioi-thieu' | 'lien-he' | 'chinh-sach' | 'thong-bao' | 'bao-mat' | 'sao-luu';
 
@@ -23,7 +24,7 @@ const BG_PRESETS = ['#F5FAFF', '#EAF5FF', '#FFFFFF', '#60B5FF'];
 
 @Component({
   selector: 'app-admin-settings',
-  imports: [FormsModule, AdminLoginsComponent, AdminSecurityComponent],
+  imports: [FormsModule, AdminLoginsComponent, AdminSecurityComponent, IconComponent, IconPickerComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

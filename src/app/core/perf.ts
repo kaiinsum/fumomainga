@@ -40,6 +40,21 @@ const listeners = new Set<Listener>();
 
 export const perf = {
   lite: false,
+  /** Khách đã tự chọn chế độ (không còn tự đoán / tự đo). */
+  forced(): 'lite' | 'full' | null {
+    return forced();
+  },
+  /** Khách chọn: 'full' = cấu hình cao (hiệu ứng đầy đủ), 'lite' = chế độ nhẹ. Áp dụng ngay, nhớ cho lần sau. */
+  set(mode: 'lite' | 'full'): void {
+    try {
+      localStorage.setItem(KEY, mode);
+    } catch {
+      /* bỏ qua */
+    }
+    setLite(mode === 'lite');
+    // Nền động / hiệu ứng canvas tính lại số hạt & độ nét theo chế độ mới.
+    dispatchEvent(new Event('resize'));
+  },
   /** Đăng ký nhận thay đổi chế độ (vd. đo được máy giật). Trả về hàm huỷ. */
   onChange(fn: Listener): () => void {
     listeners.add(fn);

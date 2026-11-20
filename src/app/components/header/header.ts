@@ -6,6 +6,7 @@ import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
 import { CartService } from '../../services/cart.service';
 import { NotifyBellComponent } from '../notify-bell/notify-bell';
+import { IconComponent } from '../../shared/icon';
 
 interface NavItem {
   label: string;
@@ -17,7 +18,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, NotifyBellComponent],
+  imports: [RouterLink, RouterLinkActive, NotifyBellComponent, IconComponent],
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })

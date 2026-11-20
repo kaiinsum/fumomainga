@@ -91,7 +91,7 @@
           (blur)="stopPeek()"
         >
           <span class="cat-main">
-            <span class="icon">{{ c.icon }}</span>
+            <span class="icon"><app-icon [icon]="c.icon" /></span>
             <strong>{{ c.name }}</strong>
             <small>{{ c.count }} sản phẩm</small>
           </span>
@@ -110,7 +110,7 @@
               @let front = c.picks[peekIdx() % c.picks.length];
               <span class="peek-label">
                 <b>{{ front.name }}</b>
-                <small>{{ c.icon }} {{ c.name }} · {{ c.count }} sản phẩm</small>
+                <small><app-icon [icon]="c.icon" /> {{ c.name }} · {{ c.count }} sản phẩm</small>
               </span>
             </span>
           }

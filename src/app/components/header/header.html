@@ -1,7 +1,7 @@
 <header class="header" [class.scrolled]="scrolled()">
   <div class="container bar">
     <a routerLink="/" class="logo" (mouseenter)="wiggleLogo()">
-      <span class="logo-icon">{{ settings().logoEmoji }}</span>
+      <span class="logo-icon"><app-icon [icon]="settings().logoEmoji" /></span>
       <span>{{ settings().shopName }}</span>
     </a>
 

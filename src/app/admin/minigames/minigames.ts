@@ -7,6 +7,7 @@ import { SettingsService } from '../../services/settings.service';
 import { guideOf } from '../../models/site-settings';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminToastService } from '../toast.service';
+import { IconComponent, IconPickerComponent } from '../../shared/icon';
 
 const STATUS: { id: GameStatus; label: string; hint: string }[] = [
   { id: 'open', label: '🟢 Mở', hint: 'Khách chơi bình thường' },
@@ -17,7 +18,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
 /** Admin → Minigame: khoá / mở / ẩn, sắp xếp thứ tự và sửa nội dung thẻ của từng mini game. */
 @Component({
   selector: 'app-admin-minigames',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head">
       <h1>Minigame</h1>
@@ -77,7 +78,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
       <div class="box-body">
         @for (c of cats(); track c.id; let ci = $index) {
           <div class="cat-row">
-            <input class="c-ic" maxlength="4" [ngModel]="c.icon" (ngModelChange)="setCat(ci, 'icon', $event)" aria-label="Biểu tượng" />
+            <app-icon-picker class="c-ic" [ngModel]="c.icon" (ngModelChange)="setCat(ci, 'icon', $event)" />
             <input class="c-nm" maxlength="30" placeholder="Tên phân loại" [ngModel]="c.name" (ngModelChange)="setCat(ci, 'name', $event)" aria-label="Tên phân loại" />
             <input class="c-ln" maxlength="140" placeholder="Câu người hướng dẫn nói khi khách rê chuột vào game loại này" [ngModel]="c.line" (ngModelChange)="setCat(ci, 'line', $event)" aria-label="Câu người hướng dẫn" />
             <span class="c-count" title="Số game thuộc phân loại này">{{ catCount(c.id) }} game</span>
@@ -119,7 +120,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
               <span class="g-cats">
                 @for (c of cats(); track c.id) {
                   <label class="g-cat" [class.on]="(g.cats ?? []).includes(c.id)">
-                    <input type="checkbox" [checked]="(g.cats ?? []).includes(c.id)" (change)="toggleGameCat(i, c.id)" />{{ c.icon }} {{ c.name || '…' }}
+                    <input type="checkbox" [checked]="(g.cats ?? []).includes(c.id)" (change)="toggleGameCat(i, c.id)" /><app-icon [icon]="c.icon" /> {{ c.name || '…' }}
                   </label>
                 }
               </span>

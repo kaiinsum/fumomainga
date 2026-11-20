@@ -1,7 +1,7 @@
 <div class="adm-shell" [class.side-open]="sidebarOpen()">
   <header class="topbar">
     <button class="burger" type="button" (click)="toggleSidebar()" aria-label="Mở menu quản trị">☰</button>
-    <a routerLink="/admin" class="brand">{{ settings().logoEmoji }} <span class="brand-name">{{ settings().shopName }}</span> <small>Quản trị</small></a>
+    <a routerLink="/admin" class="brand"><app-icon [icon]="settings().logoEmoji" /> <span class="brand-name">{{ settings().shopName }}</span> <small>Quản trị</small></a>
     <div class="top-actions">
       <button
         type="button"

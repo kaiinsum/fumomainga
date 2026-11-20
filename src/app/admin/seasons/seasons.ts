@@ -5,13 +5,14 @@ import { EmojiPickerComponent } from '../../shared/emoji-picker';
 import { CustomSeason, SEASONS, SEASON_ART, SeasonDef, SeasonId, SeasonOverride, activeSeason, isCustomSeason, seasonByDate, seasonRange, seasonsOfYear, setCustomSeasons, splitGlyphs } from '../../models/seasons';
 import { SettingsService } from '../../services/settings.service';
 import { AdminToastService } from '../toast.service';
+import { IconComponent, IconPickerComponent } from '../../shared/icon';
 
 const DAY = 86_400_000;
 
 /** Admin → Chủ đề dịp lễ: bật 1 chủ đề / tự động theo lịch / tắt; xem lịch các dịp trong năm. */
 @Component({
   selector: 'app-admin-seasons',
-  imports: [FormsModule, NgTemplateOutlet, EmojiPickerComponent],
+  imports: [FormsModule, NgTemplateOutlet, EmojiPickerComponent, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head">
       <h1>Chủ đề dịp lễ</h1>
@@ -26,7 +27,7 @@ const DAY = 86_400_000;
       <div class="now-info">
         <span class="now-lbl">Khách đang thấy</span>
         @if (current(); as c) {
-          <b>{{ c.icon }} {{ c.name }}</b>
+          <b><app-icon [icon]="c.icon" /> {{ c.name }}</b>
           <small>{{ setting() === 'auto' ? '🤖 Tự động theo lịch' : '✋ Bật thủ công' }}</small>
         } @else {
           <b>🚫 Không có chủ đề</b>
@@ -57,7 +58,7 @@ const DAY = 86_400_000;
         <div class="bar">
           @for (r of rows(); track r.def.id) {
             <span class="seg" [class.on]="current()?.id === r.def.id" [style.left.%]="pos(r.start)" [style.width.%]="Math.max(0.9, pos(r.end) - pos(r.start))"
-              [style.background]="r.def.colors[0]" [title]="r.def.name + ': ' + range(r)">{{ r.def.icon }}</span>
+              [style.background]="r.def.colors[0]" [title]="r.def.name + ': ' + range(r)"><app-icon [icon]="r.def.icon" /></span>
           }
           @if (todayPos() !== null) { <span class="today" [style.left.%]="todayPos()"><i>Hôm nay</i></span> }
         </div>
@@ -80,7 +81,7 @@ const DAY = 86_400_000;
         @let st = status(r);
         <li class="adm-box item" [class.active]="current()?.id === r.def.id" [style.--c1]="r.def.colors[0]" [style.--c2]="r.def.colors[1]">
           <span class="ico" aria-hidden="true">
-            @if (r.def.art) { <img [src]="art[r.def.art]" alt="" /> } @else { {{ r.def.icon }} }
+            @if (r.def.art) { <img [src]="art[r.def.art]" alt="" /> } @else { <app-icon [icon]="r.def.icon" /> }
           </span>
           <div class="info">
             <b>{{ r.def.name }}
@@ -102,7 +103,7 @@ const DAY = 86_400_000;
           @if (preview() === r.def.id) {
             <div class="pv">
               <div class="pv-card">
-                <div class="pv-art">@if (r.def.art) { <img [src]="art[r.def.art]" alt="" /> } @else { {{ r.def.icon }} }</div>
+                <div class="pv-art">@if (r.def.art) { <img [src]="art[r.def.art]" alt="" /> } @else { <app-icon [icon]="r.def.icon" /> }</div>
                 <b>{{ r.def.title }}</b>
                 <p>{{ r.def.message }}</p>
               </div>
@@ -122,8 +123,7 @@ const DAY = 86_400_000;
                 <div class="field small">
                   <label class="req" for="se-icon">Icon</label>
                   <div class="with-pick">
-                    <input id="se-icon" name="icon" maxlength="8" [(ngModel)]="d.icon" [class.invalid]="tried() && !d.icon.trim()" />
-                    <app-emoji-picker label="" (pick)="d.icon = $event" />
+                    <app-icon-picker id="se-icon" name="icon" [(ngModel)]="d.icon" [class.invalid]="tried() && !d.icon.trim()" />
                   </div>
                 </div>
                 <div class="field">

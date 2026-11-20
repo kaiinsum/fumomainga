@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Announcement } from '../../models/site-settings';
 import { SettingsService } from '../../services/settings.service';
+import { IconComponent } from '../../shared/icon';
 
 const SEEN_KEY = 'fumo.announce.seen';
 
@@ -21,11 +22,12 @@ export function activeAnnouncements(list: Announcement[] | undefined, now = Date
 
 /** Khung thông báo nổi góc trái dưới: hiện thông báo hệ thống mới nhất khách chưa đóng. */
 @Component({
+  imports: [IconComponent],
   selector: 'app-announce-toast',
   template: `
     @if (current(); as a) {
       <div class="toast" role="status" aria-live="polite">
-        <span class="ico" aria-hidden="true">{{ a.icon }}</span>
+        <span class="ico" aria-hidden="true"><app-icon [icon]="a.icon" /></span>
         <div class="txt" [class.link]="!!a.link" (click)="go(a)">
           <b>{{ a.title }}</b>
           <p>{{ a.content }}</p>

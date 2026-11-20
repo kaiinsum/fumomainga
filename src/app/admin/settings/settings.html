@@ -21,7 +21,7 @@
           </div>
           <div class="field">
             <label for="logo">Logo (emoji)</label>
-            <input id="logo" [(ngModel)]="draft.logoEmoji" maxlength="4" class="emoji-input" />
+            <app-icon-picker id="logo" [(ngModel)]="draft.logoEmoji" />
           </div>
           <div class="field full">
             <label for="tagline">Khẩu hiệu</label>
@@ -102,7 +102,7 @@
             [style.--primary]="draft.primaryColor"
             [style.background]="draft.backgroundColor"
           >
-            <span class="logo">{{ draft.logoEmoji }} {{ draft.shopName }}</span>
+            <span class="logo"><app-icon [icon]="draft.logoEmoji" /> {{ draft.shopName }}</span>
             <span class="pill">Nút mẫu</span>
           </div>
         </div>
@@ -162,7 +162,7 @@
         <div class="box-body">
           @for (v of draft.aboutValues; track $index; let i = $index) {
             <div class="item-row">
-              <input class="emoji-input" [(ngModel)]="v.icon" maxlength="4" aria-label="Biểu tượng" />
+              <app-icon-picker [(ngModel)]="v.icon" />
               <div class="item-fields">
                 <input [(ngModel)]="v.title" placeholder="Tiêu đề" />
                 <input [(ngModel)]="v.text" placeholder="Mô tả" />
@@ -260,7 +260,7 @@
         <div class="box-body">
           @for (p of draft.policies; track $index; let i = $index) {
             <div class="item-row">
-              <input class="emoji-input" [(ngModel)]="p.icon" maxlength="4" aria-label="Biểu tượng" />
+              <app-icon-picker [(ngModel)]="p.icon" />
               <div class="item-fields">
                 <input [(ngModel)]="p.title" placeholder="Tiêu đề, ví dụ: Đổi trả" />
                 <textarea rows="4" [(ngModel)]="p.text" placeholder="Mỗi dòng là một ý"></textarea>

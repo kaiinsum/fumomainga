@@ -96,6 +96,36 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
         </section>
 
         <section class="adm-box">
+          <h2>⚡ Cấu hình máy & nút triệu hồi</h2>
+          <div class="box-body">
+            <label class="switch"><input type="checkbox" [ngModel]="d().summonEnabled" (ngModelChange)="set('summonEnabled', $event)" /><span class="track"></span>
+              Hiện nút tròn bên trái để khách gọi người hướng dẫn ra</label>
+            <div class="field">
+              <label for="menuText">Câu khi được gọi ra</label>
+              <input id="menuText" maxlength="160" [placeholder]="def.menuText" [ngModel]="d().menuText" (ngModelChange)="set('menuText', $event)" />
+            </div>
+            <label class="switch"><input type="checkbox" [ngModel]="d().perfAskEnabled" (ngModelChange)="set('perfAskEnabled', $event)" /><span class="track"></span>
+              Máy yếu (web tự chuyển chế độ nhẹ) → vừa vào web là hỏi có muốn bật cấu hình cao không</label>
+            <div class="field">
+              <label for="perfAsk">Câu hỏi bật cấu hình cao</label>
+              <input id="perfAsk" maxlength="200" [placeholder]="def.perfAsk" [ngModel]="d().perfAsk" (ngModelChange)="set('perfAsk', $event)" />
+            </div>
+            <div class="field">
+              <label for="perfOnReply">Sau khi bật</label>
+              <input id="perfOnReply" maxlength="200" [placeholder]="def.perfOnReply" [ngModel]="d().perfOnReply" (ngModelChange)="set('perfOnReply', $event)" />
+            </div>
+            <div class="field">
+              <label for="perfOffAsk">Hỏi lại khi khách muốn tắt cấu hình cao</label>
+              <input id="perfOffAsk" maxlength="200" [placeholder]="def.perfOffAsk" [ngModel]="d().perfOffAsk" (ngModelChange)="set('perfOffAsk', $event)" />
+            </div>
+            <div class="field">
+              <label for="perfOffReply">Sau khi tắt</label>
+              <input id="perfOffReply" maxlength="200" [placeholder]="def.perfOffReply" [ngModel]="d().perfOffReply" (ngModelChange)="set('perfOffReply', $event)" />
+            </div>
+          </div>
+        </section>
+
+        <section class="adm-box">
           <h2>🗡️ Chém đôi mascot trang chủ</h2>
           <div class="box-body">
             <label class="switch"><input type="checkbox" [ngModel]="d().slashEnabled" (ngModelChange)="set('slashEnabled', $event)" /><span class="track"></span>
@@ -217,7 +247,7 @@ export class AdminGuideSettings {
   async save(): Promise<void> {
     const g = this.d();
     const clean: GuideSettings = { ...g };
-    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'hubIntro', 'slashAsk', 'slashCode', 'lightName', 'darkName'] as const) {
+    for (const k of ['askText', 'yesLabel', 'noLabel', 'yesReply', 'okLabel', 'noReply', 'hubWelcome', 'hubIntro', 'slashAsk', 'slashCode', 'menuText', 'perfAsk', 'perfOnReply', 'perfOffAsk', 'perfOffReply', 'lightName', 'darkName'] as const) {
       clean[k] = (g[k] || '').trim() || DEFAULT_GUIDE[k];
     }
     clean.delaySec = Math.max(10, Math.min(1800, Math.round(g.delaySec || 90)));

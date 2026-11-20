@@ -4,14 +4,15 @@ import { Router, RouterLink } from '@angular/router';
 import { animate } from 'animejs';
 import { AuthService } from '../../services/auth.service';
 import { SettingsService } from '../../services/settings.service';
+import { IconComponent } from '../../shared/icon';
 
 @Component({
   selector: 'app-admin-login',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent],
   template: `
     <div class="wrap">
       <form class="box" (ngSubmit)="submit()">
-        <div class="logo">{{ settings().logoEmoji }}</div>
+        <div class="logo"><app-icon [icon]="settings().logoEmoji" /></div>
         <h1>{{ settings().shopName }}</h1>
         <p class="sub">Đăng nhập trang quản trị</p>
 

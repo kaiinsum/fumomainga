@@ -4,6 +4,7 @@ import { Announcement } from '../../models/site-settings';
 import { SeasonService } from '../../services/season.service';
 import { SettingsService } from '../../services/settings.service';
 import { activeAnnouncements } from './announce-toast';
+import { IconComponent } from '../../shared/icon';
 
 const SEEN_KEY = 'fumo.announce.modal.seen';
 
@@ -24,6 +25,7 @@ export const announceModalOpen = signal<string | null>(null);
  * Hiện 1 lần cho mỗi thông báo (đợi thiệp dịp lễ đóng trước); mở lại được từ chuông.
  */
 @Component({
+  imports: [IconComponent],
   selector: 'app-announce-modal',
   template: `
     @if (current(); as a) {
@@ -33,10 +35,10 @@ export const announceModalOpen = signal<string | null>(null);
           @if (a.image) {
             <img class="hero" [src]="a.image" alt="" />
           } @else {
-            <div class="ico" aria-hidden="true">{{ a.icon }}</div>
+            <div class="ico" aria-hidden="true"><app-icon [icon]="a.icon" /></div>
           }
           <div class="txt">
-            <h2>@if (a.image) { <span aria-hidden="true">{{ a.icon }}</span> }{{ a.title }}</h2>
+            <h2>@if (a.image) { <span aria-hidden="true"><app-icon [icon]="a.icon" /></span> }{{ a.title }}</h2>
             <p>{{ a.content }}</p>
             <div class="btns">
               <button type="button" class="btn primary" (click)="press(a, a.btn1?.link)">{{ a.btn1?.text || 'Đã hiểu' }}</button>

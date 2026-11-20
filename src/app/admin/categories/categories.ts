@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Category } from '../../models/product';
 import { CategoryService } from '../../services/category.service';
 import { AdminToastService } from '../toast.service';
+import { IconComponent, IconPickerComponent, isImageIcon } from '../../shared/icon';
 
 interface Draft {
   name: string;
@@ -12,7 +13,7 @@ interface Draft {
 
 @Component({
   selector: 'app-admin-categories',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head">
       <h1>Danh mục</h1>
@@ -28,8 +29,8 @@ interface Draft {
             @if (nameBad()) { <span class="field-err">Nhập tên danh mục.</span> }
           </div>
           <div class="field">
-            <label for="cat-icon">Biểu tượng (emoji)</label>
-            <input id="cat-icon" name="icon" class="emoji" [(ngModel)]="newCat.icon" maxlength="4" />
+            <label for="cat-icon">Biểu tượng (emoji / ảnh PNG vuông)</label>
+            <app-icon-picker id="cat-icon" name="icon" [(ngModel)]="newCat.icon" />
           </div>
           <button class="btn primary small" type="submit">+ Thêm danh mục</button>
           <p class="hint">Thứ tự ở đây là thứ tự hiển thị trên trang chủ, trang sản phẩm và chân trang.</p>
@@ -51,7 +52,7 @@ interface Draft {
               @let count = service.counts().get(c.name) ?? 0;
               <tr>
                 @if (editing() === c.name) {
-                  <td><input class="cell-input emoji" [(ngModel)]="draft.icon" maxlength="4" aria-label="Biểu tượng" /></td>
+                  <td><app-icon-picker [(ngModel)]="draft.icon" [ngModelOptions]="{ standalone: true }" /></td>
                   <td>
                     <input
                       class="cell-input"
@@ -71,7 +72,7 @@ interface Draft {
                     <button class="btn ghost small" type="button" (click)="editing.set(null)">Huỷ</button>
                   </td>
                 } @else if (deleting() === c.name) {
-                  <td class="icon">{{ c.icon }}</td>
+                  <td class="icon"><app-icon [icon]="c.icon" /></td>
                   <td colspan="2">
                     @if (count) {
                       <div class="move">
@@ -79,7 +80,7 @@ interface Draft {
                         <select [(ngModel)]="moveTo" aria-label="Danh mục chuyển sang">
                           @for (o of service.categories(); track o.name) {
                             @if (o.name !== c.name) {
-                              <option [value]="o.name">{{ o.icon }} {{ o.name }}</option>
+                              <option [value]="o.name">{{ textIcon(o.icon) }}{{ o.name }}</option>
                             }
                           }
                         </select>
@@ -93,7 +94,7 @@ interface Draft {
                     <button class="btn ghost small" type="button" (click)="deleting.set(null)">Huỷ</button>
                   </td>
                 } @else {
-                  <td class="icon">{{ c.icon }}</td>
+                  <td class="icon"><app-icon [icon]="c.icon" /></td>
                   <td class="title-cell">
                     <a routerLink="/admin/san-pham" [queryParams]="{ danhMuc: c.name }">{{ c.name }}</a>
                   </td>
@@ -138,6 +139,10 @@ export class AdminCategories {
   private readonly toast = inject(AdminToastService);
 
   newCat: Draft = { name: '', icon: '✨' };
+  /** <option> không hiện được ảnh → chỉ ghi emoji. */
+  textIcon(i: string): string {
+    return isImageIcon(i) ? '' : i + ' ';
+  }
   draft: Draft = { name: '', icon: '' };
   moveTo = '';
   readonly editing = signal<string | null>(null);

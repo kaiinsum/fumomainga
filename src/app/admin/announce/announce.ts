@@ -3,17 +3,17 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Announcement } from '../../models/site-settings';
 import { SettingsService } from '../../services/settings.service';
-import { EmojiPickerComponent } from '../../shared/emoji-picker';
 import { AdminToastService } from '../toast.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
+import { IconComponent, IconPickerComponent } from '../../shared/icon';
 
 const DAY = 86_400_000;
 
 /** Admin → Thông báo hệ thống: gửi thông báo kèm icon tới mọi khách (chuông + thông báo nổi). */
 @Component({
   selector: 'app-admin-announce',
-  imports: [FormsModule, DatePipe, EmojiPickerComponent],
+  imports: [FormsModule, DatePipe, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head"><h1>Thông báo hệ thống</h1></div>
     <p class="intro">Gửi một thông báo tới <b>mọi khách</b>, hiện trong chuông 🔔 trên thanh menu và theo 1 trong 2 dạng: <b>khung nhỏ</b> ở góc màn hình, hoặc <b>hộp lớn (modal)</b> giữa màn hình như thiệp dịp lễ — có ảnh và nút bấm. Khách đóng rồi thì không hiện lại.</p>
@@ -33,9 +33,7 @@ const DAY = 86_400_000;
           <div class="field icon">
             <label class="req" for="an-icon">Icon</label>
             <div class="pick">
-              <span class="big">{{ icon || '❔' }}</span>
-              <input id="an-icon" name="icon" maxlength="8" [(ngModel)]="icon" [class.invalid]="tried() && !icon.trim()" />
-              <app-emoji-picker label="" (pick)="icon = $event" />
+              <app-icon-picker id="an-icon" name="icon" [(ngModel)]="icon" [class.invalid]="tried() && !icon.trim()" />
             </div>
           </div>
           <div class="field grow">
@@ -107,7 +105,7 @@ const DAY = 86_400_000;
           <div class="m-preview" aria-label="Xem trước modal">
             @if (image) { <img [src]="image" alt="" /> } @else { <div class="m-ico">{{ icon || '❔' }}</div> }
             <div class="m-txt">
-              <b>@if (image) { {{ icon }} }{{ title || 'Tiêu đề chính' }}</b>
+              <b>@if (image) { <app-icon [icon]="icon" /> }{{ title || 'Tiêu đề chính' }}</b>
               <p>{{ content || 'Nội dung thông báo sẽ hiện ở đây.' }}</p>
               <span class="m-btn">{{ btn1Text || 'Nút 1' }}</span>
               @if (btn2Text) { <span class="m-btn ghost">{{ btn2Text }}</span> }
@@ -133,7 +131,7 @@ const DAY = 86_400_000;
           <ul class="sent">
             @for (a of list(); track a.id) {
               <li [class.expired]="expired(a)">
-                <span class="p-ico">{{ a.icon }}</span>
+                <span class="p-ico"><app-icon [icon]="a.icon" /></span>
                 <div class="txt">
                   <b>{{ a.title }} <span class="kind-tag">{{ a.type === 'modal' ? '🪧 Modal' : '💬 Khung nhỏ' }}</span></b>
                   <p>{{ a.content }}</p>

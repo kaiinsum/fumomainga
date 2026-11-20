@@ -2,10 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 import { SettingsService } from '../../services/settings.service';
+import { IconComponent } from '../../shared/icon';
 
 @Component({
   selector: 'app-policy',
-  imports: [RouterLink, AnimateInDirective],
+  imports: [RouterLink, AnimateInDirective, IconComponent],
   template: `
     <section class="hero">
       <div class="container">
@@ -14,7 +15,7 @@ import { SettingsService } from '../../services/settings.service';
         @if (sections().length > 1) {
           <nav class="toc" aria-label="Mục lục chính sách">
             @for (p of sections(); track $index; let i = $index) {
-              <a [href]="'#cs-' + i" (click)="jump($event, i)">{{ p.icon }} {{ p.title }}</a>
+              <a [href]="'#cs-' + i" (click)="jump($event, i)"><app-icon [icon]="p.icon" /> {{ p.title }}</a>
             }
           </nav>
         }
@@ -25,7 +26,7 @@ import { SettingsService } from '../../services/settings.service';
       <div class="container list">
         @for (p of sections(); track $index; let i = $index) {
           <article class="policy card-surface" [id]="'cs-' + i" appAnimateIn [animDelay]="(i % 2) * 100">
-            <span class="icon" aria-hidden="true">{{ p.icon }}</span>
+            <span class="icon" aria-hidden="true"><app-icon [icon]="p.icon" /></span>
             <div class="body">
               <h2>{{ p.title }}</h2>
               <ul>

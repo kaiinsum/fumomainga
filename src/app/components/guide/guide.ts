@@ -12,6 +12,11 @@ import { GuideService, guideStage } from './guide.service';
     @if (st === 'intro') {
       <div class="veil" (click)="toCorner()" aria-hidden="true"></div>
     }
+    @if (st === 'hidden' && guide.cfg().enabled && guide.cfg().summonEnabled && !inGame()) {
+      <button class="summon" [class.dark]="guide.dark()" type="button" (click)="guide.summon()" [title]="'Gọi ' + guide.name()" [attr.aria-label]="'Gọi người hướng dẫn ' + guide.name()">
+        <img [src]="guide.image()" alt="" draggable="false" /><i aria-hidden="true">✦</i>
+      </button>
+    }
     @if (st !== 'hidden') {
       <div #box class="guide" [class.hub]="st === 'hub'" [class.intro]="st === 'intro'" [class.flying]="st === 'fly'" [class.dark]="guide.dark()" role="dialog" [attr.aria-label]="guide.name() + ' nói'">
         <img #fig class="fig" [src]="guide.image()" [alt]="guide.name()" draggable="false" />
@@ -31,6 +36,25 @@ import { GuideService, guideStage } from './guide.service';
             }
             @case ('no') {
               <div class="acts"><button class="b no" type="button" (click)="close()">Ừm!</button></div>
+            }
+            @case ('perf') {
+              <div class="acts">
+                <button class="b yes" type="button" (click)="guide.answerPerf(true)">⚡ Có, bật lên!</button>
+                <button class="b no" type="button" (click)="guide.answerPerf(false)">Không, giữ nhẹ</button>
+              </div>
+            }
+            @case ('perfOff') {
+              <div class="acts">
+                <button class="b yes" type="button" (click)="guide.answerPerfOff(true)">🍃 Có, tắt đi</button>
+                <button class="b no" type="button" (click)="guide.answerPerfOff(false)">Không</button>
+              </div>
+            }
+            @case ('menu') {
+              <div class="acts col">
+                <button class="b yes" type="button" (click)="guide.menuPick('play')">🎮 Chơi minigame</button>
+                <button class="b no" type="button" (click)="guide.menuPick('perf')">{{ guide.lite() ? '⚡ Bật cấu hình cao' : '🍃 Tắt cấu hình cao (chế độ nhẹ)' }}</button>
+                <button class="b no" type="button" (click)="close()">Không có gì, tạm biệt!</button>
+              </div>
             }
             @case ('slash') {
               <div class="acts">
@@ -62,6 +86,19 @@ import { GuideService, guideStage } from './guide.service';
     p { margin: 0; font-weight: 700; line-height: 1.45; font-size: .95rem; }
     .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: .85rem; padding: 2px 4px; }
     .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .acts.col { flex-direction: column; align-items: stretch; }
+    .acts.col .b { text-align: left; }
+    /* Nút triệu hồi bên trái */
+    .summon { position: fixed; left: 14px; bottom: 18px; z-index: 985; width: 54px; height: 54px; padding: 0; border-radius: 50%; cursor: pointer;
+      border: 2px solid var(--primary); background: var(--surface); overflow: visible; box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary) 70%, transparent);
+      animation: summon-in .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+    .summon img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; border-radius: 50%; display: block; pointer-events: none; }
+    .summon i { position: absolute; right: -4px; top: -4px; font-style: normal; font-size: .8rem; color: #ffd23f; text-shadow: 0 0 6px #ffd23f;
+      animation: twinkle 1.6s ease-in-out infinite; }
+    .summon:hover { transform: translateY(-2px) scale(1.05); }
+    .summon.dark { border-color: #ff2d55; background: #0b0f14; box-shadow: 0 0 16px rgba(255, 45, 85, .45); }
+    @keyframes summon-in { from { opacity: 0; transform: scale(.4); } }
+    @keyframes twinkle { 50% { opacity: .35; transform: scale(.75); } }
     .b { font: inherit; font-weight: 800; font-size: .88rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; border: 2px solid var(--primary); }
     .b.yes { background: var(--primary); color: var(--on-primary); }
     .b.no { background: var(--surface); color: var(--primary-dark); }
@@ -86,6 +123,7 @@ import { GuideService, guideStage } from './guide.service';
     @keyframes pop { from { opacity: 0; transform: scale(.6) translateY(14px); } to { opacity: 1; transform: none; } }
     @keyframes bob { 50% { translate: 0 -6px; } }
     @media (max-width: 600px) {
+      .summon { left: 10px; bottom: 14px; width: 46px; height: 46px; }
       .guide { left: 6px; bottom: 6px; }
       .fig { height: 150px; }
       .guide.hub .fig { height: 110px; }
@@ -108,6 +146,9 @@ export class GuideComponent {
   private introTimer?: ReturnType<typeof setTimeout>;
   private shown = false;
 
+  /** Đang ở màn chơi game → không hiện nút triệu hồi (tránh che nút điều khiển). */
+  readonly inGame = computed(() => /^\/mini-game\/./.test(this.guide.route()));
+
   readonly text = computed(() => {
     const c = this.guide.cfg();
     switch (this.guide.step()) {
@@ -123,6 +164,14 @@ export class GuideComponent {
         return c.hubIntro;
       case 'slash':
         return c.slashAsk;
+      case 'perf':
+        return c.perfAsk;
+      case 'perfOff':
+        return c.perfOffAsk;
+      case 'menu':
+        return c.menuText;
+      case 'say':
+        return this.guide.sayText();
       default:
         return '';
     }
@@ -158,6 +207,10 @@ export class GuideComponent {
     effect(() => {
       const st = this.guide.step();
       if (st === 'no') setTimeout(() => this.guide.step() === 'no' && this.guide.close(), 5000);
+      if (st === 'say') {
+        const text = this.guide.sayText();
+        setTimeout(() => this.guide.step() === 'say' && this.guide.sayText() === text && this.guide.close(), 5000);
+      }
       if (st === 'hub' && innerWidth < 700) setTimeout(() => this.guide.step() === 'hub' && this.guide.step.set('hidden'), 6000);
     });
   }

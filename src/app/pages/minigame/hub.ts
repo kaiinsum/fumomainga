@@ -8,6 +8,7 @@ import { SettingsService } from '../../services/settings.service';
 import { startFireworks } from './fireworks';
 import { sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
+import { IconComponent } from '../../shared/icon';
 
 const HIDE_INTRO_KEY = 'fumo.minigame.hideIntro';
 const VIEW_KEY = 'fumo.minigame.view';
@@ -46,7 +47,7 @@ interface GameCard {
 /** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
 @Component({
   selector: 'app-minigame-hub',
-  imports: [RouterLink, NgTemplateOutlet, SoundToggleComponent],
+  imports: [RouterLink, NgTemplateOutlet, SoundToggleComponent, IconComponent],
   template: `
     <div class="container wrap">
       <header class="head">
@@ -90,7 +91,7 @@ interface GameCard {
         <div class="cat-filter" role="radiogroup" aria-label="Lọc theo phân loại">
           <button type="button" role="radio" [attr.aria-checked]="!catFilter()" [class.on]="!catFilter()" (click)="catFilter.set(null)">Tất cả</button>
           @for (c of cats(); track c.id) {
-            <button type="button" role="radio" [attr.aria-checked]="catFilter() === c.id" [class.on]="catFilter() === c.id" (click)="catFilter.set(c.id)">{{ c.icon }} {{ c.name }}</button>
+            <button type="button" role="radio" [attr.aria-checked]="catFilter() === c.id" [class.on]="catFilter() === c.id" (click)="catFilter.set(c.id)"><app-icon [icon]="c.icon" /> {{ c.name }}</button>
           }
         </div>
       }
@@ -216,7 +217,7 @@ interface GameCard {
       <div class="info">
         <span class="tag">{{ g.tag }}</span>
         @if (g.cats.length) {
-          <span class="cats">@for (c of g.cats; track c.id) { <i>{{ c.icon }} {{ c.name }}</i> }</span>
+          <span class="cats">@for (c of g.cats; track c.id) { <i><app-icon [icon]="c.icon" /> {{ c.name }}</i> }</span>
         }
         @if (g.freeToday) { <span class="free-badge">🎟 Miễn phí hôm nay</span> }
         <h2>{{ g.title }}</h2>

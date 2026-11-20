@@ -4,6 +4,7 @@ import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
+import { IconComponent } from '../../shared/icon';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -18,12 +19,12 @@ const HISTORY_KEY = 'fumo.chat';
  */
 @Component({
   selector: 'app-float-bubbles',
-  imports: [FormsModule],
+  imports: [FormsModule, IconComponent],
   template: `
     @if (open()) {
       <section class="chat" role="dialog" aria-label="Trợ lý AI">
         <header>
-          <span class="avatar">{{ s().logoEmoji }}</span>
+          <span class="avatar"><app-icon [icon]="s().logoEmoji" /></span>
           <div>
             <b>Trợ lý {{ s().shopName }}</b>
             <small>AI · trả lời tự động</small>

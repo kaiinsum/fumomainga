@@ -13,6 +13,7 @@ import { ProductCardComponent } from '../../components/product-card/product-card
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 import { playBaka, sfx } from '../../shared/sfx';
 import { GuideService } from '../../components/guide/guide.service';
+import { IconComponent } from '../../shared/icon';
 
 /** Các bé fumo luân phiên làm mascot ở phần đầu trang chủ (chế độ sáng). */
 const MASCOTS = [
@@ -26,7 +27,7 @@ const MASCOT_INTERVAL = 5000;
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, DatePipe, ProductCardComponent, AnimateInDirective],
+  imports: [RouterLink, DatePipe, ProductCardComponent, AnimateInDirective, IconComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })

@@ -3,16 +3,17 @@ import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../services/category.service';
 import { SettingsService } from '../../services/settings.service';
 import { SeasonService } from '../../services/season.service';
+import { IconComponent } from '../../shared/icon';
 
 @Component({
   selector: 'app-footer',
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   template: `
     @let s = settings();
     <footer class="footer">
       <div class="container grid">
         <div>
-          <h3>{{ s.logoEmoji }} <span>{{ s.shopName }}</span></h3>
+          <h3><app-icon [icon]="s.logoEmoji" /> <span>{{ s.shopName }}</span></h3>
           <p>{{ s.footerText }}</p>
           @if (s.facebookUrl || s.tiktokUrl || s.shopeeUrl) {
             <div class="social">
@@ -60,7 +61,7 @@ import { SeasonService } from '../../services/season.service';
         </div>
       </div>
       @if (season.active(); as se) {
-        <p class="season"><button type="button" (click)="season.open()">{{ se.icon }} Xem lại lời chúc {{ se.name }}</button></p>
+        <p class="season"><button type="button" (click)="season.open()"><app-icon [icon]="se.icon" /> Xem lại lời chúc {{ se.name }}</button></p>
       }
       <p class="copy">© 2026 Fumo Mai Nga - Designed by San Nii</p>
     </footer>

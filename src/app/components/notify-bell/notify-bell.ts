@@ -8,6 +8,7 @@ import { SettingsService } from '../../services/settings.service';
 import { SeasonService } from '../../services/season.service';
 import { activeAnnouncements } from '../announce-toast/announce-toast';
 import { announceModalOpen } from '../announce-toast/announce-modal';
+import { IconComponent } from '../../shared/icon';
 
 const SEEN_KEY = 'fumo.notify.seen';
 
@@ -23,7 +24,7 @@ function readSeen(): string[] {
 /** Chuông thông báo cho khách: sản phẩm mới, minigame mới ra mắt trong N ngày (admin chỉnh N). */
 @Component({
   selector: 'app-notify-bell',
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   template: `
     @if (enabled()) {
       <button
@@ -55,7 +56,7 @@ function readSeen(): string[] {
                     @if (n.image) {
                       <img [src]="n.image" alt="" loading="lazy" />
                     } @else {
-                      <span class="ico" aria-hidden="true">{{ n.kind === 'season' || n.kind === 'system' ? n.icon : n.kind === 'game' ? '🎮' : '🧸' }}</span>
+                      <span class="ico" aria-hidden="true"><app-icon [icon]="n.kind === 'season' || n.kind === 'system' ? n.icon : n.kind === 'game' ? '🎮' : '🧸'" /></span>
                     }
                     <span class="txt">
                       <span class="kind" [class.game]="n.kind === 'game'" [class.season]="n.kind === 'season'" [class.system]="n.kind === 'system'">{{ n.kind === 'system' ? 'Thông báo từ shop' : n.kind === 'season' ? 'Chủ đề dịp lễ' : n.kind === 'game' ? 'Minigame mới' : 'Sản phẩm mới' }}</span>

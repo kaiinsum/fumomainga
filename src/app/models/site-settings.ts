@@ -81,6 +81,17 @@ export interface GuideSettings {
   hubWelcome: string;
   /** Câu giới thiệu khi người hướng dẫn vừa dẫn khách sang trang Mini game (hiện to ở giữa rồi thu về góc). */
   hubIntro: string;
+  /** Nút tròn bên trái để gọi người hướng dẫn ra bất cứ lúc nào. */
+  summonEnabled: boolean;
+  /** Câu khi được gọi ra (kèm các lựa chọn). */
+  menuText: string;
+  /** Máy yếu (đang chạy chế độ nhẹ) → hỏi có muốn bật cấu hình cao không. */
+  perfAskEnabled: boolean;
+  perfAsk: string;
+  perfOnReply: string;
+  /** Khách muốn tắt cấu hình cao → hỏi lại cho chắc. */
+  perfOffAsk: string;
+  perfOffReply: string;
   /** Lướt qua lướt lại mascot trang chủ → fumo bị chém đôi, người hướng dẫn mời chơi Fumo Ninja. */
   slashEnabled: boolean;
   slashAsk: string;
@@ -106,6 +117,13 @@ export const DEFAULT_GUIDE: GuideSettings = {
   noReply: 'Vậy bạn cứ tiếp tục tìm hiểu về sản phẩm bên mình nha.',
   hubWelcome: 'Chào mừng đến với minigame! Rê chuột vào trò nào để mình giới thiệu nha~',
   hubIntro: 'Đây là trang minigame nè! Ở đây có đủ trò chill, trò đấu trí, trò chiến thuật — chơi xong còn được lên bảng xếp hạng nữa đó~',
+  summonEnabled: true,
+  menuText: 'Gọi mình có chuyện gì nè? Mình giúp được mấy việc này nha~',
+  perfAskEnabled: true,
+  perfAsk: 'Máy bạn đang chạy chế độ nhẹ cho mượt. Muốn bật cấu hình cao để xem hiệu ứng đầy đủ không?',
+  perfOnReply: 'Đã bật cấu hình cao rồi nè! Nếu thấy giật thì gọi mình (nút bên trái) để tắt nha.',
+  perfOffAsk: 'Tắt cấu hình cao nhé? Hiệu ứng sẽ ít đi nhưng web chạy mượt hơn.',
+  perfOffReply: 'Đã chuyển sang chế độ nhẹ rồi nha! Muốn bật lại thì gọi mình.',
   slashEnabled: true,
   slashAsk: 'Bạn chơi khá đấy! Muốn thử trò Fumo Ninja không?',
   slashCode: 'Hôm nay Fumo Ninja cần code mới chơi được — nhập code ở đây nha!',
