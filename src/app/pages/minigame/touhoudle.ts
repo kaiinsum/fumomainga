@@ -104,7 +104,7 @@ interface Saved {
               (focus)="open.set(true)"
               (click)="open.set(true)"
               (blur)="closeSoon()"
-              placeholder="Gõ tên nhân vật... (VD: Reimu, Cirno)"
+              placeholder="Gõ tên hoặc bấm để xem tất cả nhân vật (VD: Reimu, Cirno)"
               aria-label="Tên nhân vật"
               role="combobox"
               [attr.aria-expanded]="open() && suggestions().length > 0"
@@ -255,16 +255,31 @@ export class TouhoudlePage {
   );
   readonly won = computed(() => this.guesses().includes(this.answer().name));
 
+  /**
+   * Gợi ý tên: hiện ĐỦ mọi nhân vật khớp (không cắt bớt) — danh sách tự cuộn.
+   * Chưa gõ gì → hiện toàn bộ nhân vật theo ABC để khách lướt chọn.
+   * Xếp hạng: khớp đầu tên > khớp đầu một chữ trong tên > khớp giữa tên; bỏ dấu, bỏ khoảng trắng / gạch nối khi so.
+   */
   readonly suggestions = computed(() => {
     const q = norm(this.query());
-    if (!q) return [];
     const used = new Set(this.guesses());
-    return CHARACTERS.filter((c) => {
-      if (used.has(c.name)) return false;
+    const pool = CHARACTERS.filter((c) => !used.has(c.name));
+    if (!q) return [...pool].sort((x, y) => x.name.localeCompare(y.name));
+    const flat = (t: string) => t.replace(/[\s\-'’.]+/g, '');
+    const qf = flat(q);
+    const scored: { c: Character; r: number }[] = [];
+    for (const c of pool) {
       const n = norm(c.name);
-      // Khớp đầu bất kỳ chữ nào trong tên; gõ từ 3 ký tự thì khớp cả giữa tên.
-      return n.startsWith(q) || n.split(/\s+/).some((w) => w.startsWith(q)) || (q.length >= 3 && n.includes(q));
-    }).slice(0, 8);
+      const r = n.startsWith(q)
+        ? 0
+        : n.split(/[\s\-]+/).some((w) => w.startsWith(q))
+          ? 1
+          : q.length >= 2 && (n.includes(q) || flat(n).includes(qf))
+            ? 2
+            : -1;
+      if (r >= 0) scored.push({ c, r });
+    }
+    return scored.sort((x, y) => x.r - y.r || x.c.name.localeCompare(y.c.name)).map((x) => x.c);
   });
 
   constructor() {
@@ -303,10 +318,17 @@ export class TouhoudlePage {
       e.preventDefault();
       this.open.set(true);
       this.active.set(Math.min(list.length - 1, this.active() + 1));
+      this.revealActive();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       this.active.set(Math.max(0, this.active() - 1));
+      this.revealActive();
     } else if (e.key === 'Escape') this.open.set(false);
+  }
+
+  /** Cuộn danh sách gợi ý tới mục đang chọn bằng phím. */
+  private revealActive(): void {
+    requestAnimationFrame(() => document.querySelector('.suggest li.on')?.scrollIntoView({ block: 'nearest' }));
   }
 
   giveUp(): void {
