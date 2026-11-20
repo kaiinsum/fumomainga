@@ -184,27 +184,78 @@ export class GuideComponent {
     const el = this.box()?.nativeElement;
     if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return this.guide.arrive();
     const r = el.getBoundingClientRect();
-    const cx = innerWidth / 2 - (r.left + r.width / 2);
-    const cy = innerHeight / 2 - (r.top + r.height / 2);
-    const rx = Math.min(innerWidth * 0.32, 420);
-    const ry = Math.min(innerHeight * 0.28, 240);
-    const N = 14;
-    const frames: Keyframe[] = [{ transform: 'translate(0, 0) rotate(0) scale(1)' }];
-    // Bắt đầu từ phía dưới bên trái vòng tròn, đi ngược chiều kim đồng hồ 1 vòng rồi vào giữa.
+    // Vị trí hiện tại so với tâm màn hình.
+    const sx = r.left + r.width / 2 - innerWidth / 2;
+    const sy = r.top + r.height / 2 - innerHeight / 2;
+    // Bay theo đường xoắn ốc mượt quanh tâm màn hình: xuất phát đúng chỗ đang đứng, vòng lên trên,
+    // lượn hơn một vòng rồi thu dần vào giữa. Tính theo toạ độ chuẩn hoá để vòng bay luôn nằm gọn trong màn hình.
+    const ax = Math.max(120, Math.min(innerWidth * 0.36, 460));
+    const ay = Math.max(110, Math.min(innerHeight * 0.3, 260));
+    const nx = sx / ax;
+    const ny = sy / ay;
+    const m0 = Math.hypot(nx, ny) || 1;
+    const a0 = Math.atan2(ny, nx);
+    const smooth = (t: number) => t * t * (3 - 2 * t);
+    const easeInOut = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2;
+    const RING = 0.9;
+    const TURNS = 1.2;
+    const N = 72;
+    const pts: { x: number; y: number }[] = [];
     for (let k = 0; k <= N; k++) {
-      const a = Math.PI * 0.75 + (k / N) * Math.PI * 2;
-      const lift = Math.sin((k / N) * Math.PI) * 0.15;
-      frames.push({
-        transform: `translate(${cx + Math.cos(a) * rx}px, ${cy + Math.sin(a) * ry}px) rotate(${Math.sin(a * 2) * 14}deg) scale(${0.85 + lift})`,
-      });
+      const u = k / N;
+      // Bán kính: từ chỗ đứng hoà vào vòng tròn, rồi xoáy dần vào tâm.
+      const m = u < 0.32 ? m0 + (RING - m0) * smooth(u / 0.32) : RING * (1 - smooth((u - 0.32) / 0.68));
+      const a = a0 - easeInOut(u) * Math.PI * 2 * TURNS;
+      // Nhấp nhô nhẹ như đang vỗ cánh.
+      const bob = Math.sin(u * Math.PI * 7) * 10 * (1 - u);
+      pts.push({ x: Math.cos(a) * m * ax, y: Math.sin(a) * m * ay + bob });
     }
-    frames.push({ transform: `translate(${cx}px, ${cy}px) rotate(0) scale(1.15)` });
-    const anim = el.animate(frames, { duration: 1900, easing: 'ease-in-out', fill: 'forwards' });
+    const frames: Keyframe[] = pts.map((p, k) => {
+      const u = k / N;
+      const prev = pts[Math.max(0, k - 1)];
+      const next = pts[Math.min(N, k + 1)];
+      // Nghiêng người theo hướng bay (ngang), tắt dần khi tới nơi.
+      const tilt = Math.max(-20, Math.min(20, (next.x - prev.x) * 0.55)) * (1 - smooth(Math.max(0, (u - 0.8) / 0.2)));
+      const scale = 1 + 0.18 * smooth(u) + Math.sin(u * Math.PI * 4) * 0.04 * (1 - u);
+      return { transform: `translate(${p.x - sx}px, ${p.y - sy}px) rotate(${tilt.toFixed(2)}deg) scale(${scale.toFixed(3)})`, offset: u };
+    });
+    const DURATION = 2400;
+    el.style.filter = 'drop-shadow(0 0 14px rgba(255, 230, 140, .85))';
+    const anim = el.animate(frames, { duration: DURATION, easing: 'linear', fill: 'forwards' });
+    this.sparkleTrail(pts, DURATION);
     anim.onfinish = () => {
+      el.style.filter = '';
       this.guide.arrive();
       // Đợi giao diện "giới thiệu" vẽ xong rồi mới bỏ hiệu ứng (tránh nháy về góc).
       requestAnimationFrame(() => requestAnimationFrame(() => anim.cancel()));
     };
+  }
+
+  /** Vệt lấp lánh rơi lại phía sau đường bay. */
+  private sparkleTrail(pts: { x: number; y: number }[], duration: number): void {
+    const layer = document.createElement('div');
+    layer.setAttribute('aria-hidden', 'true');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9998;overflow:hidden';
+    document.body.appendChild(layer);
+    const colors = ['#ffe066', '#ff9ad5', '#9be7ff', '#fff'];
+    const N = pts.length - 1;
+    for (let k = 3; k < N - 2; k += 3) {
+      const p = pts[k];
+      const s = document.createElement('span');
+      s.textContent = k % 2 ? '✦' : '✧';
+      const size = 10 + ((k * 7) % 9);
+      s.style.cssText = `position:absolute;left:${innerWidth / 2 + p.x}px;top:${innerHeight / 2 + p.y}px;font-size:${size}px;color:${colors[k % colors.length]};opacity:0;text-shadow:0 0 6px currentColor;transform:translate(-50%,-50%)`;
+      layer.appendChild(s);
+      s.animate(
+        [
+          { opacity: 0, transform: 'translate(-50%,-50%) scale(.3)' },
+          { opacity: 1, transform: 'translate(-50%,-50%) scale(1.1)', offset: 0.15 },
+          { opacity: 0, transform: `translate(calc(-50% + ${((k * 13) % 21) - 10}px), calc(-50% + 26px)) scale(.4) rotate(90deg)` },
+        ],
+        { duration: 750, delay: (k / N) * duration, easing: 'ease-out', fill: 'both' },
+      );
+    }
+    setTimeout(() => layer.remove(), duration + 900);
   }
 
   /** Giới thiệu xong: thu nhỏ và bay xuống góc cũ (FLIP: đo vị trí trước / sau rồi nội suy). */

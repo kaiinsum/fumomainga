@@ -10,7 +10,7 @@ export const LANES = 4;
 const HIT_Y = H - 110;
 export const KEYS = ['d', 'f', 'j', 'k'];
 
-export type PianoState = 'title' | 'playing' | 'paused' | 'over' | 'clear';
+export type PianoState = 'title' | 'playing' | 'paused' | 'over' | 'clear' | 'record';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export type Judge = 'perfect' | 'great' | 'good' | 'miss';
 
@@ -34,6 +34,10 @@ export interface PianoResult {
   newBest: boolean;
   /** % chính xác. */
   acc: number;
+  /** Lệch trung bình khi gõ trúng (ms): dương = hay gõ trễ, âm = hay gõ sớm. */
+  avgErr: number;
+  /** Số lần gõ trúng dùng để tính lệch. */
+  errN: number;
 }
 
 const LANE_COLORS = ['#ff7ac6', '#7af0ff', '#ffe066', '#b18cff'];
@@ -52,10 +56,16 @@ function seeded(seed: string): () => number {
 /**
  * Sinh bản nhạc ô theo nhịp: mỗi phách 1 ô, chia câu 8 phách (có phách nghỉ, đoạn chạy nốt móc đơn, nốt đôi ở độ khó cao).
  * Ô không lặp lại cùng làn liên tiếp quá 2 lần để tay không bị mỏi.
+ * `phase` = thời điểm một phách mạnh thật của bài (đo bằng cách gõ theo nhạc) → mọi ô rơi đúng phách;
+ * `offset` = ô bắt đầu từ giây này (bỏ qua đoạn dạo đầu).
  */
-export function makeChart(videoId: string, bpm: number, offset: number, duration: number, diff: Difficulty): Note[] {
+export function makeChart(videoId: string, bpm: number, offset: number, duration: number, diff: Difficulty, phase = offset): Note[] {
   const rnd = seeded(`${videoId}|${bpm}|${diff}`);
   const beat = 60 / bpm;
+  // Phách đầu tiên (thuộc lưới phách của bài) không sớm hơn thời điểm bắt đầu; câu 8 phách tính từ phách gốc.
+  const k0 = Math.ceil((offset - phase) / beat - 1e-6);
+  const first = phase + k0 * beat;
+  const bar0 = ((k0 % 8) + 8) % 8;
   const eighth = diff === 'easy' ? 0.05 : diff === 'normal' ? 0.28 : 0.55;
   const doubles = diff === 'hard' ? 0.14 : diff === 'normal' ? 0.04 : 0;
   const rest = diff === 'easy' ? 0.22 : 0.1;
@@ -71,8 +81,9 @@ export function makeChart(videoId: string, bpm: number, offset: number, duration
     return l;
   };
   // Mỗi câu 8 phách có "kiểu" riêng: đi lên, đi xuống, nhảy, ngẫu nhiên.
-  let pattern = 0;
-  for (let i = 0, t = offset; t < end; i++, t = offset + i * beat) {
+  let pattern = Math.floor(rnd() * 4);
+  for (let j = 0, t = first; t < end; j++, t = first + j * beat) {
+    const i = j + bar0;
     if (i % 8 === 0) pattern = Math.floor(rnd() * 4);
     // Phách cuối câu hay nghỉ cho dễ thở.
     if (rnd() < rest * (i % 8 === 7 ? 2.5 : 1)) continue;
@@ -87,6 +98,25 @@ export function makeChart(videoId: string, bpm: number, offset: number, duration
     if (rnd() < eighth && t + beat / 2 < end) notes.push({ t: t + beat / 2, lane: pickLane(lane) });
   }
   return notes.sort((a, b) => a.t - b.t);
+}
+
+/**
+ * Bản nhạc ô từ nhịp người chơi tự ghi. Dễ: bỏ bớt ô sát nhau; Khó: giữ nguyên;
+ * Thường: bỏ ô cách nhau quá sát (< 0.12s cùng làn).
+ */
+export function chartFromRecord(rec: Note[], diff: Difficulty): Note[] {
+  const gap = diff === 'easy' ? 0.32 : diff === 'normal' ? 0.12 : 0;
+  const out: Note[] = [];
+  const lastAt = [-9, -9, -9, -9];
+  let prev = -9;
+  for (const n of [...rec].sort((a, b) => a.t - b.t)) {
+    if (diff === 'easy' && n.t - prev < gap) continue;
+    if (n.t - lastAt[n.lane] < Math.max(gap, 0.08)) continue;
+    out.push({ t: n.t, lane: n.lane });
+    lastAt[n.lane] = n.t;
+    prev = n.t;
+  }
+  return out;
 }
 
 export class PianoGame {
@@ -115,6 +145,10 @@ export class PianoGame {
   private petals = Array.from({ length: 18 }, (_, i) => ({ x: (i * 97) % W, y: (i * 131) % H, s: 4 + (i % 4) * 2, v: 18 + (i % 5) * 9, r: i }));
   private lastFrame = 0;
   private bestKey = 'fumo.piano.best';
+  private errSum = 0;
+  private errN = 0;
+  /** Nhịp đang ghi (chế độ tự soạn nhịp). */
+  recorded: Note[] = [];
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -162,11 +196,36 @@ export class PianoGame {
     this.counts = { perfect: 0, great: 0, good: 0, miss: 0 };
     this.maxHp = this.hp = Math.round(this.p('lives', 10));
     this.next = 0;
+    this.errSum = 0;
+    this.errN = 0;
     this.flashes = [];
     this.judgeText = null;
     this.state = 'playing';
     this.onState('playing');
     this.loop();
+  }
+
+  /** Chế độ tự ghi nhịp: nhạc chạy, người chơi gõ D F J K / chạm làn theo nhạc → mỗi lần gõ thành một ô. */
+  startRecord(duration: number): void {
+    this.recorded = [];
+    this.notes = [];
+    this.duration = duration;
+    this.score = 0;
+    this.combo = 0;
+    this.flashes = [];
+    this.judgeText = null;
+    this.state = 'record';
+    this.onState('record');
+    this.loop();
+  }
+
+  /** Dừng ghi, trả về các ô đã ghi. */
+  stopRecord(): Note[] {
+    if (this.state !== 'record') return [];
+    this.state = 'title';
+    cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    return this.recorded.map((n) => ({ t: n.t, lane: n.lane }));
   }
 
   pause(): void {
@@ -208,8 +267,9 @@ export class PianoGame {
     const total = this.notes.length;
     const c = this.counts;
     const acc = total ? Math.round(((c.perfect + c.great * 0.7 + c.good * 0.4) / total) * 1000) / 10 : 0;
+    const avgErr = this.errN ? Math.round((this.errSum / this.errN) * 1000) : 0;
     this.draw(this.time());
-    this.onState(this.state, { score: this.score, maxCombo: this.maxCombo, ...c, total, cleared, newBest, acc });
+    this.onState(this.state, { score: this.score, maxCombo: this.maxCombo, ...c, total, cleared, newBest, acc, avgErr, errN: this.errN });
   }
 
   destroy(): void {
@@ -229,13 +289,22 @@ export class PianoGame {
   private readonly onKey = (e: KeyboardEvent) => {
     if (e.repeat || (e.target as HTMLElement)?.closest?.('input, textarea')) return;
     const lane = KEYS.indexOf(e.key.toLowerCase());
-    if (lane >= 0 && this.state === 'playing') {
+    if (lane >= 0 && (this.state === 'playing' || this.state === 'record')) {
       e.preventDefault();
       this.tap(lane);
     }
   };
 
   private tap(lane: number): void {
+    if (this.state === 'record') {
+      const t = this.time();
+      this.pressed[lane] = performance.now();
+      if (t >= 0) {
+        this.recorded.push({ t, lane, at: performance.now() });
+        this.flashes.push({ lane, at: performance.now(), judge: 'perfect' });
+      }
+      return;
+    }
     if (this.state !== 'playing') return;
     const t = this.time();
     this.pressed[lane] = performance.now();
@@ -256,6 +325,9 @@ export class PianoGame {
       return;
     }
     const d = Math.abs(best.t - t);
+    // Ghi lại lệch sớm / trễ để gợi ý tự căn nhịp cho riêng người chơi.
+    this.errSum += t - best.t;
+    this.errN++;
     const pw = this.p('window', 60) / 1000;
     this.judge(best, d <= pw ? 'perfect' : d <= pw * 2 ? 'great' : 'good', t, true);
   }
@@ -291,6 +363,11 @@ export class PianoGame {
     if (this.raf) return;
     const step = (now: number) => {
       this.raf = 0;
+      if (this.state === 'record') {
+        this.drawRecord(this.time(), now);
+        this.raf = requestAnimationFrame(step);
+        return;
+      }
       if (this.state !== 'playing') return;
       const t = this.time();
       // Ô đã qua vạch quá lâu → trượt.
@@ -473,6 +550,43 @@ export class PianoGame {
       x.fillStyle = '#ffe066';
       x.fillRect(0, 0, W * Math.min(1, Math.max(0, t / this.duration)), 4);
     }
+  }
+
+  /** Màn hình khi đang tự ghi nhịp: ô vừa gõ bay ngược lên trên. */
+  private drawRecord(t: number, now: number): void {
+    const saved = { notes: this.notes, combo: this.combo, score: this.score };
+    // Vẽ nền / làn / phím bằng hàm vẽ chung (không có ô rơi).
+    this.notes = [];
+    this.combo = 0;
+    this.draw(t, now);
+    this.notes = saved.notes;
+    const x = this.ctx;
+    const lw = W / LANES;
+    for (let i = this.recorded.length - 1; i >= 0; i--) {
+      const n = this.recorded[i];
+      const age = (now - (n.at ?? now)) / 1000;
+      if (age > 1.6) break;
+      const y = HIT_Y - age * 380;
+      x.globalAlpha = Math.max(0, 1 - age / 1.6);
+      x.fillStyle = LANE_COLORS[n.lane];
+      this.round(n.lane * lw + 8, y - 30, lw - 16, 30, 8);
+      x.fill();
+      x.globalAlpha = 1;
+    }
+    x.save();
+    x.fillStyle = '#ff5a6e';
+    x.beginPath();
+    x.arc(22, 58, 7 + Math.sin(now / 200) * 1.5, 0, Math.PI * 2);
+    x.fill();
+    x.fillStyle = '#fff';
+    x.textAlign = 'left';
+    x.font = '800 15px system-ui, sans-serif';
+    x.fillText(`ĐANG GHI NHỊP · ${this.recorded.length} ô`, 36, 63);
+    x.font = '600 13px system-ui, sans-serif';
+    x.fillStyle = 'rgba(255,255,255,.8)';
+    x.textAlign = 'center';
+    x.fillText('Gõ D F J K (hoặc chạm làn) theo nhạc', W / 2, 180);
+    x.restore();
   }
 
   private round(x0: number, y0: number, w: number, h: number, r: number): void {

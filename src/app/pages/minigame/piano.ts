@@ -7,7 +7,7 @@ import { playBaka, sfx } from '../../shared/sfx';
 import { SoundToggleComponent } from '../../shared/sound-toggle';
 import { GameSuggestComponent } from './game-suggest';
 import { LeaderboardComponent } from './leaderboard';
-import { Difficulty, H, KEYS, PianoGame, PianoResult, PianoState, W, makeChart } from './piano-engine';
+import { Difficulty, H, KEYS, Note, PianoGame, PianoResult, PianoState, W, chartFromRecord, makeChart } from './piano-engine';
 
 interface Song {
   id: string;
@@ -85,7 +85,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
       <header class="head">
         <span class="chip">🎹 Âm nhạc · Nhịp điệu</span>
         <h1>Anime <span class="hl">Piano Tiles</span></h1>
-        <p class="muted">Dán link bài anime / J-pop yêu thích trên YouTube, ô nhạc tự sinh theo nhịp bài — gõ trúng vạch để ăn <b>Perfect</b> và combo!</p>
+        <p class="muted">Dán link bài anime / J-pop yêu thích trên YouTube, ô nhạc rơi theo nhịp bài — gõ theo nhạc để khớp phách, hoặc tự ghi nhịp riêng cho từng bài!</p>
       </header>
 
       <div class="layout">
@@ -111,15 +111,39 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
                     <button type="button" role="radio" [attr.aria-checked]="diff() === d.id" [class.on]="diff() === d.id" (click)="diff.set(d.id)">{{ d.label }}</button>
                   }
                 </div>
-                <div class="bpm">
-                  <label>Nhịp <b>{{ bpm() }}</b> BPM
-                    <input type="range" min="70" max="200" step="1" [ngModel]="bpm()" (ngModelChange)="bpm.set(+$event)" aria-label="Nhịp BPM" />
+                @if (myChart(); as mc) {
+                  <div class="seg mode" role="radiogroup" aria-label="Kiểu nhịp">
+                    <button type="button" role="radio" [attr.aria-checked]="mode() === 'auto'" [class.on]="mode() === 'auto'" (click)="setMode('auto')">🎵 Nhịp tự động</button>
+                    <button type="button" role="radio" [attr.aria-checked]="mode() === 'mine'" [class.on]="mode() === 'mine'" (click)="setMode('mine')">✋ Nhịp của tôi ({{ mc.length }} ô)</button>
+                  </div>
+                }
+                @if (mode() === 'auto' || !myChart()) {
+                  <div class="bpm">
+                    <label>Nhịp <b>{{ bpmLabel() }}</b> BPM
+                      <input type="range" min="70" max="200" step="0.5" [ngModel]="bpm()" (ngModelChange)="bpm.set(+$event)" aria-label="Nhịp BPM" />
+                    </label>
+                    <button type="button" class="tap" (click)="tapTempo()" title="Bấm để bật nhạc, rồi gõ đúng theo phách 8 lần trở lên">
+                      👆 {{ tapLabel() }}
+                    </button>
+                  </div>
+                  @if (phase() !== null) {
+                    <small class="okp">✓ Đã khớp phách bài này ({{ bpmLabel() }} BPM) — ô sẽ rơi đúng phách nhạc</small>
+                  } @else {
+                    <small>Chưa khớp phách: bấm <b>Gõ theo nhịp</b> rồi gõ theo phách nhạc để ô rơi đúng nhịp bài.</small>
+                  }
+                  <label class="off">Ô bắt đầu sau <b>{{ offset() }}s</b> (bỏ qua đoạn dạo đầu)
+                    <input type="range" min="0" max="30" step="0.5" [ngModel]="offset()" (ngModelChange)="offset.set(+$event)" aria-label="Thời điểm bắt đầu" />
                   </label>
-                  <button type="button" class="tap" (click)="tapTempo()" title="Bật nhạc rồi gõ theo nhịp 6–8 lần để tự đo BPM">👆 Gõ đo nhịp{{ taps().length > 1 ? ' (' + taps().length + ')' : '' }}</button>
-                </div>
-                <label class="off">Ô bắt đầu sau <b>{{ offset() }}s</b> (bỏ qua đoạn dạo đầu)
-                  <input type="range" min="0" max="30" step="0.5" [ngModel]="offset()" (ngModelChange)="offset.set(+$event)" aria-label="Thời điểm bắt đầu" />
+                }
+                <label class="off">Căn lệch tay / loa: <b>{{ latency() > 0 ? '+' : '' }}{{ latency() }} ms</b>
+                  <input type="range" min="-300" max="300" step="5" [ngModel]="latency()" (ngModelChange)="latency.set(+$event)" aria-label="Căn lệch" />
                 </label>
+                <div class="rec-row">
+                  <button type="button" class="tap rec" (click)="record()" [disabled]="!ready()" title="Nghe nhạc và tự gõ D F J K theo ý mình — mỗi lần gõ thành một ô">
+                    🎙️ {{ myChart() ? 'Ghi lại nhịp của tôi' : 'Tự ghi nhịp bài này' }}
+                  </button>
+                  @if (myChart()) { <button type="button" class="tap del" (click)="clearMine()">🗑 Xoá nhịp đã ghi</button> }
+                </div>
                 <button class="btn primary big" type="button" (click)="play()" [disabled]="!ready()">{{ ready() ? '▶ Bắt đầu' : 'Đang tải bài…' }}</button>
                 <small>Bàn phím: <b>{{ keysLabel }}</b> · điện thoại: chạm vào làn</small>
               } @else {
@@ -145,12 +169,22 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
                 <span class="j o">Good {{ result()?.good }}</span><span class="j m">Miss {{ result()?.miss }}</span>
               </p>
               @if (result()?.newBest) { <p class="new">🏆 Kỷ lục mới!</p> }
+              @if (calib(); as c) {
+                <p class="calib">Bạn hay gõ <b>{{ c > 0 ? 'trễ' : 'sớm' }} {{ c > 0 ? c : -c }} ms</b> so với ô.
+                  <button type="button" class="tap" (click)="applyCalib()">🎯 Tự căn theo tay mình</button></p>
+              }
               <button class="btn primary big" type="button" (click)="play()">🔁 Chơi lại</button>
               <button class="btn ghost" type="button" (click)="quit()">Chọn bài khác</button>
             </div>
           }
           @if (state() === 'playing') {
             <button class="pause" type="button" (click)="pause()" aria-label="Tạm dừng">⏸</button>
+          }
+          @if (state() === 'record') {
+            <div class="recbar">
+              <button type="button" class="tap save" (click)="stopRecord(true)">✅ Lưu nhịp</button>
+              <button type="button" class="tap" (click)="stopRecord(false)">✕ Huỷ</button>
+            </div>
           }
         </div>
 
@@ -174,7 +208,9 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
           }
           <!-- Trình phát YouTube (phải hiện theo quy định của YouTube) -->
           <div class="yt-wrap" [class.has]="!!song()"><div #yt></div></div>
-          <p class="muted small">Ô nhạc được sinh theo <b>nhịp (BPM)</b> bạn chọn và riêng cho từng bài. Nhịp lệch? Bật nhạc, bấm <b>Gõ đo nhịp</b> theo phách 6–8 lần.</p>
+          <p class="muted small">Mỗi bài nhớ riêng nhịp của bạn trên máy này:
+            <b>Gõ theo nhịp</b> để ô khớp đúng phách nhạc · <b>Tự ghi nhịp</b> để chơi đúng giai điệu bạn gõ ·
+            <b>Căn lệch</b> nếu luôn thấy ô sớm / trễ hơn tiếng nhạc.</p>
         </aside>
       </div>
     </div>
@@ -211,6 +247,16 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
     .bpm label, .off { display: flex; flex-direction: column; gap: 2px; font-size: .85rem; }
     .bpm input, .off input { width: 170px; accent-color: #ff7ac6; }
     .tap { font: inherit; font-size: .8rem; font-weight: 800; padding: 6px 12px; border-radius: 999px; border: 2px solid #ffe066; background: transparent; color: #ffe066; cursor: pointer; }
+    .tap:disabled { opacity: .5; cursor: default; }
+    .tap.rec { border-color: #ff9ad5; color: #ff9ad5; }
+    .tap.del { border-color: rgba(255,255,255,.5); color: rgba(255,255,255,.85); }
+    .tap.save { border-color: #7dffb0; color: #7dffb0; background: rgba(0,0,0,.35); }
+    .rec-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .seg.mode button { font-size: .8rem; padding: 6px 10px; }
+    .okp { color: #7dffb0; font-weight: 700; opacity: 1 !important; }
+    .calib { font-size: .85rem; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .recbar { position: absolute; top: 76px; right: 10px; display: flex; gap: 6px; }
+    .recbar .tap { background: rgba(0,0,0,.4); }
     .btn.big { font-size: 1.1rem; padding: 12px 26px; }
     .overlay small { opacity: .8; }
     .pause { position: absolute; top: 34px; left: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); color: #fff; font-size: 1rem; cursor: pointer; }
@@ -283,9 +329,26 @@ export class AnimePianoPage implements AfterViewInit {
   readonly diff = signal<Difficulty>('normal');
   readonly bpm = signal(120);
   readonly offset = signal(2);
+  /** Thời điểm một phách thật của bài (đo khi gõ theo nhịp). null = chưa khớp. */
+  readonly phase = signal<number | null>(null);
+  /** Căn lệch (ms): dương = ô đến muộn hơn (cho người hay gõ trễ / loa bluetooth trễ). */
+  readonly latency = signal(0);
+  /** Nhịp người chơi tự ghi cho bài này. */
+  readonly myChart = signal<Note[] | null>(null);
+  readonly mode = signal<'auto' | 'mine'>('auto');
+  /** Lệch trung bình của ván vừa chơi (ms), để gợi ý tự căn. */
+  readonly calib = computed(() => {
+    const r = this.result();
+    return r && r.errN >= 10 && Math.abs(r.avgErr) >= 25 ? r.avgErr : 0;
+  });
   readonly taps = signal<number[]>([]);
+  readonly bpmLabel = computed(() => (Number.isInteger(this.bpm()) ? String(this.bpm()) : this.bpm().toFixed(1)));
+  readonly tapLabel = computed(() => {
+    const n = this.taps().length;
+    return n === 0 ? 'Gõ theo nhịp' : n < 4 ? `Gõ tiếp… (${n})` : `Đang khớp… ${n} phách`;
+  });
   private duration = 0;
-  private waitingStart = false;
+  private waitingStart: false | 'play' | 'record' = false;
   /** Đồng hồ mượt: lấy giờ từ YouTube rồi nội suy bằng performance.now(). */
   private clock = { yt: 0, at: 0, playing: false };
 
@@ -317,7 +380,8 @@ export class AnimePianoPage implements AfterViewInit {
           }),
         (kind, n) => this.zone.run(() => this.showCheer(kind, n)),
       );
-      this.game.time = () => this.now();
+      // Thời gian game = thời gian bài hát trừ độ lệch người chơi chọn.
+      this.game.time = () => this.now() - this.latency() / 1000;
     });
   }
 
@@ -367,12 +431,15 @@ export class AnimePianoPage implements AfterViewInit {
     this.state.set('title');
     this.game!.state = 'title';
     this.taps.set([]);
-    // Đã từng chơi bài này → nhớ BPM / độ trễ.
+    // Đã từng chơi bài này → nhớ nhịp riêng của bài (BPM, phách, căn lệch, nhịp tự ghi).
     const saved = readTuning(s.id);
-    if (saved) {
-      this.bpm.set(saved.bpm);
-      this.offset.set(saved.offset);
-    }
+    this.bpm.set(saved?.bpm ?? 120);
+    this.offset.set(saved?.offset ?? 2);
+    this.phase.set(saved?.phase ?? null);
+    this.latency.set(saved?.latency ?? readGlobalLatency());
+    const chart = saved?.chart?.length ? saved.chart.map(([ms, lane]) => ({ t: ms / 1000, lane })) : null;
+    this.myChart.set(chart);
+    this.mode.set(chart && saved?.mode === 'mine' ? 'mine' : 'auto');
     this.recent.update((list) => [s, ...list.filter((x) => x.id !== s.id)].slice(0, 6));
     saveRecent(this.recent());
     try {
@@ -415,10 +482,17 @@ export class AnimePianoPage implements AfterViewInit {
     if (st === P.PLAYING) {
       this.clock = { yt: this.player!.getCurrentTime(), at: performance.now(), playing: true };
       this.duration = this.player!.getDuration() || this.duration;
-      if (this.waitingStart) {
+      if (this.waitingStart === 'record') {
+        this.waitingStart = false;
+        this.game!.startRecord(this.duration);
+        this.syncTimer();
+      } else if (this.waitingStart) {
         this.waitingStart = false;
         const s = this.song()!;
-        const notes = makeChart(s.id, this.bpm(), this.offset(), this.duration, this.diff());
+        const mine = this.mode() === 'mine' ? this.myChart() : null;
+        const notes = mine
+          ? chartFromRecord(mine, this.diff())
+          : makeChart(s.id, this.bpm(), this.offset(), this.duration, this.diff(), this.phase() ?? this.offset());
         this.game!.start(notes, this.duration, this.diff());
         this.syncTimer();
       } else if (this.game!.state === 'paused') {
@@ -431,7 +505,8 @@ export class AnimePianoPage implements AfterViewInit {
       if (st === P.PAUSED && this.game!.state === 'playing') this.game!.pause();
     } else if (st === P.ENDED) {
       this.clock.playing = false;
-      this.game!.finish();
+      if (this.game!.state === 'record') this.zone.run(() => this.stopRecord(true));
+      else this.game!.finish();
     }
   }
 
@@ -439,7 +514,7 @@ export class AnimePianoPage implements AfterViewInit {
   private syncTimer(): void {
     clearInterval(this.syncId);
     this.syncId = setInterval(() => {
-      if (this.game?.state !== 'playing') return;
+      if (this.game?.state !== 'playing' && this.game?.state !== 'record') return;
       this.syncClock();
     }, 500);
   }
@@ -448,13 +523,13 @@ export class AnimePianoPage implements AfterViewInit {
   play(): void {
     const s = this.song();
     if (!s || !this.player || !this.ready()) return;
-    saveTuning(s.id, this.bpm(), this.offset());
+    this.persist();
     if (this.game) this.game.params = gameParams(this.settings().gameParams, 'piano');
     this.result.set(null);
     this.cheer.set(null);
     this.taps.set([]);
     this.canvas().nativeElement.parentElement?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    this.waitingStart = true;
+    this.waitingStart = 'play';
     this.clock = { yt: 0, at: performance.now(), playing: false };
     this.player.setVolume(80);
     this.player.seekTo(0, true);
@@ -478,22 +553,110 @@ export class AnimePianoPage implements AfterViewInit {
     this.song.set(null);
   }
 
-  /** Gõ theo nhịp nhạc để đo BPM (lấy trung bình các khoảng cách gần nhất). */
+  /**
+   * Gõ theo phách nhạc: lấy đúng thời điểm trong bài của mỗi lần gõ → tính cả BPM lẫn vị trí phách
+   * (hồi quy tuyến tính), nên ô rơi trùng phách thật của bài chứ không chỉ đúng tốc độ.
+   */
   tapTempo(): void {
-    if (this.player && this.player.getPlayerState() !== this.yt?.PlayerState.PLAYING) this.player.playVideo();
-    const now = performance.now();
-    const list = [...this.taps().filter((t) => now - t < 2500 * 8), now].slice(-9);
-    // Ngừng gõ quá 2.5 giây → đo lại từ đầu.
-    const fresh = list.length > 1 && now - list[list.length - 2] > 2500 ? [now] : list;
-    this.taps.set(fresh);
-    if (fresh.length >= 4) {
-      const gaps = fresh.slice(1).map((t, i) => t - fresh[i]);
-      const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-      let bpm = 60000 / avg;
-      while (bpm < 70) bpm *= 2;
-      while (bpm > 200) bpm /= 2;
-      this.bpm.set(Math.round(bpm));
+    if (!this.player || !this.yt) return;
+    if (this.player.getPlayerState() !== this.yt.PlayerState.PLAYING) {
+      // Lần bấm đầu: bật nhạc, các lần sau mới tính.
+      this.player.playVideo();
+      this.taps.set([]);
+      return;
     }
+    this.syncClock();
+    const t = this.now() - this.latency() / 1000;
+    let list = this.taps();
+    // Ngừng gõ quá 2.5 giây (hoặc tua) → đo lại từ đầu.
+    if (list.length && (t - list[list.length - 1] > 2.5 || t <= list[list.length - 1])) list = [];
+    list = [...list, t].slice(-48);
+    this.taps.set(list);
+    if (list.length < 4) return;
+    const gaps = list.slice(1).map((x, i) => x - list[i]).sort((a, b) => a - b);
+    let beat = gaps[Math.floor(gaps.length / 2)];
+    if (!(beat > 0.15)) return;
+    // Phách thứ k của mỗi lần gõ (cho phép bỏ sót phách) → hồi quy t = phase + k * beat.
+    const ks = list.map((x) => Math.round((x - list[0]) / beat));
+    const mk = ks.reduce((a, b) => a + b, 0) / ks.length;
+    const mt = list.reduce((a, b) => a + b, 0) / list.length;
+    let num = 0;
+    let den = 0;
+    ks.forEach((k, i) => {
+      num += (k - mk) * (list[i] - mt);
+      den += (k - mk) ** 2;
+    });
+    if (den > 0) beat = num / den;
+    let bpm = 60 / beat;
+    while (bpm < 70) bpm *= 2;
+    while (bpm > 200) bpm /= 2;
+    this.bpm.set(Math.round(bpm * 10) / 10);
+    this.phase.set(mt - (num / (den || 1)) * mk);
+    this.mode.set('auto');
+  }
+
+  setMode(m: 'auto' | 'mine'): void {
+    this.mode.set(m);
+    this.persist();
+  }
+
+  // ---------- Tự ghi nhịp ----------
+  record(): void {
+    const s = this.song();
+    if (!s || !this.player || !this.ready()) return;
+    this.result.set(null);
+    this.cheer.set(null);
+    this.canvas().nativeElement.parentElement?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    this.waitingStart = 'record';
+    this.clock = { yt: 0, at: performance.now(), playing: false };
+    this.player.setVolume(80);
+    this.player.seekTo(0, true);
+    this.player.playVideo();
+  }
+
+  stopRecord(save: boolean): void {
+    const notes = this.game!.stopRecord();
+    this.player?.pauseVideo();
+    this.state.set('title');
+    if (!save) return;
+    if (notes.length < 8) {
+      this.linkErr.set('Mới ghi được ' + notes.length + ' ô — gõ nhiều hơn (ít nhất 8 ô) rồi lưu nhé.');
+      return;
+    }
+    this.linkErr.set('');
+    this.myChart.set(notes);
+    this.mode.set('mine');
+    this.persist();
+    sfx.play('win');
+  }
+
+  clearMine(): void {
+    this.myChart.set(null);
+    this.mode.set('auto');
+    this.persist();
+  }
+
+  applyCalib(): void {
+    const c = this.calib();
+    if (!c) return;
+    this.latency.set(Math.max(-300, Math.min(300, Math.round((this.latency() + c) / 5) * 5)));
+    saveGlobalLatency(this.latency());
+    this.persist();
+    this.result.update((r) => (r ? { ...r, errN: 0 } : r));
+  }
+
+  /** Lưu nhịp riêng của bài đang chọn. */
+  private persist(): void {
+    const s = this.song();
+    if (!s) return;
+    saveTuning(s.id, {
+      bpm: this.bpm(),
+      offset: this.offset(),
+      phase: this.phase(),
+      latency: this.latency(),
+      mode: this.mode(),
+      chart: this.myChart()?.slice(0, 4000).map((n) => [Math.round(n.t * 1000), n.lane] as [number, number]),
+    });
   }
 
   private showCheer(kind: 'combo' | 'perfect', n: number): void {
@@ -522,17 +685,44 @@ function saveRecent(list: Song[]): void {
     /* bỏ qua */
   }
 }
-function readTuning(id: string): { bpm: number; offset: number } | null {
+interface Tuning {
+  bpm: number;
+  offset: number;
+  phase?: number | null;
+  latency?: number;
+  mode?: 'auto' | 'mine';
+  /** Nhịp tự ghi: [mili-giây, làn]. */
+  chart?: [number, number][];
+}
+function readTuning(id: string): Tuning | null {
   try {
-    const v = JSON.parse(localStorage.getItem('fumo.piano.tune.' + id) || 'null') as { bpm: number; offset: number } | null;
-    return v && v.bpm >= 70 && v.bpm <= 200 ? v : null;
+    const v = JSON.parse(localStorage.getItem('fumo.piano.tune.' + id) || 'null') as Tuning | null;
+    if (!v || !(v.bpm >= 70 && v.bpm <= 200)) return null;
+    if (v.chart && !Array.isArray(v.chart)) v.chart = undefined;
+    v.chart = v.chart?.filter((x) => Array.isArray(x) && x[0] >= 0 && x[1] >= 0 && x[1] < 4);
+    return v;
   } catch {
     return null;
   }
 }
-function saveTuning(id: string, bpm: number, offset: number): void {
+function saveTuning(id: string, t: Tuning): void {
   try {
-    localStorage.setItem('fumo.piano.tune.' + id, JSON.stringify({ bpm, offset }));
+    localStorage.setItem('fumo.piano.tune.' + id, JSON.stringify(t));
+  } catch {
+    /* bỏ qua */
+  }
+}
+/** Căn lệch chung (dùng cho bài mới chưa chỉnh riêng). */
+function readGlobalLatency(): number {
+  try {
+    return Math.max(-300, Math.min(300, Number(localStorage.getItem('fumo.piano.latency')) || 0));
+  } catch {
+    return 0;
+  }
+}
+function saveGlobalLatency(ms: number): void {
+  try {
+    localStorage.setItem('fumo.piano.latency', String(ms));
   } catch {
     /* bỏ qua */
   }
