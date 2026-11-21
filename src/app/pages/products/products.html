@@ -10,61 +10,59 @@
     ⚙️ Bộ lọc @if (activeCount()) { ({{ activeCount() }}) }
   </button>
 
-  <aside class="filters card-surface" [class.open]="filtersOpen()">
+  <aside class="filters card-surface" [class.open]="filtersOpen()" aria-label="Bộ lọc sản phẩm">
     <div class="filters-head">
       <h3>Bộ lọc</h3>
-      @if (activeCount()) {
-        <button class="link" type="button" (click)="reset()">Xoá lọc</button>
-      }
+      <button class="link" type="button" (click)="reset()" [disabled]="!activeCount()">
+        Xoá lọc @if (activeCount()) { ({{ activeCount() }}) }
+      </button>
     </div>
 
-    <div class="field">
-      <label for="search">Tìm kiếm</label>
-      <input
-        id="search"
-        type="search"
-        placeholder="Tên, mô tả, thẻ..."
-        [ngModel]="search()"
-        (ngModelChange)="search.set($event)"
-      />
+    <div class="f-sec">
+      <label class="f-title" for="search">Tìm kiếm</label>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2" /><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg>
+        <input id="search" type="search" placeholder="Tên, mô tả, thẻ..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
     </div>
 
-    <fieldset>
-      <legend>Danh mục</legend>
-      @for (c of categories(); track c) {
-        <label class="check">
-          <input type="checkbox" [checked]="selectedCats().has(c)" (change)="toggle(selectedCats, c)" />
-          <span><app-icon [icon]="catIcon(c)" /> {{ c }}</span>
-        </label>
-      }
-    </fieldset>
-
-    <fieldset>
-      <legend>Giá tối đa: <b>{{ effectivePriceMax() | vnd }}</b></legend>
-      <input
-        type="range"
-        min="0"
-        [max]="maxPrice()"
-        step="10000"
-        [value]="effectivePriceMax()"
-        (input)="setPrice(+$any($event.target).value)"
-      />
-    </fieldset>
-
-    <fieldset>
-      <legend>Thẻ</legend>
-      <div class="pills">
-        @for (t of allTags(); track t) {
-          <button type="button" class="pill" [class.on]="selectedTags().has(t)" (click)="toggle(selectedTags, t)">
-            #{{ t }}
-          </button>
+    <div class="f-sec" role="group" aria-labelledby="f-cat">
+      <span class="f-title" id="f-cat">Danh mục</span>
+      <div class="opts">
+        @for (c of categories(); track c) {
+          <label class="opt" [class.on]="selectedCats().has(c)">
+            <input type="checkbox" class="sr" [checked]="selectedCats().has(c)" (change)="toggle(selectedCats, c)" />
+            <span class="box" aria-hidden="true"></span>
+            <app-icon class="ic" [icon]="catIcon(c)" />
+            <span class="nm">{{ c }}</span>
+            <span class="n">{{ catCount(c) }}</span>
+          </label>
         }
       </div>
-    </fieldset>
+    </div>
 
-    <label class="check">
-      <input type="checkbox" [checked]="inStockOnly()" (change)="inStockOnly.set(!inStockOnly())" />
+    <div class="f-sec">
+      <label class="f-title" for="f-price">Giá tối đa <b>{{ effectivePriceMax() | vnd }}</b></label>
+      <input id="f-price" type="range" min="0" [max]="maxPrice()" step="10000" [value]="effectivePriceMax()"
+        [style.--fill.%]="(effectivePriceMax() / maxPrice()) * 100" (input)="setPrice(+$any($event.target).value)" />
+      <div class="range-ends"><span>0 ₫</span><span>{{ maxPrice() | vnd }}</span></div>
+    </div>
+
+    @if (allTags().length) {
+      <div class="f-sec" role="group" aria-labelledby="f-tag">
+        <span class="f-title" id="f-tag">Thẻ</span>
+        <div class="pills">
+          @for (t of allTags(); track t) {
+            <button type="button" class="pill" [class.on]="selectedTags().has(t)" [attr.aria-pressed]="selectedTags().has(t)" (click)="toggle(selectedTags, t)">#{{ t }}</button>
+          }
+        </div>
+      </div>
+    }
+
+    <label class="switch-row">
       <span>Chỉ hiện còn hàng</span>
+      <input type="checkbox" class="sr" [checked]="inStockOnly()" (change)="inStockOnly.set(!inStockOnly())" />
+      <span class="sw" aria-hidden="true"></span>
     </label>
   </aside>
 

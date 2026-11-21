@@ -33,6 +33,17 @@ export class ProductsPage {
     return this.catSvc.find(name)?.icon ?? '';
   }
   readonly allTags = this.service.allTags;
+
+  /** Số sản phẩm đang bán trong từng danh mục (hiện bên phải tên danh mục). */
+  private readonly catCounts = computed(() => {
+    const m = new Map<string, number>();
+    for (const p of this.service.shop()) m.set(p.category, (m.get(p.category) ?? 0) + 1);
+    return m;
+  });
+
+  catCount(name: string): number {
+    return this.catCounts().get(name) ?? 0;
+  }
   readonly maxPrice = computed(() => Math.ceil(this.service.maxPrice() / 10000) * 10000 || 1000000);
 
   readonly sortOptions: { value: SortKey; label: string }[] = [

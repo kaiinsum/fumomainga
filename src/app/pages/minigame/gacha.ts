@@ -8,6 +8,7 @@ import { CartService } from '../../services/cart.service';
 import { ProductService } from '../../services/product.service';
 import { flyToCart } from '../../shared/fly-to-cart';
 import { sfx } from '../../shared/sfx';
+import { richToText } from '../../shared/rich-text';
 
 type RarityKey = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -48,6 +49,7 @@ const WIN_INDEX = 54;
         <span class="chip">🎁 Gacha</span>
         <h1>Túi mù <span class="hl">may mắn</span></h1>
         <p class="muted">Bóc một túi mù để xem hôm nay số phận chọn bé nào cho bạn. Chỉ gồm các sản phẩm đang còn hàng.</p>
+        <p class="notice" role="note">⚠️ Đây chỉ là trò chơi gợi ý cho vui - kết quả <b>KHÔNG</b> phải quà tặng, <b>KHÔNG</b> được miễn phí và <b>KHÔNG</b> kèm giảm giá. Sản phẩm vẫn tính đúng giá bán.</p>
       </header>
 
       @if (!pool().length) {
@@ -94,7 +96,7 @@ const WIN_INDEX = 54;
               <small class="muted">Hôm nay bạn nên mua</small>
               <h2>{{ r.product.name }}</h2>
               <app-price-tag class="price" [product]="r.product" />
-              <p class="muted">{{ r.product.description }}</p>
+              <p class="muted one-line" [title]="plain(r.product.description)">{{ plain(r.product.description) }}</p>
               <div class="row">
                 <button class="btn primary" type="button" (click)="addToCart(r.product)">{{ added() ? '✓ Đã thêm vào giỏ' : '🛒 Thêm vào giỏ' }}</button>
                 <a class="btn ghost" [routerLink]="['/san-pham', r.product.slug || r.product.id]">Xem chi tiết</a>
@@ -140,6 +142,11 @@ const WIN_INDEX = 54;
     .head h1 { margin: 8px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); }
     .hl { color: var(--primary); }
     .muted { color: var(--muted); }
+    .res-info { min-width: 0; }
+    .one-line { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .notice { margin: 10px auto 0; max-width: 640px; padding: 10px 14px; border-radius: 12px; font-size: .9rem; line-height: 1.5;
+      background: color-mix(in srgb, #e53935 8%, var(--surface)); border: 1.5px dashed color-mix(in srgb, #e53935 45%, transparent); }
+    .notice b { color: #e53935; font-weight: 900; letter-spacing: .02em; }
     .small { font-size: .82rem; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; }
     .empty { text-align: center; padding: 48px 16px; }
@@ -213,6 +220,10 @@ export class GachaPage {
   private readonly cart = inject(CartService);
 
   readonly winIndex = WIN_INDEX;
+  /** Mô tả dạng chữ thường (bỏ **đậm**, [màu]…) để hiện gọn 1 dòng. */
+  plain(d: string): string {
+    return richToText(d).replace(/\s+/g, ' ').trim();
+  }
   readonly duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1200 : 6500;
   readonly opening = signal(false);
   readonly animating = signal(false);
