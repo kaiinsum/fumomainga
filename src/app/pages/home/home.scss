@@ -1013,7 +1013,7 @@ h1 {
   70% { transform: scale(0.97, 1.03); }
 }
 
-// Bé 2 (Satori): "đọc suy nghĩ" — bay bổng lơ lửng, đung đưa nhẹ, toả hào quang hồng nhấp nháy như con mắt thứ ba.
+// Bé 2 (Satori): "đọc suy nghĩ" - bay bổng lơ lửng, đung đưa nhẹ, toả hào quang hồng nhấp nháy như con mắt thứ ba.
 @keyframes fx-psychic {
   0%, 100% { transform: translateY(0) rotate(0) scale(1); filter: drop-shadow(0 0 0 rgba(255, 105, 180, 0)); }
   20% { transform: translateY(-16px) rotate(-3deg) scale(1.03); filter: drop-shadow(0 0 14px rgba(255, 105, 180, .75)); }

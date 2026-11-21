@@ -57,9 +57,9 @@ export class AdminNewsForm {
   readonly path = newsPath;
   readonly scoreLevel = scoreLevel;
   readonly schemaTypes: { value: NewsSchemaType; label: string }[] = [
-    { value: 'NewsArticle', label: 'NewsArticle — Tin tức' },
-    { value: 'BlogPosting', label: 'BlogPosting — Bài blog' },
-    { value: 'Article', label: 'Article — Bài viết chung' },
+    { value: 'NewsArticle', label: 'NewsArticle - Tin tức' },
+    { value: 'BlogPosting', label: 'BlogPosting - Bài blog' },
+    { value: 'Article', label: 'Article - Bài viết chung' },
   ];
   readonly cover = signal('');
   readonly coverUrl = signal('');
@@ -73,7 +73,7 @@ export class AdminNewsForm {
   readonly uploading = signal(false);
 
   readonly mdHint = 'Viết nội dung bài... Hỗ trợ: ## tiêu đề, **đậm**, *nghiêng*, - danh sách, [link](url), > trích dẫn';
-  readonly htmlHint = 'Dán hoặc viết mã HTML... VD: <h2>Tiêu đề</h2><p>Nội dung</p> — hỗ trợ bảng, ảnh, màu chữ, video YouTube (script sẽ tự bị bỏ).';
+  readonly htmlHint = 'Dán hoặc viết mã HTML... VD: <h2>Tiêu đề</h2><p>Nội dung</p> - hỗ trợ bảng, ảnh, màu chữ, video YouTube (script sẽ tự bị bỏ).';
   /** Nút chèn nhanh khi soạn HTML. */
   readonly htmlTools: ToolButton[] = [
     { label: 'H2', title: 'Tiêu đề lớn', before: '<h2>', after: '</h2>', placeholder: 'Tiêu đề', block: true },

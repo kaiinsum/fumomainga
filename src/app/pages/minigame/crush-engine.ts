@@ -1,5 +1,5 @@
 /**
- * "Fumo Crush Saga" — ghép 3 bé fumo cùng màu để đánh quái đang kéo tới đền Hakurei.
+ * "Fumo Crush Saga" - ghép 3 bé fumo cùng màu để đánh quái đang kéo tới đền Hakurei.
  *  - 3 viên: chém 1 nhát vào con quái gần nhất
  *  - 4 viên: ném bom nổ lan
  *  - 5 viên: laser xuyên cả hàng quái
@@ -68,7 +68,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     place: 'Dinh thự Quỷ Đỏ',
-    story: 'Màn sương đỏ che mặt trời — tiểu thư ma cà rồng thức giấc.',
+    story: 'Màn sương đỏ che mặt trời - tiểu thư ma cà rồng thức giấc.',
     boss: 'Remilia',
     bossTitle: 'Tiểu thư của bóng đêm',
     img: 'fumo-ninja/remilia.webp',
@@ -90,7 +90,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     place: 'Đền Hakurei',
-    story: 'Đền vắng khách, hòm công đức trống rỗng — vu nữ nổi giận thật rồi!',
+    story: 'Đền vắng khách, hòm công đức trống rỗng - vu nữ nổi giận thật rồi!',
     boss: 'Reimu',
     bossTitle: 'Vu nữ đền Hakurei',
     img: 'jp-type/boss-reimu.webp',
@@ -101,7 +101,7 @@ export const CHAPTERS: Chapter[] = [
   },
   {
     place: 'Dị biến cuối cùng',
-    story: 'Bóng tối nuốt trọn Gensokyo — Reimu bóng tối xuất hiện.',
+    story: 'Bóng tối nuốt trọn Gensokyo - Reimu bóng tối xuất hiện.',
     boss: 'Reimu bóng tối',
     bossTitle: 'Dị biến tối thượng',
     img: 'jp-type/boss-dark-reimu.webp',
@@ -221,7 +221,7 @@ export class CrushGame {
   private p = (k: string, d: number) => this.params[k] ?? d;
   private readonly ctx: CanvasRenderingContext2D;
   private readonly imgs = new Map<string, HTMLImageElement>();
-  /** Ảnh ô fumo dựng sẵn (nền + glow + ảnh) — vẽ nhanh mỗi khung hình. */
+  /** Ảnh ô fumo dựng sẵn (nền + glow + ảnh) - vẽ nhanh mỗi khung hình. */
   private tiles: HTMLCanvasElement[] = [];
   private iceTile?: HTMLCanvasElement;
   private dpr = 1;
@@ -541,7 +541,7 @@ export class CrushGame {
     }
     this.grid.flat().forEach((g) => g && ((g.scale = 0.2), (g.alpha = 0.3)));
     this.phase = 'shuffle';
-    this.say('🔀 Hết nước đi — xáo bàn!', '#ffd23f', W / 2, BY + 4 * CELL, 30);
+    this.say('🔀 Hết nước đi - xáo bàn!', '#ffd23f', W / 2, BY + 4 * CELL, 30);
     sfx.play('whoosh');
   }
 
@@ -895,7 +895,7 @@ export class CrushGame {
     sfx.play('bossIn');
   }
 
-  /** Chiêu riêng của boss — càng về sau càng khó. */
+  /** Chiêu riêng của boss - càng về sau càng khó. */
   private bossSkill(e: Enemy): void {
     const ch = this.chapter;
     const freeze = (n: number, label: string) => {

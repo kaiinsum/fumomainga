@@ -333,7 +333,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
         ease: 'outElastic(1, .6)',
       }, '-=900');
 
-    // Bong bóng trôi lơ lửng (lặp vô hạn) — chế độ nhẹ thì để đứng yên.
+    // Bong bóng trôi lơ lửng (lặp vô hạn) - chế độ nhẹ thì để đứng yên.
     if (!perf.lite) q('.bubble').forEach((el, i) => {
       this.loops.push(
         animate(el, {
@@ -349,7 +349,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.observeStats();
   }
 
-  /** Mascot lơ lửng — chạy lại mỗi khi quay về giao diện sáng (mascot được render lại). */
+  /** Mascot lơ lửng - chạy lại mỗi khi quay về giao diện sáng (mascot được render lại). */
   private startMascotFloat(): void {
     this.mascotLoop?.pause();
     if (perf.lite) return;

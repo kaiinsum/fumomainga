@@ -1,6 +1,6 @@
 /**
- * /api/settings — cài đặt website (tên shop, màu, liên hệ, link Facebook/TikTok/Shopee, lời chào AI...).
- * GET: công khai — mọi khách đều nhận cùng cài đặt admin đã lưu.
+ * /api/settings - cài đặt website (tên shop, màu, liên hệ, link Facebook/TikTok/Shopee, lời chào AI...).
+ * GET: công khai - mọi khách đều nhận cùng cài đặt admin đã lưu.
  * PUT: chỉ admin.
  * Cài đặt không chứa bí mật (mật khẩu admin lưu riêng, không gửi lên đây).
  */

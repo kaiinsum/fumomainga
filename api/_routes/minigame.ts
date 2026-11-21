@@ -1,5 +1,5 @@
 /**
- * /api/minigame — code mở khoá tất cả minigame trong ngày (giờ Việt Nam).
+ * /api/minigame - code mở khoá tất cả minigame trong ngày (giờ Việt Nam).
  * GET (admin): code hôm nay · PUT (admin): tạo code mới cho hôm nay (code cũ hết hiệu lực)
  * POST { code } (công khai): kiểm tra code khách nhập → mở khoá đến hết ngày.
  *

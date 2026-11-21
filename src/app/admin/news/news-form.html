@@ -91,13 +91,19 @@
           @case ('general') {
             <div class="serp" aria-label="Xem trước trên Google">
               <small class="serp-url">{{ origin }} › tin-tuc › {{ r.slug || '...' }}</small>
-              <div class="serp-title">{{ r.title || 'Tiêu đề bài viết' }} — {{ settings().shopName }}</div>
+              <div class="serp-title">{{ r.title || 'Tiêu đề bài viết' }} - {{ settings().shopName }}</div>
               <div class="serp-desc">{{ r.description || 'Mô tả sẽ hiển thị ở đây.' }}</div>
             </div>
 
             <div class="field">
               <label for="seo-kw">Từ khoá chính</label>
               <input id="seo-kw" [(ngModel)]="seo.focusKeyword" placeholder="Ví dụ: fumo mùa đông" maxlength="80" />
+            </div>
+
+            <div class="field">
+              <label for="seo-kw2">Từ khoá phụ <small class="opt">(cách nhau bằng dấu phẩy)</small></label>
+              <input id="seo-kw2" [(ngModel)]="seo.secondaryKeywords" placeholder="Ví dụ: giữ ấm fumo, đồ đông cho thú bông" maxlength="300" />
+              <small class="hint">Các cách gọi khác khách hay gõ. Nên dùng mỗi từ khoá phụ ít nhất 1 lần trong bài.</small>
             </div>
 
             <div class="field">
@@ -151,10 +157,10 @@
             <div class="field">
               <span class="label">Robots meta</span>
               <label class="check">
-                <input type="checkbox" [(ngModel)]="seo.noindex" /> <b>noindex</b> — không cho Google hiển thị bài này
+                <input type="checkbox" [(ngModel)]="seo.noindex" /> <b>noindex</b> - không cho Google hiển thị bài này
               </label>
               <label class="check">
-                <input type="checkbox" [(ngModel)]="seo.nofollow" /> <b>nofollow</b> — không theo các liên kết trong bài
+                <input type="checkbox" [(ngModel)]="seo.nofollow" /> <b>nofollow</b> - không theo các liên kết trong bài
               </label>
             </div>
             <div class="field">
@@ -224,7 +230,7 @@
       <h2>Danh mục</h2>
       <div class="box-body field">
         <select [ngModel]="category()" (ngModelChange)="category.set($event)" aria-label="Danh mục bài viết">
-          <option value="">— Chưa phân loại —</option>
+          <option value="">- Chưa phân loại -</option>
           @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
         </select>
         <a class="small-link" routerLink="/admin/tin-tuc" [queryParams]="{ danhMuc: 1 }">⚙ Quản lý danh mục bài viết</a>

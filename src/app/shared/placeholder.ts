@@ -5,7 +5,7 @@ const HUE = 208;
 const shade = (lightness: number, sat = 100) => `hsl(${HUE}, ${sat}%, ${lightness}%)`;
 
 /**
- * Tạo ảnh SVG placeholder (data URI) cho dữ liệu mẫu — chỉ dùng các sắc của #60B5FF,
+ * Tạo ảnh SVG placeholder (data URI) cho dữ liệu mẫu - chỉ dùng các sắc của #60B5FF,
  * trắng và xanh đậm, không thêm màu khác. `variant` thay đổi độ sáng/bố cục cho mỗi ảnh.
  */
 export function placeholderImage(label: string, variant = 0): string {

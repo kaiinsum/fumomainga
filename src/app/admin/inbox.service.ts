@@ -136,7 +136,7 @@ export class AdminInboxService {
                 key: `s:${s.level}:${day}`,
                 kind: 'storage',
                 title: s.level === 'danger' ? `🚨 Bộ nhớ sắp đầy (${s.pct}%)` : `⚠ Bộ nhớ đang đầy dần (${s.pct}%)`,
-                content: `Đã dùng ${mb(s.dbBytes)} / ${mb(s.limitBytes)} — bấm để dọn dữ liệu cũ không dùng.`,
+                content: `Đã dùng ${mb(s.dbBytes)} / ${mb(s.limitBytes)} - bấm để dọn dữ liệu cũ không dùng.`,
                 createdAt: Date.now(),
                 link: '/admin/thong-ke?don=1',
               },
@@ -165,7 +165,7 @@ export class AdminInboxService {
           key: `sec:${s.ip}:${s.level}:${day}`,
           kind: 'security' as const,
           title: s.loginFails >= 3 ? `🔐 IP ${s.ip} nhập sai mật khẩu admin ${s.loginFails} lần` : `🚨 IP ${s.ip} đang spam / tấn công`,
-          content: [s.rateHits ? `Bị chặn tốc độ ${s.rateHits} lần` : '', s.loginFails ? `sai mật khẩu ${s.loginFails} lần` : '', 'trong 24 giờ — bấm để xem và chặn IP.']
+          content: [s.rateHits ? `Bị chặn tốc độ ${s.rateHits} lần` : '', s.loginFails ? `sai mật khẩu ${s.loginFails} lần` : '', 'trong 24 giờ - bấm để xem và chặn IP.']
             .filter(Boolean)
             .join(', '),
           createdAt: s.last,

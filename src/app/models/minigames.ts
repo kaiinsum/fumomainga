@@ -15,7 +15,7 @@ export interface GameDef {
   title: string;
   tag: string;
   desc: string;
-  /** Ngày ra mắt mặc định (YYYY-MM-DD) — dùng cho thông báo "Minigame mới". Trống = không thông báo. */
+  /** Ngày ra mắt mặc định (YYYY-MM-DD) - dùng cho thông báo "Minigame mới". Trống = không thông báo. */
   releasedAt: string;
   /** Phân loại mặc định (id trong danh sách phân loại). 1 game được nhiều phân loại. */
   cats: string[];
@@ -47,7 +47,7 @@ export const GAMES: GameDef[] = [
     art: 'piano',
     title: 'Anime Piano Tiles',
     tag: '🎹 Âm nhạc · Nhịp điệu · Mới',
-    desc: 'Tìm bài hát anime / J-pop yêu thích trên YouTube, ô nhạc tự sinh theo bài — gõ trúng nhịp để ăn Perfect và combo!',
+    desc: 'Tìm bài hát anime / J-pop yêu thích trên YouTube, ô nhạc tự sinh theo bài - gõ trúng nhịp để ăn Perfect và combo!',
     releasedAt: '2026-11-20',
     cats: ['giai-tri'],
   },
@@ -57,7 +57,7 @@ export const GAMES: GameDef[] = [
     art: 'merge',
     title: 'Merge Fumo',
     tag: '🫧 Thả & gộp · Mới',
-    desc: 'Thả các bé fumo vào hộp quà, 2 bé giống nhau chạm nhau sẽ gộp thành bé lớn hơn. Gộp tới Reimu siêu to — đừng để hộp tràn!',
+    desc: 'Thả các bé fumo vào hộp quà, 2 bé giống nhau chạm nhau sẽ gộp thành bé lớn hơn. Gộp tới Reimu siêu to - đừng để hộp tràn!',
     releasedAt: '2026-11-20',
     cats: ['giai-tri', 'chien-thuat'],
   },
@@ -67,7 +67,7 @@ export const GAMES: GameDef[] = [
     art: 'crush',
     title: 'Fumo Crush Saga',
     tag: '💎 Ghép fumo · Thủ đền · Mới',
-    desc: 'Ghép 3 bé fumo cùng màu để chém, 4 ném bom, 5 bắn laser, 6 tung chiêu đặc biệt — bảo vệ đền Hakurei khỏi lũ yêu quái. Chơi vô tận!',
+    desc: 'Ghép 3 bé fumo cùng màu để chém, 4 ném bom, 5 bắn laser, 6 tung chiêu đặc biệt - bảo vệ đền Hakurei khỏi lũ yêu quái. Chơi vô tận!',
     releasedAt: '2026-11-19',
     cats: ['giai-tri', 'chien-thuat'],
   },
@@ -77,7 +77,7 @@ export const GAMES: GameDef[] = [
     art: 'jp',
     title: 'Gõ chữ diệt Fumo',
     tag: '⌨️ Gõ chữ · Tiếng Nhật · Mới',
-    desc: 'Fumo mang chữ tiếng Nhật rơi từ trời xuống — gõ đúng cách đọc để tiêu diệt, phản đòn boss. 3 mức từ hiragana tới kanji khó!',
+    desc: 'Fumo mang chữ tiếng Nhật rơi từ trời xuống - gõ đúng cách đọc để tiêu diệt, phản đòn boss. 3 mức từ hiragana tới kanji khó!',
     releasedAt: '2026-11-17',
     cats: ['tri-tue'],
   },
@@ -97,7 +97,7 @@ export const GAMES: GameDef[] = [
     art: 'dle',
     title: 'Đoán nhân vật (Touhoudle)',
     tag: '🔎 Đố vui · Mỗi ngày',
-    desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật mới!',
+    desc: 'Đoán nhân vật bí ẩn qua chủng loài, game đầu tiên, nơi ở, màu tóc... Mỗi ngày một nhân vật!',
     releasedAt: '',
     cats: ['tri-tue'],
   },
@@ -107,7 +107,7 @@ export const GAMES: GameDef[] = [
     art: 'ninja',
     title: 'Fumo Ninja',
     tag: '🗡️ Chém fumo · Mới',
-    desc: 'Vuốt để chém các bé fumo bay lên. Cẩn thận Reimu viền neon đỏ — chém trúng là thua!',
+    desc: 'Vuốt để chém các bé fumo bay lên. Cẩn thận Reimu viền neon đỏ - chém trúng là thua!',
     releasedAt: '',
     cats: ['giai-tri'],
   },
@@ -156,6 +156,9 @@ export interface ResolvedGame extends GameDef {
   free: boolean;
 }
 
+/** Mô tả cũ đã lưu trong cài đặt (bản trước có chữ "mới") → bỏ chữ "mới". */
+const oldDesc = (t: string) => t.replace('Mỗi ngày một nhân vật mới!', 'Mỗi ngày một nhân vật!');
+
 /** Gộp cấu hình admin với danh sách game: giữ thứ tự admin, bỏ game không còn tồn tại, nối game mới vào cuối. */
 export function resolveGames(saved: GameSetting[] | undefined): ResolvedGame[] {
   const list = Array.isArray(saved) ? saved : [];
@@ -169,11 +172,11 @@ export function resolveGames(saved: GameSetting[] | undefined): ResolvedGame[] {
       ...def,
       title: s.title?.trim() || def.title,
       tag: s.tag?.trim() || def.tag,
-      desc: s.desc?.trim() || def.desc,
+      desc: oldDesc(s.desc?.trim() || def.desc),
       status: s.status === 'locked' || s.status === 'hidden' ? s.status : 'open',
       lockMsg: s.lockMsg?.trim() || DEFAULT_LOCK_MSG,
       releasedAt: s.releasedAt?.trim() || def.releasedAt,
-      notice: s.notice?.trim() || s.desc?.trim() || def.desc,
+      notice: oldDesc(s.notice?.trim() || s.desc?.trim() || def.desc),
       free: !!s.free,
       cats: Array.isArray(s.cats) ? s.cats : def.cats,
     });

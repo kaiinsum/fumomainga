@@ -57,7 +57,7 @@ interface Draft {
         <h2>Kết nối máy chủ đơn hàng</h2>
         <form class="box-body" (ngSubmit)="connect()">
           <p class="hint">
-            Đơn hàng của khách được lưu trên máy chủ, nên cần <b>mã quản trị</b> — chính là giá trị biến môi trường
+            Đơn hàng của khách được lưu trên máy chủ, nên cần <b>mã quản trị</b> - chính là giá trị biến môi trường
             <code>ADMIN_API_KEY</code> bạn đặt trên Vercel. Chỉ cần nhập một lần trên máy này.
           </p>
           <div class="field">
@@ -127,7 +127,7 @@ interface Draft {
               }
               <div class="add-row">
                 <select [(ngModel)]="pickProduct" aria-label="Chọn sản phẩm">
-                  <option value="">— Thêm sản phẩm có sẵn —</option>
+                  <option value="">- Thêm sản phẩm có sẵn -</option>
                   @for (p of products(); track p.id) { <option [value]="p.id">{{ p.name }} ({{ unit(p) | vnd }})</option> }
                 </select>
                 <button type="button" class="mini" (click)="addProduct(d)">+ Thêm</button>
@@ -393,7 +393,7 @@ export class AdminOrders {
       const msg = e instanceof Error ? e.message : 'Không tải được dữ liệu.';
       this.setup.set(status === 503 || status === 404 ? msg : '');
       this.needKey.set(status === 401);
-      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng — nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
+      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng - nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
       if (!status) this.needKey.set(true);
     } finally {
       this.loading.set(false);

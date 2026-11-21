@@ -1,5 +1,5 @@
 /**
- * Hiệu ứng âm thanh cho mini game — tổng hợp bằng Web Audio (không dùng file âm thanh nào).
+ * Hiệu ứng âm thanh cho mini game - tổng hợp bằng Web Audio (không dùng file âm thanh nào).
  * Dùng: sfx.play('slice'). Trình duyệt chỉ cho phát sau khi người dùng chạm / bấm lần đầu.
  */
 import { signal } from '@angular/core';
@@ -13,7 +13,7 @@ export type SfxName =
   | 'key' | 'typo' | 'reflect' | 'heal' | 'freeze' | 'bossIn' | 'bossHit' | 'kill';
 
 const MUTE_KEY = 'fumo.sfx.muted';
-/** Khoảng cách tối thiểu giữa hai lần phát cùng một âm (ms) — tránh rè khi bắn liên tục. */
+/** Khoảng cách tối thiểu giữa hai lần phát cùng một âm (ms) - tránh rè khi bắn liên tục. */
 const THROTTLE: Partial<Record<SfxName, number>> = { key: 25, typo: 90, shot: 95, hit: 45, pickup: 60, tick: 28, whoosh: 160, flip: 60, launch: 120, boom: 70 };
 
 class Sfx {
@@ -76,7 +76,7 @@ class Sfx {
     this.render(name);
   }
 
-  // ---------- Âm thanh từ file (giải mã sẵn vào Web Audio — phát tức thì, không trễ) ----------
+  // ---------- Âm thanh từ file (giải mã sẵn vào Web Audio - phát tức thì, không trễ) ----------
   private readonly buffers = new Map<string, Promise<AudioBuffer | null>>();
 
   loadFile(src: string): Promise<AudioBuffer | null> {
@@ -260,7 +260,8 @@ export const sfx = new Sfx();
 const fileLast = new Map<string, number>();
 const BAKA = 'sfx/baka-cirno.mp3';
 /** File tải sẵn ngay lần chạm đầu. */
-const PRELOAD = [BAKA];
+const OHAYOU = 'sfx/guide-ohayou.mp3';
+const PRELOAD = [BAKA, OHAYOU];
 
 /** Phát 1 file âm thanh ngắn (tôn trọng nút tắt tiếng). `gapMs`: không phát lại cùng file trong khoảng này. */
 export function playFile(src: string, opts: { volume?: number; gapMs?: number } = {}): void {
@@ -270,5 +271,8 @@ export function playFile(src: string, opts: { volume?: number; gapMs?: number } 
   sfx.playFile(src, opts.volume ?? 0.7);
 }
 
-/** "Baka!" của Cirno — phát khi thua minigame và khi Cirno nhún ở trang chủ. */
+/** "Baka!" của Cirno - phát khi thua minigame và khi Cirno nhún ở trang chủ. */
 export const playBaka = () => playFile(BAKA, { volume: 0.75, gapMs: 1200 });
+
+/** "Ohayou!" - phát khi bấm nút triệu hồi người hướng dẫn. */
+export const playOhayou = () => playFile(OHAYOU, { volume: 0.8, gapMs: 800 });

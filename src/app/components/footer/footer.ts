@@ -93,7 +93,7 @@ import { IconComponent } from '../../shared/icon';
     .season button:hover { background: rgba(255, 255, 255, .16); border-color: var(--primary); }
     .copy { text-align: center; margin-top: 32px; font-size: .85rem; opacity: .7; }
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-    /* Điện thoại: gọn lại — chữ nhỏ hơn, 2 cột link, liên hệ trải ngang. */
+    /* Điện thoại: gọn lại - chữ nhỏ hơn, 2 cột link, liên hệ trải ngang. */
     @media (max-width: 600px) {
       .footer { padding: 26px 0 14px; margin-top: 28px; font-size: .82rem; }
       .grid { grid-template-columns: 1fr 1fr; gap: 16px 14px; }
@@ -118,7 +118,7 @@ export class FooterComponent {
   readonly categories = this.catSvc.names;
   readonly year = new Date().getFullYear();
   readonly season = inject(SeasonService);
-  /** Link "Designed by San Nii" (Cài đặt → Chung) — chỉ nhận link https:// / http://. */
+  /** Link "Designed by San Nii" (Cài đặt → Chung) - chỉ nhận link https:// / http://. */
   designer(): string {
     const u = (this.settings().designerUrl ?? '').trim();
     return /^https?:\/\/\S+$/i.test(u) ? u : '';

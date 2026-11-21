@@ -3,6 +3,11 @@ import { Meta } from '@angular/platform-browser';
 import { EMPTY_SEO, NewsPost, newsPath } from '../models/news';
 import { Product, finalPrice, productPath, productSeoOf, variantsOf } from '../models/product';
 import { effectiveProductSeo, effectiveSeo } from '../shared/seo';
+import { splitKeywords } from '../models/site-seo';
+
+/** Từ khoá chính + từ khoá phụ (+ thẻ sản phẩm), không trùng. */
+const kwList = (seo: { focusKeyword?: string; secondaryKeywords?: string } | null | undefined, extra: string[] = []): string[] =>
+  splitKeywords([seo?.focusKeyword ?? '', seo?.secondaryKeywords ?? '', ...extra].join(','));
 
 export interface ArticleSchemaInput {
   post: NewsPost;
@@ -36,7 +41,7 @@ export function buildArticleSchema({ post, url, shopName, logo }: ArticleSchemaI
         publisher: org,
         mainEntityOfPage: { '@type': 'WebPage', '@id': url },
         inLanguage: 'vi-VN',
-        ...(seo?.focusKeyword ? { keywords: seo.focusKeyword } : {}),
+        ...(kwList(seo).length ? { keywords: kwList(seo).join(', ') } : {}),
       },
       {
         '@type': 'BreadcrumbList',
@@ -87,7 +92,7 @@ export function buildProductSchema({ product: p, url, shopName, logo }: ProductS
       sku: seo.sku || p.id,
       brand: { '@type': 'Brand', name: seo.brand || shopName },
       category: p.category,
-      ...(seo.focusKeyword || p.tags.length ? { keywords: [seo.focusKeyword, ...p.tags].filter(Boolean).join(', ') } : {}),
+      ...(kwList(seo, p.tags).length ? { keywords: kwList(seo, p.tags).join(', ') } : {}),
       offers,
     });
   }
@@ -114,7 +119,7 @@ export function buildProductSchema({ product: p, url, shopName, logo }: ProductS
       publisher: org,
       mainEntityOfPage: { '@type': 'WebPage', '@id': url },
       inLanguage: 'vi-VN',
-      ...(seo.focusKeyword ? { keywords: seo.focusKeyword } : {}),
+      ...(kwList(seo).length ? { keywords: kwList(seo).join(', ') } : {}),
     });
   }
   graph.push({
@@ -189,8 +194,8 @@ export class SeoMetaService {
       { name: 'twitter:description', content: description },
     ];
     if (image) tags.push({ property: 'og:image', content: image }, { name: 'twitter:image', content: image });
-    if (seo?.focusKeyword) {
-      tags.push({ property: 'article:tag', content: seo.focusKeyword }, { name: 'keywords', content: seo.focusKeyword });
+    if (kwList(seo).length) {
+      tags.push({ name: 'keywords', content: kwList(seo).join(', ') }, ...kwList(seo).map((k) => ({ property: 'article:tag', content: k })));
     }
     this.meta.addTags(tags);
 
@@ -237,7 +242,7 @@ export class SeoMetaService {
       { name: 'twitter:description', content: description },
     ];
     if (image) tags.push({ property: 'og:image', content: image }, { name: 'twitter:image', content: image });
-    if (seo.focusKeyword) tags.push({ name: 'keywords', content: [seo.focusKeyword, ...p.tags].join(', ') });
+    if (seo.focusKeyword || seo.secondaryKeywords) tags.push({ name: 'keywords', content: kwList(seo, p.tags).join(', ') });
     this.meta.addTags(tags);
 
     const canonical = this.doc.createElement('link');

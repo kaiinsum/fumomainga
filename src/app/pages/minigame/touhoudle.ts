@@ -256,7 +256,7 @@ export class TouhoudlePage {
   readonly won = computed(() => this.guesses().includes(this.answer().name));
 
   /**
-   * Gợi ý tên: hiện ĐỦ mọi nhân vật khớp (không cắt bớt) — danh sách tự cuộn.
+   * Gợi ý tên: hiện ĐỦ mọi nhân vật khớp (không cắt bớt) - danh sách tự cuộn.
    * Chưa gõ gì → hiện toàn bộ nhân vật theo ABC để khách lướt chọn.
    * Xếp hạng: khớp đầu tên > khớp đầu một chữ trong tên > khớp giữa tên; bỏ dấu, bỏ khoảng trắng / gạch nối khi so.
    */

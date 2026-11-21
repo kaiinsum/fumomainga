@@ -41,7 +41,7 @@ export class ProductService {
   /** Tăng mỗi khi admin thay đổi dữ liệu (không tính lần nạp từ máy chủ) → tự gửi lên máy chủ. */
   readonly changes = signal(0);
 
-  /** Tất cả sản phẩm (kể cả đang ẩn) — dùng cho trang admin. */
+  /** Tất cả sản phẩm (kể cả đang ẩn) - dùng cho trang admin. */
   readonly products = this._products.asReadonly();
   /** Sản phẩm khách được thấy (bỏ sản phẩm admin đã ẩn). */
   readonly shop = computed(() => this._products().filter((p) => !p.hidden));
@@ -55,13 +55,13 @@ export class ProductService {
     return this._products().find((p) => p.id === id);
   }
 
-  /** Tìm theo slug (mới hoặc cũ) hoặc id — dùng cho trang /san-pham/:id. */
+  /** Tìm theo slug (mới hoặc cũ) hoặc id - dùng cho trang /san-pham/:id. */
   find(key: string): Product | undefined {
     const list = this._products();
     return list.find((p) => p.slug === key) ?? list.find((p) => p.id === key) ?? list.find((p) => p.oldSlugs?.includes(key));
   }
 
-  /** Gợi ý slug cho tên (đã tránh trùng) — admin xem trước khi lưu. */
+  /** Gợi ý slug cho tên (đã tránh trùng) - admin xem trước khi lưu. */
   suggestSlug(text: string, selfId?: string): string {
     return uniqueSlug(slugify(text), this._products(), selfId);
   }
@@ -127,7 +127,7 @@ export class ProductService {
     this.commit(structuredClone(SEED_PRODUCTS));
   }
 
-  /** Nạp dữ liệu từ máy chủ (hoặc dữ liệu mẫu) — không tính là thay đổi của admin. */
+  /** Nạp dữ liệu từ máy chủ (hoặc dữ liệu mẫu) - không tính là thay đổi của admin. */
   hydrate(list: Product[]): void {
     const next = ensureSlugs(list);
     try {

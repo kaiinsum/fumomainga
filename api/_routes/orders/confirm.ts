@@ -1,5 +1,5 @@
 /**
- * POST /api/orders/confirm — khách bấm "Tôi đã chuyển khoản": ghi lại thời điểm để shop đối soát.
+ * POST /api/orders/confirm - khách bấm "Tôi đã chuyển khoản": ghi lại thời điểm để shop đối soát.
  */
 import { HttpError, digits, getStore, handle, json, normalizeCode, rateLimit, readJson } from '../../_lib/orders';
 

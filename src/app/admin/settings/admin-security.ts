@@ -107,7 +107,7 @@ interface Suspect {
         @if (tried() && !validIp(ip)) { <p class="field-err">IP không hợp lệ (IPv4 dạng 1.2.3.4 hoặc IPv6).</p> }
         @if (myIp()) { <p class="hint">IP của bạn hiện tại: <code>{{ myIp() }}</code> (không thể tự chặn).</p> }
         @if (safe().length) { <p class="hint">🛡 IP an toàn (không bao giờ bị chặn): @for (s of safe(); track s) { <code>{{ s }}</code> } </p> }
-        @if (off()) { <p class="err">⚠ Đang bật BLOCKLIST_OFF trên Vercel — danh sách chặn tạm thời KHÔNG có hiệu lực.</p> }
+        @if (off()) { <p class="err">⚠ Đang bật BLOCKLIST_OFF trên Vercel - danh sách chặn tạm thời KHÔNG có hiệu lực.</p> }
         <p class="hint">IP bị chặn không đặt hàng, gửi liên hệ, chat AI hay đăng nhập admin được. Muốn chặn cả việc xem trang web, thêm IP vào <b>Vercel → Firewall</b>.</p>
 
         <h3>Đang chặn ({{ blocked().length }})

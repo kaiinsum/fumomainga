@@ -1,10 +1,10 @@
 /**
- * /api/og?p=<đường dẫn trang> — trang HTML nhỏ có thẻ Open Graph cho BOT xem trước link
+ * /api/og?p=<đường dẫn trang> - trang HTML nhỏ có thẻ Open Graph cho BOT xem trước link
  * (Messenger / Facebook / Zalo / Discord / Telegram...). Bot không chạy JavaScript nên không thấy
  * ảnh / tiêu đề mà Angular gắn sau; vercel.json chuyển riêng các bot (theo user-agent) tới đây.
  * Người thật không bao giờ vào đây (vercel.json chỉ chuyển user-agent của bot).
  *
- * ?mode=search — dành cho bot TÌM KIẾM (Googlebot, Bing, Cốc Cốc...): trả về ĐÚNG trang web khách nhận (index.html),
+ * ?mode=search - dành cho bot TÌM KIẾM (Googlebot, Bing, Cốc Cốc...): trả về ĐÚNG trang web khách nhận (index.html),
  * chỉ điền sẵn <head> (tiêu đề, mô tả, canonical, ảnh thumbnail, robots max-image-preview, JSON-LD có ảnh)
  * để Google thấy ảnh ngay từ HTML gốc, không phải chờ chạy JavaScript. Nội dung trang giữ nguyên → không phải "cloaking".
  * Angular khởi động sẽ xoá các thẻ [data-ssr] này rồi gắn lại thẻ của chính nó.
@@ -85,7 +85,7 @@ export const GET = handle(async (req) => {
     const p = products.find((x) => x.slug === key || x.id === key || (x.oldSlugs ?? []).includes(key));
     if (p) {
       const price = typeof p.salePrice === 'number' && p.salePrice < (p.price ?? Infinity) ? p.salePrice : p.price;
-      title = `${p.seo?.title || p.name} — ${shop}`;
+      title = `${p.seo?.title || p.name} - ${shop}`;
       desc = clip(`${typeof price === 'number' ? vnd(price) + ' · ' : ''}${plain(p.seo?.description || p.description || '')}`, 200);
       image = abs(p.images?.[0]);
       type = 'product';
@@ -94,7 +94,7 @@ export const GET = handle(async (req) => {
     const key = decodeURIComponent(news[1]);
     const n = (catalog?.news ?? []).find((x) => x && x.status !== 'draft' && (x.seo?.slug === key || x.id === key));
     if (n) {
-      title = `${n.seo?.title || n.title} — ${shop}`;
+      title = `${n.seo?.title || n.title} - ${shop}`;
       desc = clip(plain(n.seo?.description || n.excerpt || ''), 200) || defDesc;
       image = abs(n.cover);
       type = 'article';
@@ -105,15 +105,15 @@ export const GET = handle(async (req) => {
     const rawIcon = cat ? (catalog?.categories ?? []).find((c) => c.name === cat)?.icon ?? '' : '';
     // Icon dạng ảnh (link / data) thì không ghi vào tiêu đề.
     const icon = rawIcon.length <= 8 && !/[/.:]/.test(rawIcon) ? rawIcon : '';
-    title = cat ? `${icon ? icon + ' ' : ''}${cat} — ${shop}` : `Tất cả sản phẩm — ${shop}`;
+    title = cat ? `${icon ? icon + ' ' : ''}${cat} - ${shop}` : `Tất cả sản phẩm - ${shop}`;
     desc = `${list.length} sản phẩm${cat ? ' trong danh mục ' + cat : ''}: ${clip(list.slice(0, 4).map((p) => p.name).join(', '), 150)}`;
     // Danh mục: lấy ảnh sản phẩm đầu tiên của danh mục.
     if (cat && list[0]?.images?.[0]) image = abs(list[0].images[0]);
   } else if (pathname.startsWith('/mini-game')) {
-    title = `🎮 Mini game — ${shop}`;
+    title = `🎮 Mini game - ${shop}`;
     desc = 'Chơi minigame fumo miễn phí ngay trên trình duyệt, đua top bảng xếp hạng!';
   } else if (pathname === '/tin-tuc') {
-    title = `Tin tức — ${shop}`;
+    title = `Tin tức - ${shop}`;
   }
 
   // Trang trên menu có khai báo riêng → ưu tiên (trừ trang danh mục ?danhMuc=).

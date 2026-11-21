@@ -31,7 +31,7 @@ function stored(storage: () => Storage, key: string): string {
 /**
  * Đọc nguồn khách tới: document.referrer + utm_source / utm_medium / utm_campaign trên link,
  * và mã quảng cáo (fbclid → Facebook, gclid → Google Ads, ttclid → TikTok, zarsrc → Zalo).
- * Trả về "<referrer|(direct)>[ ##utm_source=..&...]" — máy chủ tự phân loại (api/_lib/traffic-source.ts).
+ * Trả về "<referrer|(direct)>[ ##utm_source=..&...]" - máy chủ tự phân loại (api/_lib/traffic-source.ts).
  */
 function entrySource(): string {
   const ref = document.referrer || '(direct)';

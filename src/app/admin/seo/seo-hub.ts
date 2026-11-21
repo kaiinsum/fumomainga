@@ -44,7 +44,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
         <div class="box-body">
           <p class="hint">Tự điền <b>từ khoá chính, tiêu đề SEO, mô tả meta</b> và bật <b>schema</b> (Product cho sản phẩm, NewsArticle cho bài viết,
             WebPage / CollectionPage / AboutPage / ContactPage cho từng trang) dựa trên tên, mô tả, nội dung có sẵn.
-            Mặc định <b>chỉ điền ô đang trống</b> — không đụng tới nội dung bạn đã viết.</p>
+            Mặc định <b>chỉ điền ô đang trống</b> - không đụng tới nội dung bạn đã viết.</p>
           <div class="auto-opts">
             <label class="check"><input type="checkbox" [ngModel]="autoPages()" (ngModelChange)="autoPages.set($event)" /> 🧭 Trang menu <small>({{ pv.pages }} trang sẽ được điền)</small></label>
             <label class="check"><input type="checkbox" [ngModel]="autoProducts()" (ngModelChange)="autoProducts.set($event)" /> 🧸 Sản phẩm <small>({{ pv.products }} sản phẩm)</small></label>
@@ -166,12 +166,17 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               <div class="serp" aria-label="Xem trước trên Google">
                 <small class="serp-url">{{ origin }}{{ cur.def.path === '/' ? '' : ' › ' + cur.def.path.slice(1) }}</small>
                 <div class="serp-title">{{ cur.title }}</div>
-                <div class="serp-desc">{{ cur.description || 'Chưa có mô tả — Google sẽ tự lấy một đoạn trên trang.' }}</div>
+                <div class="serp-desc">{{ cur.description || 'Chưa có mô tả - Google sẽ tự lấy một đoạn trên trang.' }}</div>
               </div>
 
               <div class="field">
                 <label for="pg-kw">Từ khoá chính</label>
                 <input id="pg-kw" maxlength="80" [ngModel]="cur.seo.focusKeyword" (ngModelChange)="setPage('focusKeyword', $event)" placeholder="VD: fumo chính hãng" />
+              </div>
+              <div class="field">
+                <label for="pg-kw2">Từ khoá phụ <small>(cách nhau bằng dấu phẩy)</small></label>
+                <input id="pg-kw2" maxlength="300" [ngModel]="cur.seo.secondaryKeywords" (ngModelChange)="setPage('secondaryKeywords', $event)" placeholder="VD: thú bông touhou, gấu bông anime" />
+                <small class="hint">Nên có mặt trong tiêu đề hoặc mô tả của trang.</small>
               </div>
               <div class="field">
                 <label for="pg-title">Tiêu đề SEO <span class="counter" [class.over]="cur.title.length > limits.title">{{ cur.title.length }}/{{ limits.title }}</span></label>
@@ -193,15 +198,15 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
                 <summary>Nâng cao · Chia sẻ · Schema</summary>
                 <div class="field">
                   <span class="label">Robots meta</span>
-                  <label class="check"><input type="checkbox" [ngModel]="cur.seo.noindex" (ngModelChange)="setPage('noindex', $event)" /> <b>noindex</b> — không cho Google hiển thị trang này</label>
-                  <label class="check"><input type="checkbox" [ngModel]="cur.seo.nofollow" (ngModelChange)="setPage('nofollow', $event)" /> <b>nofollow</b> — không theo các liên kết trên trang</label>
+                  <label class="check"><input type="checkbox" [ngModel]="cur.seo.noindex" (ngModelChange)="setPage('noindex', $event)" /> <b>noindex</b> - không cho Google hiển thị trang này</label>
+                  <label class="check"><input type="checkbox" [ngModel]="cur.seo.nofollow" (ngModelChange)="setPage('nofollow', $event)" /> <b>nofollow</b> - không theo các liên kết trên trang</label>
                 </div>
                 <div class="field">
                   <label for="pg-can">URL chuẩn (canonical)</label>
                   <input id="pg-can" type="url" [ngModel]="cur.seo.canonical" (ngModelChange)="setPage('canonical', $event)" [placeholder]="origin + cur.def.path" />
                 </div>
                 <div class="field">
-                  <span class="label">Ảnh chia sẻ (Facebook, Zalo, Messenger) — 1200×630</span>
+                  <span class="label">Ảnh chia sẻ (Facebook, Zalo, Messenger) - 1200×630</span>
                   <div class="img-row">
                     @if (cur.seo.ogImage || d().defaultOgImage) { <img class="og-thumb" [src]="cur.seo.ogImage || d().defaultOgImage" alt="" /> }
                     <label class="btn ghost small">{{ uploading() === 'page' ? 'Đang tải…' : '⬆ Tải ảnh' }}
@@ -214,7 +219,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
                   <select id="pg-schema" [ngModel]="cur.seo.schemaType" (ngModelChange)="setPage('schemaType', $event)">
                     @for (t of schemaTypes; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
                   </select>
-                  @if (cur.def.path === '/') { <small class="hint">Trang chủ khai báo thêm <b>Tổ chức</b> và <b>WebSite</b> (ô tìm kiếm) — chỉnh ở tab Khai báo chung.</small> }
+                  @if (cur.def.path === '/') { <small class="hint">Trang chủ khai báo thêm <b>Tổ chức</b> và <b>WebSite</b> (ô tìm kiếm) - chỉnh ở tab Khai báo chung.</small> }
                 </div>
                 <pre class="jsonld">{{ cur.schema }}</pre>
               </details>
@@ -237,7 +242,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               <tr>
                 <td><span [class]="'score sm ' + lvl(r.score)">{{ r.score }}</span></td>
                 <td class="name">@if (r.img) { <img [src]="r.img" alt="" /> }<span><b>{{ r.name }}</b><small>{{ r.path }}</small></span></td>
-                <td>{{ r.kw || '—' }}</td>
+                <td>{{ r.kw || '-' }}</td>
                 <td class="flags">
                   @if (r.noindex) { <span class="flag bad">noindex</span> }
                   @if (r.productSchema) { <span class="flag">Product</span> }
@@ -265,7 +270,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               <tr>
                 <td><span [class]="'score sm ' + lvl(r.score)">{{ r.score }}</span></td>
                 <td class="name">@if (r.img) { <img [src]="r.img" alt="" /> }<span><b>{{ r.name }}</b><small>{{ r.path }}</small></span></td>
-                <td>{{ r.kw || '—' }}</td>
+                <td>{{ r.kw || '-' }}</td>
                 <td class="flags">
                   <span class="flag">{{ r.schema }}</span>
                   @if (r.noindex) { <span class="flag bad">noindex</span> }
@@ -291,7 +296,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
                   <app-icon-picker label="Favicon" [ngModel]="d().favicon" (ngModelChange)="set('favicon', $event)" />
                   <span class="fav-prev"><span class="tab"><app-icon [icon]="d().favicon || '🧸'" /> {{ shopName }}</span></span>
                 </div>
-                <small class="hint">Tải ảnh PNG vuông (tự cắt vuông, 144×144 — chuẩn Google: bội số của 48px) hoặc chọn emoji. Trống = favicon mặc định của web.
+                <small class="hint">Tải ảnh PNG vuông (tự cắt vuông, 144×144 - chuẩn Google: bội số của 48px) hoặc chọn emoji. Trống = favicon mặc định của web.
                   Google cần vài ngày để cập nhật favicon trên kết quả tìm kiếm.</small>
               </div>
               <div class="field">
@@ -306,7 +311,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               <div class="field">
                 <label for="g-desc">Mô tả mặc định (trang chưa khai báo)</label>
                 <textarea id="g-desc" rows="2" maxlength="300" [ngModel]="d().defaultDescription" (ngModelChange)="set('defaultDescription', $event)"
-                  placeholder="VD: Fumo Mai Nga — thú bông fumo chính hãng, móc khoá, figure..."></textarea>
+                  placeholder="VD: Fumo Mai Nga - thú bông fumo chính hãng, móc khoá, figure..."></textarea>
               </div>
               <div class="field">
                 <label for="g-sep">Ký tự ngăn tiêu đề</label>
@@ -459,11 +464,11 @@ export class AdminSeoHub {
     { id: 'general', label: '⚙️ Khai báo chung' },
   ];
   readonly schemaTypes: { value: PageSchemaType; label: string }[] = [
-    { value: 'WebPage', label: 'WebPage — Trang thường' },
-    { value: 'CollectionPage', label: 'CollectionPage — Trang danh sách' },
-    { value: 'AboutPage', label: 'AboutPage — Giới thiệu' },
-    { value: 'ContactPage', label: 'ContactPage — Liên hệ' },
-    { value: 'FAQPage', label: 'FAQPage — Hỏi đáp' },
+    { value: 'WebPage', label: 'WebPage - Trang thường' },
+    { value: 'CollectionPage', label: 'CollectionPage - Trang danh sách' },
+    { value: 'AboutPage', label: 'AboutPage - Giới thiệu' },
+    { value: 'ContactPage', label: 'ContactPage - Liên hệ' },
+    { value: 'FAQPage', label: 'FAQPage - Hỏi đáp' },
   ];
   readonly orgTypes: { value: OrgType; label: string }[] = [
     { value: 'OnlineStore', label: 'Cửa hàng online (OnlineStore)' },
@@ -471,7 +476,7 @@ export class AdminSeoHub {
     { value: 'LocalBusiness', label: 'Cửa hàng có địa chỉ (LocalBusiness)' },
     { value: 'Organization', label: 'Tổ chức (Organization)' },
   ];
-  readonly seps = ['—', '–', '-', '|', '•', '·', '»', '/'];
+  readonly seps = ['-', '–', '|', '•', '·', '»', '/'];
   readonly host = location.host;
   /** Các mục SEO kỹ thuật web đã làm sẵn (hiển thị ở Tổng quan). */
   readonly techChecks = [
@@ -523,10 +528,10 @@ export class AdminSeoHub {
     const shop = this.shopName;
     return SEO_PAGES.map((def) => {
       const p = pageSeoOf(seo, def.path);
-      const autoTitle = def.path === '/' ? shop : `${def.label} ${seo.titleSep || '—'} ${shop}`;
+      const autoTitle = def.path === '/' ? shop : `${def.label} ${seo.titleSep || '-'} ${shop}`;
       const title = p.title.trim() || autoTitle;
       const description = p.description.trim() || seo.defaultDescription.trim();
-      const report = analyzePageSeo({ title: p.title.trim() ? title : '', description, focusKeyword: p.focusKeyword, path: def.path, noindex: p.noindex, ogImage: p.ogImage, defaultOgImage: seo.defaultOgImage || 'og/og-default.jpg' });
+      const report = analyzePageSeo({ title: p.title.trim() ? title : '', description, focusKeyword: p.focusKeyword, secondaryKeywords: p.secondaryKeywords, path: def.path, noindex: p.noindex, ogImage: p.ogImage, defaultOgImage: seo.defaultOgImage || 'og/og-default.jpg' });
       return { def, seo: p, title, autoTitle, description, report };
     });
   });
@@ -678,7 +683,7 @@ export class AdminSeoHub {
       try {
         url = (await this.api.call<{ url: string }>('POST', '/api/catalog', { dataUrl }, true, { timeoutMs: 30000 })).url || dataUrl;
       } catch {
-        if (dataUrl.length > 200_000) throw new Error('Không tải được ảnh lên máy chủ — hãy dán link ảnh thay thế.');
+        if (dataUrl.length > 200_000) throw new Error('Không tải được ảnh lên máy chủ - hãy dán link ảnh thay thế.');
       }
       if (where === 'page') this.setPage('ogImage', url);
       else this.set('defaultOgImage', url);

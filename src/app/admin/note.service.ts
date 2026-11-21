@@ -7,7 +7,7 @@ export interface AdminNote {
 }
 
 /**
- * Ghi chú nội bộ cho sản phẩm — CHỈ admin. Lưu riêng trên máy chủ (/api/admin/notes),
+ * Ghi chú nội bộ cho sản phẩm - CHỈ admin. Lưu riêng trên máy chủ (/api/admin/notes),
  * không nằm trong dữ liệu sản phẩm công khai nên khách không bao giờ thấy.
  */
 @Injectable({ providedIn: 'root' })

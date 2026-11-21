@@ -97,7 +97,7 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
           } @else {
             <div class="meter off">
               <span class="m-top"><b>🗄 Cơ sở dữ liệu</b></span>
-              <span class="m-foot">{{ d.usage ? 'Chưa đo được chi tiết — chạy lại file supabase/schema.sql trong Supabase → SQL Editor.' : 'Chỉ có khi dùng Supabase.' }}</span>
+              <span class="m-foot">{{ d.usage ? 'Chưa đo được chi tiết - chạy lại file supabase/schema.sql trong Supabase → SQL Editor.' : 'Chỉ có khi dùng Supabase.' }}</span>
             </div>
           }
           @if (d.usage?.media; as md) {
@@ -190,7 +190,7 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
               }
               @if (d.manual.renewUrl) { <a class="btn ghost small" [href]="d.manual.renewUrl" target="_blank" rel="noopener">Gia hạn tên miền ↗</a> }
             } @else {
-              <p class="hint">Đang mở admin bằng địa chỉ tạm (vercel.app / máy thử) — nhập tên miền ở ô bên dưới.</p>
+              <p class="hint">Đang mở admin bằng địa chỉ tạm (vercel.app / máy thử) - nhập tên miền ở ô bên dưới.</p>
             }
           </div>
         </section>
@@ -212,7 +212,7 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
                 @let hl = daysLeft(d.manual.hostingExpires + 'T00:00:00+07:00', d.now);
                 <dt>Gói hosting hết hạn</dt><dd [class.red]="hl <= 30">{{ date(d.manual.hostingExpires + 'T00:00:00+07:00') }} ({{ hl < 0 ? 'đã hết hạn' : 'còn ' + hl + ' ngày' }})</dd>
               } @else {
-                <dt>Thời hạn</dt><dd>Gói miễn phí (Vercel Hobby / Supabase Free) không có hạn — chỉ giới hạn dung lượng.</dd>
+                <dt>Thời hạn</dt><dd>Gói miễn phí (Vercel Hobby / Supabase Free) không có hạn - chỉ giới hạn dung lượng.</dd>
               }
             </dl>
             <p class="hint">Gói miễn phí Vercel: 100GB băng thông/tháng. Supabase miễn phí tạm dừng dự án nếu 7 ngày không có ai truy cập.</p>

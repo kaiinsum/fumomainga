@@ -1,6 +1,6 @@
 /**
  * Lọc tên người chơi trên bảng xếp hạng: chặn từ tục / xúc phạm (tiếng Việt + tiếng Anh) và mạo danh shop.
- * Bản sao ở src/app/shared/bad-words.ts (giao diện báo lỗi ngay) — sửa ở đây thì sửa cả bên đó.
+ * Bản sao ở src/app/shared/bad-words.ts (giao diện báo lỗi ngay) - sửa ở đây thì sửa cả bên đó.
  */
 
 /** Bỏ dấu, chữ thường, đổi số / ký tự giống chữ (0→o, 1→i, 3→e, @→a...), bỏ chữ lặp (fuuuck → fuck). */

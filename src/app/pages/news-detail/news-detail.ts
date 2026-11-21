@@ -86,7 +86,7 @@ export class NewsDetailPage {
     return p.category ? newsCategoriesOf(this.settings()).find((c) => c.id === p.category) : undefined;
   }
 
-  /** Chỉ hiển thị bài đã xuất bản — bản nháp không xem được từ trang công khai. Tìm theo slug hoặc id. */
+  /** Chỉ hiển thị bài đã xuất bản - bản nháp không xem được từ trang công khai. Tìm theo slug hoặc id. */
   readonly post = computed(() => {
     const p = this.news.findByPath(this.id());
     return p?.status === 'published' ? p : undefined;

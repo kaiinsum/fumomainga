@@ -17,7 +17,7 @@ export interface BlockedIp {
   ip: string;
   reason: string;
   at: number;
-  /** Hết hạn chặn (ms) — trống = chặn vĩnh viễn. */
+  /** Hết hạn chặn (ms) - trống = chặn vĩnh viễn. */
   until?: number;
 }
 
@@ -42,7 +42,7 @@ export interface Suspect {
 
 export const validIp = (ip: string) => /^[0-9a-fA-F:.]{3,45}$/.test(ip) && /[.:]/.test(ip);
 
-/** IP an toàn (biến môi trường ADMIN_SAFE_IPS, cách nhau bằng dấu phẩy) — không bao giờ bị chặn. */
+/** IP an toàn (biến môi trường ADMIN_SAFE_IPS, cách nhau bằng dấu phẩy) - không bao giờ bị chặn. */
 export function safeIps(): Set<string> {
   return new Set((process.env['ADMIN_SAFE_IPS'] ?? '').split(',').map((s) => s.trim()).filter(Boolean));
 }

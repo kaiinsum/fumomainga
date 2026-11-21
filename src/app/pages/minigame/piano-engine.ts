@@ -1,5 +1,5 @@
 /**
- * Anime Piano Tiles — engine vẽ canvas.
+ * Anime Piano Tiles - engine vẽ canvas.
  * Thời gian lấy từ trình phát YouTube (time()), nên ô nhạc luôn khớp với bài đang phát (kể cả khi video bị khựng / buffer).
  * Ô được sinh theo nhịp (BPM) và "chữ ký" riêng của từng bài (mã video) → cùng bài, cùng độ khó luôn ra cùng một bản nhạc ô.
  */
@@ -126,7 +126,7 @@ export class PianoGame {
   notes: Note[] = [];
   /** Thông số admin chỉnh. */
   params: Record<string, number> = {};
-  /** Thời gian bài hát (giây) — trang game nối vào trình phát YouTube. */
+  /** Thời gian bài hát (giây) - trang game nối vào trình phát YouTube. */
   time: () => number = () => 0;
   duration = 0;
   diff: Difficulty = 'normal';

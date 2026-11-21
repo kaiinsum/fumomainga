@@ -1,6 +1,6 @@
 /**
  * Vẽ avatar chibi SVG cho nhân vật Touhoudle (hình tự vẽ: màu tóc, màu mắt + phụ kiện đặc trưng).
- * Không phụ thuộc Angular — dùng được ở mọi nơi.
+ * Không phụ thuộc Angular - dùng được ở mọi nơi.
  */
 import { Character } from './touhoudle-data';
 

@@ -31,7 +31,7 @@ const cache = new Map<string, Promise<IpGeo>>();
           <p class="err">{{ err() }}</p>
         } @else if (geo(); as g) {
           @if (g.private) {
-            <p class="muted"><code>{{ g.ip }}</code> là IP nội bộ (mạng LAN / máy chủ) — không có vị trí.</p>
+            <p class="muted"><code>{{ g.ip }}</code> là IP nội bộ (mạng LAN / máy chủ) - không có vị trí.</p>
           } @else {
             <p class="place"><b>{{ place(g) }}</b></p>
             <p class="muted"><code>{{ g.ip }}</code>{{ g.isp ? ' · ' + g.isp : '' }}</p>

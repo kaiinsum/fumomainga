@@ -163,7 +163,7 @@ export class OrderHeatmapComponent implements AfterViewInit {
   private L?: LeafletNs;
   private map?: LMap;
   private layers: LLayer[] = [];
-  /** Bật / tắt lớp nhiệt và ẩn cả bản đồ — nhớ trong trình duyệt. */
+  /** Bật / tắt lớp nhiệt và ẩn cả bản đồ - nhớ trong trình duyệt. */
   readonly showHeat = signal(pref('fumo.adm.heat') !== '0');
   readonly showMap = signal(pref('fumo.adm.map') !== '0');
 

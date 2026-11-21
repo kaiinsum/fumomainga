@@ -100,7 +100,7 @@ export class ProductDetailPage {
     if (v) this.variantId.set(v.id);
   }
   /**
-   * Gợi ý tối đa 5 sản phẩm liên quan — chấm điểm, không bó buộc cùng danh mục:
+   * Gợi ý tối đa 5 sản phẩm liên quan - chấm điểm, không bó buộc cùng danh mục:
    * trùng thẻ (tag) +3 mỗi thẻ · cùng danh mục +2 · trùng từ khoá trong tên/mô tả +1 mỗi từ · còn hàng / nổi bật cộng nhẹ.
    */
   readonly related = computed(() => {

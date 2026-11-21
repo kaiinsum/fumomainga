@@ -26,7 +26,7 @@ function forced(): 'lite' | 'full' | null {
 function guessLite(): boolean {
   const nav = navigator as Navigator & NavigatorExtra;
   // Điện thoại / máy tính bảng: chỉ có cảm ứng (không chuột) hoặc trình duyệt tự báo là thiết bị di động.
-  // (Không dựa vào kích thước màn hình — laptop 1366×768 vẫn là máy tính bình thường.)
+  // (Không dựa vào kích thước màn hình - laptop 1366×768 vẫn là máy tính bình thường.)
   const uaMobile = (nav as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile ?? /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const mobile = uaMobile || matchMedia('(hover: none) and (pointer: coarse)').matches;
   const weakCpu = (nav.hardwareConcurrency || 8) <= 4;

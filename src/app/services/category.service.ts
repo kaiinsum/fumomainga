@@ -48,7 +48,7 @@ export class CategoryService {
     const used = this.counts().get(name) ?? 0;
     if (used) {
       if (!moveTo || moveTo === name || !this.find(moveTo)) {
-        throw new Error(`Danh mục "${name}" còn ${used} sản phẩm — hãy chọn danh mục để chuyển sang.`);
+        throw new Error(`Danh mục "${name}" còn ${used} sản phẩm - hãy chọn danh mục để chuyển sang.`);
       }
       this.products.renameCategory(name, moveTo);
     }
@@ -84,7 +84,7 @@ export class CategoryService {
     }
   }
 
-  /** Nạp dữ liệu từ máy chủ — không tính là thay đổi của admin. */
+  /** Nạp dữ liệu từ máy chủ - không tính là thay đổi của admin. */
   hydrate(list: Category[]): void {
     try {
       saveJson(STORAGE_KEYS.categories, list);

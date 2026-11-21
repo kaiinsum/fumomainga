@@ -46,7 +46,7 @@ type Tab = 'new' | 'done' | 'all';
         </section>
       } @else {
         <div class="adm-notice warn">
-          {{ error() }} — xem hướng dẫn cài đặt ở trang <b>Đơn hàng</b>. Nếu vừa thêm tính năng Liên hệ, hãy chạy lại file
+          {{ error() }} - xem hướng dẫn cài đặt ở trang <b>Đơn hàng</b>. Nếu vừa thêm tính năng Liên hệ, hãy chạy lại file
           <code>supabase/schema.sql</code> trong Supabase → SQL Editor để tạo bảng <code>contacts</code>.
           <button class="link" type="button" (click)="load()">Thử lại</button>
         </div>

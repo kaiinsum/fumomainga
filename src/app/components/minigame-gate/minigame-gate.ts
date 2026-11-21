@@ -16,7 +16,7 @@ import { SettingsService } from '../../services/settings.service';
   imports: [RouterLink],
   template: `
     @if (block(); as b) {
-      <div class="veil" role="dialog" aria-modal="true" [attr.aria-label]="b.title + ' — cần mở khoá'">
+      <div class="veil" role="dialog" aria-modal="true" [attr.aria-label]="b.title + ' - cần mở khoá'">
         <div class="box">
           @if (b.kind === 'code') {
             <div class="lock" aria-hidden="true">🔑</div>
@@ -77,7 +77,7 @@ export class MinigameGateComponent {
     const game = resolveGames(this.settingsSvc.settings().minigames).find((g) => g.path === path);
     if (!game) return null;
     if (game.status === 'hidden') return { kind: 'locked', title: game.title, msg: 'Trò này hiện không mở cho người chơi.' };
-    if (game.status !== 'open') return { kind: 'locked', title: game.title, msg: 'Trò này đang tạm khoá' + (game.lockMsg ? ' — ' + game.lockMsg : '.') };
+    if (game.status !== 'open') return { kind: 'locked', title: game.title, msg: 'Trò này đang tạm khoá' + (game.lockMsg ? ' - ' + game.lockMsg : '.') };
     if (!this.access.canPlay(game.id)) return { kind: 'code', title: game.title, msg: '' };
     return null;
   });

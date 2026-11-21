@@ -4,6 +4,7 @@ import { filter } from 'rxjs';
 import { gameCategories, resolveGames } from '../../models/minigames';
 import { guideOf } from '../../models/site-settings';
 import { perf } from '../../core/perf';
+import { playOhayou } from '../../shared/sfx';
 import { MinigameAccessService } from '../../services/minigame-access.service';
 import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
@@ -204,7 +205,7 @@ export class GuideService {
     this.step.set('perf');
   }
 
-  /** Trả lời "bật cấu hình cao?" — Không thì giữ chế độ nhẹ (và không hỏi lại). */
+  /** Trả lời "bật cấu hình cao?" - Không thì giữ chế độ nhẹ (và không hỏi lại). */
   answerPerf(yes: boolean): void {
     perf.set(yes ? 'full' : 'lite');
     this.lite.set(perf.lite);
@@ -230,7 +231,25 @@ export class GuideService {
   /** Nút triệu hồi bên trái: gọi người hướng dẫn ra kèm các lựa chọn. */
   summon(): void {
     if (this.step() === 'fly' || this.step() === 'intro') return;
+    playOhayou();
+    this.beforeMenu = this.step();
     this.step.set('menu');
+  }
+
+  /** Sẽ quay về đâu khi bấm "tạm biệt" (không đổi trạng thái). */
+  leaveMenuPeek(): 'hub' | 'hidden' {
+    return this.beforeMenu === 'hub' && this.path === '/mini-game' ? 'hub' : 'hidden';
+  }
+
+  /** Trạng thái trước khi bấm triệu hồi (để "tạm biệt" thì quay về đúng chỗ cũ). */
+  private beforeMenu: GuideStep = 'hidden';
+
+  /** Bấm "tạm biệt" trong menu triệu hồi: đang đứng ở trang Mini game thì về lại chỗ đó, còn lại thì ẩn về nút triệu hồi. */
+  leaveMenu(): 'hub' | 'hidden' {
+    const back = this.beforeMenu === 'hub' && this.path === '/mini-game' ? 'hub' : 'hidden';
+    if (back === 'hub') this.settle();
+    else this.step.set('hidden');
+    return back;
   }
 
   /** Lựa chọn trong menu triệu hồi. */

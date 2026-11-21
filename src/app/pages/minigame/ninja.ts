@@ -16,7 +16,7 @@ import { BOMB, H, KINDS, NinjaGame, NinjaResult, NinjaState, W } from './ninja-e
       <header class="head">
         <span class="chip">🗡️ Chém fumo</span>
         <h1>Fumo <span class="hl">Ninja</span></h1>
-        <p class="muted">Vuốt chuột / ngón tay để chém các bé fumo bay lên. Tránh <b class="bomb">Reimu viền neon đỏ</b> — chém trúng là thua ngay!</p>
+        <p class="muted">Vuốt chuột / ngón tay để chém các bé fumo bay lên. Tránh <b class="bomb">Reimu viền neon đỏ</b> - chém trúng là thua ngay!</p>
       </header>
 
       <div class="layout">

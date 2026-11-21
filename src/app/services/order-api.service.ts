@@ -13,7 +13,7 @@ export class ApiError extends Error {
   }
 }
 
-/** Gọi các API trên máy chủ (Vercel Functions trong thư mục /api) — đơn hàng và dùng chung mã quản trị. */
+/** Gọi các API trên máy chủ (Vercel Functions trong thư mục /api) - đơn hàng và dùng chung mã quản trị. */
 @Injectable({ providedIn: 'root' })
 export class OrderApiService {
   /** Mã quản trị (ADMIN_API_KEY) admin nhập một lần, nhớ trên máy admin. */

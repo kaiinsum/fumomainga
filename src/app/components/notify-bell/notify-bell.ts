@@ -164,7 +164,7 @@ export class NotifyBellComponent {
       const date = Math.min(Date.now(), Math.max(r.start, this.settings().seasonChangedAt || 0) || Date.now());
       list.unshift({ key: `s:${s.id}:${new Date(r.start).getFullYear()}`, kind: 'season', title: s.title, content: s.message, date, link: '', icon: s.icon });
     }
-    // Thông báo hệ thống admin gửi — luôn ở đầu.
+    // Thông báo hệ thống admin gửi - luôn ở đầu.
     const sys = activeAnnouncements(this.settings().announcements).map((a) => ({
       key: `a:${a.id}`, kind: 'system' as const, title: a.title, content: a.content, date: a.createdAt, icon: a.icon,
       // Thông báo dạng modal: bấm trong chuông → mở lại modal.

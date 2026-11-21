@@ -1,5 +1,5 @@
 /**
- * /api/admin/system — trang "Lưu trữ & tên miền" (CHỈ admin).
+ * /api/admin/system - trang "Lưu trữ & tên miền" (CHỈ admin).
  *  GET  → dung lượng chi tiết (cơ sở dữ liệu, kho ảnh), thông tin hosting, hạn tên miền.
  *  PATCH { domain, domainExpires, registrar, renewUrl, hostingPlan, hostingExpires, note } → lưu thông tin nhập tay.
  * Hạn tên miền: thử tra RDAP (dữ liệu đăng ký công khai); không tra được (vd. một số đuôi .vn) thì dùng ngày admin nhập.

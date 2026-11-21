@@ -1,8 +1,8 @@
 /**
- * /api/catalog — sản phẩm, danh mục, tin tức của shop.
- * GET: công khai — mọi máy đều thấy cùng dữ liệu admin đã lưu.
- * PUT: chỉ admin — trang admin tự gửi lên mỗi khi thêm / sửa / xoá.
- * POST { dataUrl }: chỉ admin — tải ảnh lên kho ảnh Supabase Storage → { url }.
+ * /api/catalog - sản phẩm, danh mục, tin tức của shop.
+ * GET: công khai - mọi máy đều thấy cùng dữ liệu admin đã lưu.
+ * PUT: chỉ admin - trang admin tự gửi lên mỗi khi thêm / sửa / xoá.
+ * POST { dataUrl }: chỉ admin - tải ảnh lên kho ảnh Supabase Storage → { url }.
  *   (Gộp chung file để không vượt giới hạn 12 function của gói Vercel miễn phí.)
  * Ảnh được tải riêng nên dữ liệu ở đây chỉ chứa link ảnh.
  */

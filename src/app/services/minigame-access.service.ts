@@ -15,7 +15,7 @@ function readUnlockDay(): string {
 
 /**
  * Quyền chơi minigame trong ngày: mỗi ngày chỉ mở N trò miễn phí (admin chỉnh),
- * nhập đúng code hôm nay thì mở hết đến 23:59 (giờ Việt Nam) — qua ngày mới tự khoá lại.
+ * nhập đúng code hôm nay thì mở hết đến 23:59 (giờ Việt Nam) - qua ngày mới tự khoá lại.
  */
 @Injectable({ providedIn: 'root' })
 export class MinigameAccessService {

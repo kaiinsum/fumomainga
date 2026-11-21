@@ -1,5 +1,5 @@
 /**
- * Cổng API duy nhất của website — MỘT Vercel Function cho mọi đường dẫn /api/*.
+ * Cổng API duy nhất của website - MỘT Vercel Function cho mọi đường dẫn /api/*.
  *
  * Vì sao: gói Vercel miễn phí (Hobby) chỉ cho tối đa 12 function mỗi lần deploy.
  * Gộp hết vào đây thì thêm API mới bao nhiêu cũng được (vẫn là 1 function).
@@ -115,7 +115,7 @@ async function route(req: Request): Promise<Response> {
     }
   }
 
-  // Dựng lại Request với URL gốc /api/<path>?<query> — các handler đọc mã đơn / id từ đường dẫn như trước.
+  // Dựng lại Request với URL gốc /api/<path>?<query> - các handler đọc mã đơn / id từ đường dẫn như trước.
   const target = `${url.origin}/api/${path}${url.search}`;
   const hasBody = method !== 'GET';
   let body: ArrayBuffer | undefined;

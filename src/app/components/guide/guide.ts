@@ -52,8 +52,8 @@ import { GuideService, guideStage } from './guide.service';
             @case ('menu') {
               <div class="acts col">
                 <button class="b yes" type="button" (click)="guide.menuPick('play')">🎮 Chơi minigame</button>
-                <button class="b no" type="button" (click)="guide.menuPick('perf')">{{ guide.lite() ? '⚡ Bật cấu hình cao' : '🍃 Tắt cấu hình cao (chế độ nhẹ)' }}</button>
-                <button class="b no" type="button" (click)="close()">Không có gì, tạm biệt!</button>
+                <button class="b no" type="button" (click)="guide.menuPick('perf')">{{ guide.lite() ? '⚡ Bật cấu hình cao' : '🍃 Tắt cấu hình cao' }}</button>
+                <button class="b no" type="button" (click)="bye()">Không có gì, tạm biệt!</button>
               </div>
             }
             @case ('slash') {
@@ -87,7 +87,7 @@ import { GuideService, guideStage } from './guide.service';
     .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: .85rem; padding: 2px 4px; }
     .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .acts.col { flex-direction: column; align-items: stretch; }
-    .acts.col .b { text-align: left; }
+    .acts.col .b { text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     /* Nút triệu hồi bên trái */
     .summon { position: fixed; left: 14px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 985; width: 54px; height: 54px; padding: 0; border-radius: 50%; cursor: pointer;
       border: 2px solid var(--primary); background: var(--surface); overflow: visible; box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary) 70%, transparent);
@@ -347,6 +347,34 @@ export class GuideComponent {
 
   close(): void {
     if (this.guide.step() === 'intro') return this.toCorner();
+    if (this.guide.step() === 'menu') return this.bye();
     this.guide.close();
+  }
+
+  /** "Tạm biệt": thu nhỏ bay về nút triệu hồi (góc trái dưới) rồi ẩn; ở trang Mini game thì về lại chỗ đứng cũ. */
+  bye(): void {
+    const box = this.box()?.nativeElement;
+    const el = this.fig()?.nativeElement;
+    if (!box || !el || this.guide.leaveMenuPeek() === 'hub' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.guide.leaveMenu();
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    const size = innerWidth <= 600 ? 46 : 54;
+    const left = innerWidth <= 600 ? 10 : 14;
+    // Tâm nút triệu hồi.
+    const tx = left + size / 2 - (r.left + r.width / 2);
+    const ty = innerHeight - (innerWidth <= 600 ? 14 : 18) - size / 2 - (r.top + r.height / 2);
+    const s = size / r.height;
+    box.querySelector<HTMLElement>('.bubble')?.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.7)' }], { duration: 220, fill: 'forwards' });
+    const anim = el.animate(
+      [
+        { transform: 'none', opacity: 1 },
+        { transform: `translate(${tx * 0.4}px, ${ty * 0.4 - 30}px) scale(${0.5 + s * 0.5}) rotate(-10deg)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${s})`, opacity: 0.2 },
+      ],
+      { duration: 650, easing: 'cubic-bezier(.4, 0, .3, 1)', fill: 'forwards' },
+    );
+    anim.onfinish = () => this.guide.leaveMenu();
   }
 }

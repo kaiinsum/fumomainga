@@ -40,7 +40,7 @@ export interface GuardRule {
   method?: string;
   max: number;
   windowMs: number;
-  /** true = vượt giới hạn thì trả 204 trống (không báo lỗi cho khách — dùng cho thống kê). */
+  /** true = vượt giới hạn thì trả 204 trống (không báo lỗi cho khách - dùng cho thống kê). */
   silent?: boolean;
 }
 

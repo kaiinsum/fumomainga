@@ -16,7 +16,7 @@ import { H, MergeGame, MergeResult, MergeState, TIERS, W } from './merge-engine'
       <header class="head">
         <span class="chip">🫧 Thả & gộp</span>
         <h1>Merge <span class="hl">Fumo</span></h1>
-        <p class="muted">Thả các bé fumo vào hộp quà — 2 bé giống nhau chạm vào nhau sẽ gộp thành bé lớn hơn. Đừng để hộp tràn qua vạch đỏ nhé!</p>
+        <p class="muted">Thả các bé fumo vào hộp quà - 2 bé giống nhau chạm vào nhau sẽ gộp thành bé lớn hơn. Đừng để hộp tràn qua vạch đỏ nhé!</p>
       </header>
 
       <div class="layout">

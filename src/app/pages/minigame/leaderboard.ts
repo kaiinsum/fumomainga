@@ -13,7 +13,7 @@ const MEDAL = ['🥇', '🥈', '🥉', '4', '5'];
 
 /**
  * Bảng xếp hạng top 5 của 1 minigame. Máy tính: khung bên cạnh màn chơi.
- * Điện thoại: thanh nhỏ (chỉ hiện hạng 1), bấm để xem top 5 — không che giao diện game.
+ * Điện thoại: thanh nhỏ (chỉ hiện hạng 1), bấm để xem top 5 - không che giao diện game.
  * Hết ván mà lọt top 5 → hiện ô nhập tên (lọc từ cấm).
  */
 @Component({
@@ -59,7 +59,7 @@ const MEDAL = ['🥇', '🥈', '🥉', '4', '5'];
               } @else {
                 <span class="r-label">Điểm ván này</span>
                 <span class="r-score">{{ d.toLocaleString('vi-VN') }}</span>
-                @if (gap() > 0) { <span class="r-unit">Còn thiếu <b>{{ gap().toLocaleString('vi-VN') }}</b> điểm để vào top 5 — thử lại nhé!</span> }
+                @if (gap() > 0) { <span class="r-unit">Còn thiếu <b>{{ gap().toLocaleString('vi-VN') }}</b> điểm để vào top 5 - thử lại nhé!</span> }
               }
             </div>
           }
@@ -67,7 +67,7 @@ const MEDAL = ['🥇', '🥈', '🥉', '4', '5'];
           @if (loading()) {
             <p class="muted">Đang tải…</p>
           } @else if (!top().length) {
-            <p class="muted">Chưa có ai trên bảng — chơi và ghi tên đầu tiên nhé!</p>
+            <p class="muted">Chưa có ai trên bảng - chơi và ghi tên đầu tiên nhé!</p>
           } @else {
             <ol>
               @for (e of top(); track e.at; let i = $index) {

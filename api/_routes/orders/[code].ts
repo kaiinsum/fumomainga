@@ -1,5 +1,5 @@
 /**
- * /api/orders/:code — xem, sửa, xoá một đơn (chỉ admin).
+ * /api/orders/:code - xem, sửa, xoá một đơn (chỉ admin).
  */
 import {
   HttpError,

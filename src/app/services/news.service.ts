@@ -33,7 +33,7 @@ export const SEED_NEWS: NewsPost[] = [
   {
     id: 'news-3',
     title: 'Sắp có: Fumo phiên bản Tết',
-    excerpt: 'Bản nháp — chưa công bố.',
+    excerpt: 'Bản nháp - chưa công bố.',
     content: 'Nội dung đang được chuẩn bị...',
     cover: placeholderImage('Tết', 5),
     status: 'draft',
@@ -55,16 +55,16 @@ export class NewsService {
   /** Tăng mỗi khi admin thay đổi dữ liệu → tự gửi lên máy chủ. */
   readonly changes = signal(0);
 
-  /** Tất cả bài (kể cả nháp) — dùng trong admin. */
+  /** Tất cả bài (kể cả nháp) - dùng trong admin. */
   readonly posts = computed(() => [...this._posts()].sort((a, b) => b.createdAt - a.createdAt));
-  /** Chỉ bài đã xuất bản — dùng ngoài trang công khai. */
+  /** Chỉ bài đã xuất bản - dùng ngoài trang công khai. */
   readonly published = computed(() => this.posts().filter((p) => p.status === 'published'));
 
   getById(id: string): NewsPost | undefined {
     return this._posts().find((p) => p.id === id);
   }
 
-  /** Tìm theo slug (đường dẫn SEO) hoặc id — link cũ dạng /tin-tuc/<id> vẫn hoạt động. */
+  /** Tìm theo slug (đường dẫn SEO) hoặc id - link cũ dạng /tin-tuc/<id> vẫn hoạt động. */
   findByPath(key: string): NewsPost | undefined {
     return this._posts().find((p) => p.seo?.slug === key) ?? this.getById(key);
   }
@@ -105,7 +105,7 @@ export class NewsService {
     return next;
   }
 
-  /** Nạp dữ liệu từ máy chủ (hoặc bài mẫu) — không tính là thay đổi của admin. */
+  /** Nạp dữ liệu từ máy chủ (hoặc bài mẫu) - không tính là thay đổi của admin. */
   hydrate(list: NewsPost[]): void {
     try {
       saveJson(STORAGE_KEYS.news, list);

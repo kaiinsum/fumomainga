@@ -1,5 +1,5 @@
 /**
- * /api/admin/notes — ghi chú nội bộ cho sản phẩm (CHỈ admin). Lưu riêng trong app_kv 'admin:notes',
+ * /api/admin/notes - ghi chú nội bộ cho sản phẩm (CHỈ admin). Lưu riêng trong app_kv 'admin:notes',
  * KHÔNG nằm trong catalog sản phẩm công khai nên khách không bao giờ thấy.
  *  GET → { notes: { "<productId>": { text, updatedAt } } }
  *  PATCH { id, text } → sửa 1 sản phẩm (text rỗng = xoá ghi chú)

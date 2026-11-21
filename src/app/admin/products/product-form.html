@@ -31,7 +31,7 @@
     </div>
 
     <section class="adm-box">
-      <h2><span class="req">Hình ảnh</span> ({{ images().length }}/{{ maxImages }}) — ảnh đầu tiên là ảnh bìa</h2>
+      <h2><span class="req">Hình ảnh</span> ({{ images().length }}/{{ maxImages }}) - ảnh đầu tiên là ảnh bìa</h2>
       <div class="box-body">
         <label
           class="dropzone"
@@ -44,7 +44,7 @@
           <input type="file" accept="image/*" multiple hidden (change)="onFiles($event)" />
           <span class="dz-icon">📷</span>
           <strong>{{ processing() ? 'Đang xử lý ảnh...' : 'Kéo thả ảnh vào đây hoặc bấm để chọn' }}</strong>
-          <small>JPG, PNG, WebP — ảnh sẽ được tự động thu nhỏ</small>
+          <small>JPG, PNG, WebP - ảnh sẽ được tự động thu nhỏ</small>
         </label>
         @if (submitted() && !images().length) {
           <span class="field-err">Cần ít nhất 1 hình ảnh.</span>
@@ -81,7 +81,7 @@
     </section>
 
     <section class="adm-box variants-box">
-      <h2>Biến thể <small class="hint">(phân loại: kích cỡ, màu... — bỏ trống nếu sản phẩm chỉ có 1 loại)</small></h2>
+      <h2>Biến thể <small class="hint">(phân loại: kích cỡ, màu... - bỏ trống nếu sản phẩm chỉ có 1 loại)</small></h2>
       <div class="box-body">
         @if (variants().length) {
           <div class="bulk">
@@ -119,7 +119,7 @@
                 [attr.aria-label]="'Giá biến thể ' + (i + 1)" />
               <input type="number" min="0" max="99" step="1" placeholder="0" [value]="v.pct ?? ''" (input)="setVariant(i, 'pct', $any($event.target).value)"
                 [attr.aria-label]="'Phần trăm giảm biến thể ' + (i + 1)" />
-              <input type="number" min="0" step="1000" placeholder="—" [value]="v.sale ?? ''" (input)="setVariant(i, 'sale', $any($event.target).value)"
+              <input type="number" min="0" step="1000" placeholder="-" [value]="v.sale ?? ''" (input)="setVariant(i, 'sale', $any($event.target).value)"
                 [attr.aria-label]="'Giá sau giảm biến thể ' + (i + 1)" />
               <div class="v-acts">
                 <button type="button" class="mini" title="Lên" [disabled]="first" (click)="moveVariant(i, -1)">↑</button>
@@ -149,7 +149,7 @@
             </div>
           }
         } @else {
-          <p class="hint">Sản phẩm chưa có biến thể — dùng giá ở ô <b>Thông tin</b> bên phải.</p>
+          <p class="hint">Sản phẩm chưa có biến thể - dùng giá ở ô <b>Thông tin</b> bên phải.</p>
         }
         <button type="button" class="btn ghost small add-var" [disabled]="variants().length >= maxVariants" (click)="addVariant()">+ Thêm biến thể</button>
       </div>
@@ -183,7 +183,7 @@
           @case ('general') {
             <div class="serp" aria-label="Xem trước trên Google">
               <small class="serp-url">{{ origin }} › san-pham › {{ r.slug || '...' }}</small>
-              <div class="serp-title">{{ r.title || 'Tên sản phẩm' }} — {{ shopName }}</div>
+              <div class="serp-title">{{ r.title || 'Tên sản phẩm' }} - {{ shopName }}</div>
               <div class="serp-desc">{{ r.description || 'Mô tả sẽ hiển thị ở đây.' }}</div>
             </div>
 
@@ -191,6 +191,13 @@
               <label for="seo-kw">Từ khoá chính</label>
               <input id="seo-kw" [value]="seo().focusKeyword" (input)="setSeo('focusKeyword', $any($event.target).value)"
                 placeholder="Ví dụ: fumo cirno 20cm" maxlength="80" />
+            </div>
+
+            <div class="field">
+              <label for="seo-kw2">Từ khoá phụ <small class="opt">(cách nhau bằng dấu phẩy)</small></label>
+              <input id="seo-kw2" [value]="seo().secondaryKeywords || ''" (input)="setSeo('secondaryKeywords', $any($event.target).value)"
+                placeholder="Ví dụ: thú bông cirno, gấu bông touhou, cirno plush" maxlength="300" />
+              <small class="hint">Các cách gọi khác khách hay gõ. Nên dùng mỗi từ khoá phụ ít nhất 1 lần trong mô tả sản phẩm.</small>
             </div>
 
             <div class="field">
@@ -226,9 +233,9 @@
             <div class="field">
               <span class="label">Robots meta</span>
               <label class="check"><input type="checkbox" [checked]="seo().noindex" (change)="setSeo('noindex', $any($event.target).checked)" />
-                <b>noindex</b> — không cho Google hiển thị sản phẩm này</label>
+                <b>noindex</b> - không cho Google hiển thị sản phẩm này</label>
               <label class="check"><input type="checkbox" [checked]="seo().nofollow" (change)="setSeo('nofollow', $any($event.target).checked)" />
-                <b>nofollow</b> — không theo các liên kết trên trang</label>
+                <b>nofollow</b> - không theo các liên kết trên trang</label>
             </div>
             <div class="field">
               <label for="seo-canon">URL chuẩn (canonical)</label>
@@ -252,7 +259,7 @@
           @case ('schema') {
             <label class="check big">
               <input type="checkbox" [checked]="seo().productSchema" (change)="setSeo('productSchema', $any($event.target).checked)" />
-              <span><b>Khai báo schema Product</b> — Google hiện giá, tình trạng còn hàng ngay trên kết quả tìm kiếm</span>
+              <span><b>Khai báo schema Product</b> - Google hiện giá, tình trạng còn hàng ngay trên kết quả tìm kiếm</span>
             </label>
             @if (seo().productSchema) {
               <div class="seo-grid">
@@ -277,7 +284,7 @@
 
             <label class="check big">
               <input type="checkbox" [checked]="seo().article" (change)="setSeo('article', $any($event.target).checked)" />
-              <span><b>Khai báo bài viết</b> — trang sản phẩm đồng thời là một bài viết / bài đánh giá</span>
+              <span><b>Khai báo bài viết</b> - trang sản phẩm đồng thời là một bài viết / bài đánh giá</span>
             </label>
             @if (seo().article) {
               <div class="seo-grid">
@@ -377,7 +384,7 @@
           }
         </div>
         <div class="field sale">
-          <label>Giảm giá <small class="hint">(nhập % hoặc giá sau giảm — ô kia tự tính)</small></label>
+          <label>Giảm giá <small class="hint">(nhập % hoặc giá sau giảm - ô kia tự tính)</small></label>
           <div class="sale-row">
             <div class="sale-input">
               <input type="number" min="0" max="99" step="1" placeholder="0" [formControl]="salePercent" (input)="onPercentInput()" aria-label="Phần trăm giảm" />
@@ -403,7 +410,7 @@
         } @else {
           <div class="field">
             <label>Giá</label>
-            <p class="var-note">Giá lấy theo <b>{{ variants().length }} biến thể</b> — khách thấy giá <b>từ {{ variantMin() | vnd }}</b>.</p>
+            <p class="var-note">Giá lấy theo <b>{{ variants().length }} biến thể</b> - khách thấy giá <b>từ {{ variantMin() | vnd }}</b>.</p>
           </div>
         }
         <div class="field">
@@ -428,7 +435,7 @@
           @for (v of variants(); track v.id) {
             <div class="cost-row">
               <span>{{ v.name || '(chưa đặt tên)' }}</span>
-              <input type="number" min="0" step="1000" [placeholder]="costDraft()[''] ?? '—'" [value]="costDraft()[v.id] ?? ''" (input)="setCost(v.id, $any($event.target).value)" [attr.aria-label]="'Giá nhập ' + v.name" />
+              <input type="number" min="0" step="1000" [placeholder]="costDraft()[''] ?? '-'" [value]="costDraft()[v.id] ?? ''" (input)="setCost(v.id, $any($event.target).value)" [attr.aria-label]="'Giá nhập ' + v.name" />
               @if (margin(v.sale ?? v.price, v.id); as m) { <small class="hint" [class.neg]="m < 0">lãi {{ m | vnd }}</small> }
             </div>
           }
@@ -451,7 +458,7 @@
             <small class="hint">Ghi chú được lưu khi bấm Đăng sản phẩm.</small>
           }
         </div>
-        <small class="hint">Lưu riêng trên máy chủ — khách không bao giờ thấy, kể cả khi xem mã nguồn trang.</small>
+        <small class="hint">Lưu riêng trên máy chủ - khách không bao giờ thấy, kể cả khi xem mã nguồn trang.</small>
       </div>
     </section>
   </aside>

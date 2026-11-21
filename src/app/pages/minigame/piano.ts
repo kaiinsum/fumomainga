@@ -85,7 +85,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
       <header class="head">
         <span class="chip">🎹 Âm nhạc · Nhịp điệu</span>
         <h1>Anime <span class="hl">Piano Tiles</span></h1>
-        <p class="muted">Dán link bài anime / J-pop yêu thích trên YouTube, ô nhạc rơi theo nhịp bài — gõ theo nhạc để khớp phách, hoặc tự ghi nhịp riêng cho từng bài!</p>
+        <p class="muted">Dán link bài anime / J-pop yêu thích trên YouTube, ô nhạc rơi theo nhịp bài - gõ theo nhạc để khớp phách, hoặc tự ghi nhịp riêng cho từng bài!</p>
       </header>
 
       <div class="layout">
@@ -127,7 +127,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
                     </button>
                   </div>
                   @if (phase() !== null) {
-                    <small class="okp">✓ Đã khớp phách bài này ({{ bpmLabel() }} BPM) — ô sẽ rơi đúng phách nhạc</small>
+                    <small class="okp">✓ Đã khớp phách bài này ({{ bpmLabel() }} BPM) - ô sẽ rơi đúng phách nhạc</small>
                   } @else {
                     <small>Chưa khớp phách: bấm <b>Gõ theo nhịp</b> rồi gõ theo phách nhạc để ô rơi đúng nhịp bài.</small>
                   }
@@ -139,7 +139,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
                   <input type="range" min="-300" max="300" step="5" [ngModel]="latency()" (ngModelChange)="latency.set(+$event)" aria-label="Căn lệch" />
                 </label>
                 <div class="rec-row">
-                  <button type="button" class="tap rec" (click)="record()" [disabled]="!ready()" title="Nghe nhạc và tự gõ D F J K theo ý mình — mỗi lần gõ thành một ô">
+                  <button type="button" class="tap rec" (click)="record()" [disabled]="!ready()" title="Nghe nhạc và tự gõ D F J K theo ý mình - mỗi lần gõ thành một ô">
                     🎙️ {{ myChart() ? 'Ghi lại nhịp của tôi' : 'Tự ghi nhịp bài này' }}
                   </button>
                   @if (myChart()) { <button type="button" class="tap del" (click)="clearMine()">🗑 Xoá nhịp đã ghi</button> }
@@ -404,7 +404,7 @@ export class AnimePianoPage implements AfterViewInit {
   useLink(): void {
     const id = youtubeId(this.q);
     if (!id) {
-      this.linkErr.set('Link chưa đúng — hãy dán link video YouTube (youtube.com/watch?v=… hoặc youtu.be/…).');
+      this.linkErr.set('Link chưa đúng - hãy dán link video YouTube (youtube.com/watch?v=… hoặc youtu.be/…).');
       return;
     }
     this.linkErr.set('');
@@ -466,7 +466,7 @@ export class AnimePianoPage implements AfterViewInit {
           onStateChange: (e: { data: number }) => this.onYtState(e.data),
           onError: () => this.zone.run(() => {
             this.ready.set(false);
-            this.linkErr.set('Video này không cho phát nhúng trong web khác (hoặc link sai) — thử bài khác nhé.');
+            this.linkErr.set('Video này không cho phát nhúng trong web khác (hoặc link sai) - thử bài khác nhé.');
           }),
         },
       });
@@ -620,7 +620,7 @@ export class AnimePianoPage implements AfterViewInit {
     this.state.set('title');
     if (!save) return;
     if (notes.length < 8) {
-      this.linkErr.set('Mới ghi được ' + notes.length + ' ô — gõ nhiều hơn (ít nhất 8 ô) rồi lưu nhé.');
+      this.linkErr.set('Mới ghi được ' + notes.length + ' ô - gõ nhiều hơn (ít nhất 8 ô) rồi lưu nhé.');
       return;
     }
     this.linkErr.set('');

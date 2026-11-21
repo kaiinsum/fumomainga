@@ -1,5 +1,5 @@
 /**
- * Lọc tên người chơi (bản sao của api/_lib/bad-words.ts — sửa ở đây thì sửa cả bên đó).
+ * Lọc tên người chơi (bản sao của api/_lib/bad-words.ts - sửa ở đây thì sửa cả bên đó).
  * Giao diện báo lỗi ngay khi gõ; máy chủ kiểm tra lại lần nữa.
  */
 

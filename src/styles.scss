@@ -281,7 +281,7 @@ h3 {
 }
 
 /* =====================================================================
- * CHẾ ĐỘ NHẸ (html.lite) — điện thoại / máy cấu hình thấp (xem app/core/perf.ts).
+ * CHẾ ĐỘ NHẸ (html.lite) - điện thoại / máy cấu hình thấp (xem app/core/perf.ts).
  * Giữ nguyên bố cục & màu sắc, chỉ bỏ các hiệu ứng tốn GPU: làm mờ kính, đốm màu blur chuyển động,
  * animation trang trí lặp vô hạn. Máy cấu hình bình thường không bị ảnh hưởng.
  * ===================================================================== */
@@ -298,7 +298,7 @@ html.lite {
     backdrop-filter: none !important;
   }
 
-  /* Trang chủ — nền "Sản phẩm nổi bật": đứng yên, bớt lớp phủ. */
+  /* Trang chủ - nền "Sản phẩm nổi bật": đứng yên, bớt lớp phủ. */
   .fb-grid,
   .fb-blob,
   .fb-spot,
@@ -324,7 +324,7 @@ html.lite {
     filter: none !important;
   }
 
-  /* Trang Giới thiệu — tiêu đề neon, đèn rọi, nhân vật: giữ dáng, bỏ chuyển động lặp. */
+  /* Trang Giới thiệu - tiêu đề neon, đèn rọi, nhân vật: giữ dáng, bỏ chuyển động lặp. */
   .nt-main,
   .nt-shop,
   .beam,
@@ -342,7 +342,7 @@ html.lite {
     filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.15)) !important;
   }
 
-  /* Trang Mini game — minh hoạ trên thẻ game đứng yên cho tới khi rê chuột / chạm. */
+  /* Trang Mini game - minh hoạ trên thẻ game đứng yên cho tới khi rê chuột / chạm. */
   .art * {
     animation-play-state: paused !important;
   }

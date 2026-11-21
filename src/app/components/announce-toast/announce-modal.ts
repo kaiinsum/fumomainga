@@ -90,7 +90,7 @@ export class AnnounceModalComponent {
   });
 
   constructor() {
-    // Chờ trang tải xong một chút rồi mới hiện (để thiệp dịp lễ — nếu có — hiện trước).
+    // Chờ trang tải xong một chút rồi mới hiện (để thiệp dịp lễ - nếu có - hiện trước).
     setTimeout(() => this.ready.set(true), 1200);
     effect(() => {
       const a = this.current();

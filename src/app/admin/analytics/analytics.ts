@@ -242,7 +242,7 @@ export function device(ua: string): string {
               @for (o of d.online.list; track o.vid) {
                 <li>
                   <span class="path" [title]="o.path">{{ o.path }}</span>
-                  <span class="meta">{{ o.ip || '—' }} · {{ dev(o.ua) }} · {{ ago(o.lastSeen, d.now) }}</span>
+                  <span class="meta">{{ o.ip || '-' }} · {{ dev(o.ua) }} · {{ ago(o.lastSeen, d.now) }}</span>
                 </li>
               }
             </ul>
@@ -330,7 +330,7 @@ export function device(ua: string): string {
                   <thead><tr><th>Nguồn (utm_source)</th><th>Kênh (utm_medium)</th><th>Chiến dịch (utm_campaign)</th><th class="num">Lượt vào</th><th class="num">Khách</th></tr></thead>
                   <tbody>
                     @for (c of so.campaigns; track $index) {
-                      <tr><td><b>{{ c.source }}</b></td><td>{{ c.medium || '—' }}</td><td>{{ c.campaign || '—' }}</td><td class="num">{{ fmt(c.entries) }}</td><td class="num">{{ fmt(c.visitors) }}</td></tr>
+                      <tr><td><b>{{ c.source }}</b></td><td>{{ c.medium || '-' }}</td><td>{{ c.campaign || '-' }}</td><td class="num">{{ fmt(c.entries) }}</td><td class="num">{{ fmt(c.visitors) }}</td></tr>
                     }
                   </tbody>
                 </table>
@@ -341,8 +341,8 @@ export function device(ua: string): string {
           }
           <p class="hint src-note">
             Tính theo <b>lần mở web</b> (trang đầu tiên khách vào). <b>Trực tiếp</b> = gõ địa chỉ, bookmark, hoặc mở từ ứng dụng không báo nguồn
-            (Messenger / Zalo trên điện thoại thường như vậy) — dùng <b>link theo dõi</b> bên dưới để biết chính xác.
-            @if (so.partial) { <br />⚠ Đang tính tạm trên 1000 lượt vào gần nhất — chạy lại <code>supabase/schema.sql</code> để thống kê đủ. }
+            (Messenger / Zalo trên điện thoại thường như vậy) - dùng <b>link theo dõi</b> bên dưới để biết chính xác.
+            @if (so.partial) { <br />⚠ Đang tính tạm trên 1000 lượt vào gần nhất - chạy lại <code>supabase/schema.sql</code> để thống kê đủ. }
           </p>
         } @else {
           <p class="none">Chưa đọc được nguồn truy cập.</p>
@@ -378,7 +378,7 @@ export function device(ua: string): string {
               @for (v of d.latest; track $index) {
                 <tr>
                   <td class="nowrap">{{ timeLabel(v.at, d.now) }}</td>
-                  <td class="mono">{{ v.ip || '—' }}</td>
+                  <td class="mono">{{ v.ip || '-' }}</td>
                   <td class="path" [title]="v.path">{{ v.path }}</td>
                   <td class="nowrap">{{ dev(v.ua) }}</td>
                   <td class="ref" [title]="v.ref">{{ v.source || host(v.ref) }}</td>
@@ -634,7 +634,7 @@ export class AdminAnalytics {
     { key: 'images', label: 'Ảnh không còn dùng', hint: 'Ảnh đã tải lên nhưng không sản phẩm / bài viết nào dùng nữa (giữ lại ảnh mới tải trong 24 giờ).' },
     { key: 'online', label: 'Khách online đã rời đi', hint: 'Dấu vết "đang truy cập" của khách đã rời hơn 1 ngày.' },
     { key: 'rateLimits', label: 'Bộ đếm chống spam hết hạn', hint: 'Số lần gửi form / nhập code của các khung giờ đã qua.' },
-    { key: 'salts', label: 'Dữ liệu code minigame ngày cũ', hint: 'Dùng để tạo code các ngày đã qua — không còn tác dụng.' },
+    { key: 'salts', label: 'Dữ liệu code minigame ngày cũ', hint: 'Dùng để tạo code các ngày đã qua - không còn tác dụng.' },
   ];
   readonly cleanOpen = signal(false);
   readonly cleanDays = signal(90);
@@ -713,7 +713,7 @@ export class AdminAnalytics {
 
   async load(quiet = false): Promise<void> {
     if (!this.api.adminKey()) {
-      this.error.set('Chưa có mã quản trị — vào trang Đơn hàng để nhập mã, rồi quay lại đây.');
+      this.error.set('Chưa có mã quản trị - vào trang Đơn hàng để nhập mã, rồi quay lại đây.');
       return;
     }
     if (!quiet) this.loading.set(true);
@@ -926,7 +926,7 @@ export class AdminAnalytics {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 1800);
     } catch {
-      /* trình duyệt chặn — khách tự bôi đen ô link */
+      /* trình duyệt chặn - khách tự bôi đen ô link */
     }
   }
 

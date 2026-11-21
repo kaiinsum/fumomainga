@@ -1,5 +1,5 @@
 /**
- * /api/contacts/:id — admin đánh dấu đã xử lý / ghi chú (PUT) hoặc xoá (DELETE) một lời nhắn.
+ * /api/contacts/:id - admin đánh dấu đã xử lý / ghi chú (PUT) hoặc xoá (DELETE) một lời nhắn.
  */
 import { HttpError, getContacts, handle, json, readJson, requireAdmin } from '../../_lib/orders';
 

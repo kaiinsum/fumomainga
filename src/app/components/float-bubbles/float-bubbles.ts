@@ -15,7 +15,7 @@ const HISTORY_KEY = 'fumo.chat';
 
 /**
  * Bong bóng nổi góc phải: TikTok, Facebook và trợ lý AI.
- * Trợ lý AI gọi /api/chat (Vercel Function) — AI trả lời dựa trên file knowledge/kien-thuc.md.
+ * Trợ lý AI gọi /api/chat (Vercel Function) - AI trả lời dựa trên file knowledge/kien-thuc.md.
  */
 @Component({
   selector: 'app-float-bubbles',

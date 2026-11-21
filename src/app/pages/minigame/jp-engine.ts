@@ -1,5 +1,5 @@
 /**
- * "Gõ chữ diệt Fumo" — các bé fumo mang chữ tiếng Nhật rơi từ trời xuống, gõ đúng (romaji / kana / kanji)
+ * "Gõ chữ diệt Fumo" - các bé fumo mang chữ tiếng Nhật rơi từ trời xuống, gõ đúng (romaji / kana / kanji)
  * để tiêu diệt. Chạm đất 3 lần là thua. Có fumo đặc biệt (hồi tim, bom, đóng băng) và boss định kỳ:
  * boss tung chiêu mang chữ, gõ đúng chữ đó để ném ngược chiêu về boss. Chơi vô hạn tới khi thua.
  */
@@ -25,7 +25,7 @@ export interface JpResult {
   accuracy: number;
   time: number;
   newBest: boolean;
-  /** Các từ đã để rơi — hiện lại để ôn. */
+  /** Các từ đã để rơi - hiện lại để ôn. */
   missed: JpWord[];
 }
 
@@ -122,7 +122,7 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 /** Font cho chữ Nhật (kana / kanji trên đầu fumo). */
 const JP_FONT = '"Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif';
-/** Font cho chữ tiếng Việt (điểm, nghĩa, thông báo...) — Montserrat của web hiển thị dấu chuẩn; ký tự Nhật lẫn trong câu tự rơi về font Nhật. */
+/** Font cho chữ tiếng Việt (điểm, nghĩa, thông báo...) - Montserrat của web hiển thị dấu chuẩn; ký tự Nhật lẫn trong câu tự rơi về font Nhật. */
 const TEXT_FONT = 'Montserrat, "Segoe UI", Roboto, Arial, "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif';
 
 export class JpTypingGame {
@@ -221,7 +221,7 @@ export class JpTypingGame {
     this.missed = [];
     this.typed = '';
     this.targetId = -1;
-    this.showBanner('Bắt đầu!', level === 'hard' ? 'Kanji khó — tự đọc chữ nhé!' : 'Đọc chữ và gõ cách đọc nhé!', LEVELS[level].color);
+    this.showBanner('Bắt đầu!', level === 'hard' ? 'Kanji khó - tự đọc chữ nhé!' : 'Đọc chữ và gõ cách đọc nhé!', LEVELS[level].color);
     this.setState('playing');
   }
 
@@ -243,7 +243,7 @@ export class JpTypingGame {
 
   /**
    * Nhận nội dung ô gõ. Trả về:
-   * 'done' — gõ đúng trọn một từ (trang xoá ô gõ) · 'ok' — đang đúng hướng · 'typo' — không khớp từ nào · 'empty'.
+   * 'done' - gõ đúng trọn một từ (trang xoá ô gõ) · 'ok' - đang đúng hướng · 'typo' - không khớp từ nào · 'empty'.
    */
   type(text: string): 'done' | 'ok' | 'typo' | 'empty' {
     if (this.state !== 'playing') return 'empty';
@@ -725,7 +725,7 @@ export class JpTypingGame {
     g.fillRect(0, GROUND, W, 4);
   }
 
-  /** Gợi ý dưới chữ theo độ khó — chỉ chữ Nhật (kana), không romaji, không nghĩa. */
+  /** Gợi ý dưới chữ theo độ khó - chỉ chữ Nhật (kana), không romaji, không nghĩa. */
   private hints(word: JpWord, y: number): { kana: boolean; vi: boolean } {
     const p = y / GROUND;
     if (this.level === 'hard') return { kana: !!word.kana && p > 0.5, vi: false };

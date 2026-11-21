@@ -31,7 +31,7 @@ const DAY = 86_400_000;
           <small>{{ setting() === 'auto' ? '🤖 Tự động theo lịch' : '✋ Bật thủ công' }}</small>
         } @else {
           <b>🚫 Không có chủ đề</b>
-          <small>{{ setting() === 'auto' ? '🤖 Tự động theo lịch — hôm nay không trùng dịp nào' : 'Đang tắt' }}</small>
+          <small>{{ setting() === 'auto' ? '🤖 Tự động theo lịch - hôm nay không trùng dịp nào' : 'Đang tắt' }}</small>
         }
       </div>
       <div class="modes" role="radiogroup" aria-label="Chế độ chủ đề">
@@ -513,7 +513,7 @@ export class AdminSeasons {
     const msg = !value
       ? `🚫 Đã tắt chủ đề${before ? ' ' + before.name : ''}`
       : value === 'auto'
-        ? `🤖 Đã bật tự động theo lịch${seasonByDate(Date.now(), this.overrides()) ? ' — hôm nay: ' + seasonByDate(Date.now(), this.overrides())!.name : ' — hôm nay không có dịp nào'}`
+        ? `🤖 Đã bật tự động theo lịch${seasonByDate(Date.now(), this.overrides()) ? ' - hôm nay: ' + seasonByDate(Date.now(), this.overrides())!.name : ' - hôm nay không có dịp nào'}`
         : `${after!.icon} Đã bật chủ đề ${after!.name}${before && before.id !== after!.id ? ' (tắt ' + before.name + ')' : ''}`;
     if (!this.toast.run(() => this.settingsSvc.save(next), msg)) return;
     this.busy.set(true);

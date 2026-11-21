@@ -52,7 +52,7 @@ async function squareIcon(file: File, size = 144): Promise<string> {
   imports: [IconComponent, EmojiPickerComponent],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => IconPickerComponent), multi: true }],
   template: `
-    <button #cur type="button" class="cur" (click)="toggle()" [attr.aria-expanded]="open()" [title]="label() + ' — bấm để đổi'" [disabled]="disabled()">
+    <button #cur type="button" class="cur" (click)="toggle()" [attr.aria-expanded]="open()" [title]="label() + ' - bấm để đổi'" [disabled]="disabled()">
       @if (value()) { <app-icon [icon]="value()" /> } @else { <span class="ph">＋</span> }
     </button>
     @if (open()) {
@@ -194,7 +194,7 @@ export class IconPickerComponent implements ControlValueAccessor {
       try {
         url = (await this.api.call<{ url: string }>('POST', '/api/catalog', { dataUrl }, true, { timeoutMs: 30000 })).url || dataUrl;
       } catch {
-        if (dataUrl.length > 80_000) throw new Error('Không tải được ảnh lên máy chủ — hãy dán link ảnh thay thế.');
+        if (dataUrl.length > 80_000) throw new Error('Không tải được ảnh lên máy chủ - hãy dán link ảnh thay thế.');
       }
       this.set(url);
       this.close();

@@ -50,7 +50,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
                 <div class="line-info">
                   <a [routerLink]="['/san-pham', l.product.slug || l.product.id]">{{ l.product.name }}</a>
                   @if (l.variant) { <span class="variant">{{ l.variant.name }}</span> }
-                  <small><app-price-tag [product]="l.variant ?? l.product" />{{ l.product.inStock ? '' : ' · Hết hàng — shop sẽ liên hệ' }}</small>
+                  <small><app-price-tag [product]="l.variant ?? l.product" />{{ l.product.inStock ? '' : ' · Hết hàng - shop sẽ liên hệ' }}</small>
                 </div>
                 <div class="qty">
                   <button type="button" (click)="cart.setQty(l.key, l.qty - 1)" aria-label="Giảm">−</button>
@@ -133,7 +133,7 @@ const PENDING_KEY = 'fumo.checkout.pending';
             <p class="save-ok">✅ Shop đã nhận được đơn của bạn.</p>
           } @else {
             <p class="save-warn">
-              ⚠️ Mạng yếu nên chưa gửi được đơn lên hệ thống — web sẽ tự gửi lại khi có mạng.
+              ⚠️ Mạng yếu nên chưa gửi được đơn lên hệ thống - web sẽ tự gửi lại khi có mạng.
               <button type="button" class="retry" [disabled]="retrying()" (click)="retry()">{{ retrying() ? 'Đang gửi...' : 'Gửi lại ngay' }}</button>
             </p>
           }
@@ -261,7 +261,7 @@ export class CartPage {
     this.retrying.set(true);
     const done = await this.outbox.flush();
     this.retrying.set(false);
-    this.flash(done ? 'Đã gửi đơn thành công' : 'Vẫn chưa gửi được — web sẽ tự thử lại');
+    this.flash(done ? 'Đã gửi đơn thành công' : 'Vẫn chưa gửi được - web sẽ tự thử lại');
   }
 
   customer: Customer = { ...EMPTY_CUSTOMER };
@@ -322,7 +322,7 @@ export class CartPage {
     const total = this.cart.total();
     const vnd = (n: number) => n.toLocaleString('vi-VN') + 'đ';
     const summary = [
-      `ĐƠN HÀNG ${code} — ${this.s().shopName}`,
+      `ĐƠN HÀNG ${code} - ${this.s().shopName}`,
       ...this.cart.items().map((l) => `• ${l.name} × ${l.qty} = ${vnd(l.unit * l.qty)}`),
       `Tổng: ${vnd(total)}`,
       `Người nhận: ${c.name.trim()}`,
@@ -373,7 +373,7 @@ export class CartPage {
       await navigator.clipboard.writeText(text);
       this.flash(done);
     } catch {
-      this.flash('Không sao chép được — hãy chép tay nhé');
+      this.flash('Không sao chép được - hãy chép tay nhé');
     }
   }
 

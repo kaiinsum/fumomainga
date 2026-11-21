@@ -1,5 +1,5 @@
 /**
- * /site-icon — favicon theo khai báo (Admin → Khai báo SEO → Khai báo chung → Favicon).
+ * /site-icon - favicon theo khai báo (Admin → Khai báo SEO → Khai báo chung → Favicon).
  * index.html trỏ thẳng <link rel="icon"> về đây nên Google (đọc HTML gốc, không chạy JavaScript) thấy đúng favicon đã đặt,
  * không chỉ tab trình duyệt. Chưa đặt favicon → chuyển về file mặc định trong /public.
  *  ?apple=1 → icon cho màn hình chính iPhone (mặc định: apple-touch-icon.png).

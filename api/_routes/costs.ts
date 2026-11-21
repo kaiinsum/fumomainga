@@ -1,5 +1,5 @@
 /**
- * /api/admin/costs — giá nhập hàng (CHỈ admin). Lưu riêng trong app_kv 'admin:costs',
+ * /api/admin/costs - giá nhập hàng (CHỈ admin). Lưu riêng trong app_kv 'admin:costs',
  * KHÔNG nằm trong catalog sản phẩm công khai nên khách không bao giờ thấy.
  *  GET → { costs: { "<productId>": 120000, "<productId>::<variantId>": 150000 } }
  *  PUT { costs } → ghi đè toàn bộ  ·  PATCH { id, cost | null } → sửa 1 mục

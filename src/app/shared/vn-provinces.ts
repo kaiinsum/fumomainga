@@ -1,5 +1,5 @@
 /**
- * Toạ độ (gần đúng, trung tâm tỉnh lỵ) các tỉnh / thành Việt Nam — dùng cho bản đồ nhiệt đơn hàng
+ * Toạ độ (gần đúng, trung tâm tỉnh lỵ) các tỉnh / thành Việt Nam - dùng cho bản đồ nhiệt đơn hàng
  * khi đơn không có vị trí theo IP: đoán tỉnh từ địa chỉ giao hàng.
  * Gồm cả tên cũ (63 tỉnh) và tên gọi phổ biến (Sài Gòn, Vũng Tàu, Nha Trang...).
  */

@@ -26,7 +26,7 @@ export function saveJson(key: string, value: unknown): void {
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
       throw new Error('Bộ nhớ trình duyệt đã đầy. Hãy dùng ít ảnh hơn hoặc xoá bớt dữ liệu.');
     }
-    // localStorage không khả dụng (chế độ riêng tư...) — vẫn chạy trong phiên hiện tại.
+    // localStorage không khả dụng (chế độ riêng tư...) - vẫn chạy trong phiên hiện tại.
   }
 }
 

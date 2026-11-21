@@ -5,12 +5,14 @@ export type NewsStatus = 'draft' | 'published';
 /** Loại schema.org khai báo cho bài viết (giống Rank Math → Schema). */
 export type NewsSchemaType = 'Article' | 'NewsArticle' | 'BlogPosting';
 
-/** Cấu hình SEO của một bài — tất cả đều tuỳ chọn, để trống sẽ lấy giá trị mặc định từ bài viết. */
+/** Cấu hình SEO của một bài - tất cả đều tuỳ chọn, để trống sẽ lấy giá trị mặc định từ bài viết. */
 export interface NewsSeo {
   /** Đường dẫn thân thiện: /tin-tuc/<slug>. Trống → dùng id. */
   slug: string;
   /** Từ khoá chính (focus keyword). */
   focusKeyword: string;
+  /** Từ khoá phụ (cách nhau bằng dấu phẩy). */
+  secondaryKeywords: string;
   /** Tiêu đề SEO (thẻ <title>). Trống → tiêu đề bài. */
   title: string;
   /** Mô tả meta. Trống → tóm tắt. */
@@ -26,7 +28,7 @@ export interface NewsPost {
   id: string;
   title: string;
   excerpt: string;
-  /** Nội dung: Markdown đơn giản (soạn thường) hoặc mã HTML — xem `format`. */
+  /** Nội dung: Markdown đơn giản (soạn thường) hoặc mã HTML - xem `format`. */
   content: string;
   /** Kiểu soạn nội dung. Trống = 'markdown' (bài cũ). */
   format?: ContentFormat;
@@ -64,6 +66,7 @@ export const newsCategoriesOf = (s: { newsCategories?: NewsCategory[] }): NewsCa
 export const EMPTY_SEO: NewsSeo = {
   slug: '',
   focusKeyword: '',
+  secondaryKeywords: '',
   title: '',
   description: '',
   schemaType: 'NewsArticle',

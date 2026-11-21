@@ -2,12 +2,12 @@ import { DOCUMENT, Injectable, effect, inject, signal } from '@angular/core';
 import { Meta } from '@angular/platform-browser';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
-import { SEO_PAGES, SiteSeo, pageSeoOf, siteSeoOf } from '../models/site-seo';
+import { SEO_PAGES, SiteSeo, pageSeoOf, siteSeoOf, splitKeywords } from '../models/site-seo';
 import { SettingsService } from '../services/settings.service';
 import { isImageIcon } from '../shared/icon';
 
 /** Ký tự ngăn tiêu đề trang / tên shop (Admin → Khai báo → Khai báo chung). */
-export const titleSep = { value: '—' };
+export const titleSep = { value: '-' };
 
 const ATTR = 'data-page-seo';
 const publicImage = (src: string, origin: string) =>
@@ -48,7 +48,7 @@ export class PageSeoService {
     effect(() => {
       const s = this.settings();
       const seo = siteSeoOf(s);
-      titleSep.value = seo.titleSep || '—';
+      titleSep.value = seo.titleSep || '-';
       this.applyFavicon(seo.favicon);
       this.apply(this.path(), seo, s.shopName, this.query());
     });
@@ -95,7 +95,7 @@ export class PageSeoService {
     // Trang danh mục (/san-pham?danhMuc=..., /tin-tuc?danhMuc=...) là trang riêng → canonical giữ tham số danh mục.
     const cat = new URLSearchParams(query).get('danhMuc');
     const url = origin + (path === '/' ? '/' : path) + (cat && (path === '/san-pham' || path === '/tin-tuc') ? '?danhMuc=' + encodeURIComponent(cat) : '');
-    const title = page.title.trim() || (path === '/' ? shop : `${def.label} ${seo.titleSep || '—'} ${shop}`);
+    const title = page.title.trim() || (path === '/' ? shop : `${def.label} ${seo.titleSep || '-'} ${shop}`);
     const description = page.description.trim() || seo.defaultDescription.trim() || this.defaultDescription || '';
     const image = publicImage(page.ogImage || seo.defaultOgImage, origin) || `${origin}/og/og-default.jpg`;
 
@@ -116,7 +116,8 @@ export class PageSeoService {
       { name: 'twitter:image', content: image },
     ];
     if (description) tags.push({ property: 'og:description', content: description }, { name: 'twitter:description', content: description });
-    if (page.focusKeyword.trim()) tags.push({ name: 'keywords', content: page.focusKeyword.trim() });
+    const kws = splitKeywords(`${page.focusKeyword},${page.secondaryKeywords ?? ''}`);
+    if (kws.length) tags.push({ name: 'keywords', content: kws.join(', ') });
     tags.push({ name: 'thumbnail', content: image });
     for (const t of tags) {
       const el = this.meta.addTag(t, true);

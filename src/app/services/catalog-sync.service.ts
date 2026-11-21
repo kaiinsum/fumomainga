@@ -17,7 +17,7 @@ interface RemoteCatalog {
 
 export type SyncState = 'idle' | 'saving' | 'saved' | 'error';
 
-/** Ảnh dạng data URL (ảnh admin chọn từ máy) — cần tải lên kho ảnh. Ảnh SVG mẫu nhỏ, giữ nguyên. */
+/** Ảnh dạng data URL (ảnh admin chọn từ máy) - cần tải lên kho ảnh. Ảnh SVG mẫu nhỏ, giữ nguyên. */
 const DATA_IMG = /data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+/g;
 const isDataImg = (s: string) => /^data:image\/(?:jpeg|png|webp|gif);base64,/.test(s);
 const hasDataImg = (s: string) => /data:image\/(?:jpeg|png|webp|gif);base64,/.test(s);
@@ -115,7 +115,7 @@ export class CatalogSyncService {
       this.products.useSeedIfEmpty();
       this.news.useSeedIfEmpty();
       // Máy chủ chưa có dữ liệu → admin đăng nhập sẽ đưa dữ liệu trên máy này lên (lần đầu).
-      // Chỉ khi máy này có dữ liệu admin đã lưu — không bao giờ đẩy dữ liệu mẫu đè lên.
+      // Chỉ khi máy này có dữ liệu admin đã lưu - không bao giờ đẩy dữ liệu mẫu đè lên.
       const hasLocal = hasJson(STORAGE_KEYS.products) || hasJson(STORAGE_KEYS.news) || hasJson(STORAGE_KEYS.categories);
       this.remoteEmpty = !hasRemote && !!remote && hasLocal;
       if (this.remoteEmpty && admin) this.setDirty(true);
@@ -142,7 +142,7 @@ export class CatalogSyncService {
   private async doPush(): Promise<void> {
     if (!this.auth.loggedIn()) return;
     if (!this.api.adminKey()) {
-      this.fail('Chưa có mã quản trị (ADMIN_API_KEY) — vào Đơn hàng để nhập mã, dữ liệu mới lưu lên máy chủ được.');
+      this.fail('Chưa có mã quản trị (ADMIN_API_KEY) - vào Đơn hàng để nhập mã, dữ liệu mới lưu lên máy chủ được.');
       return;
     }
     this.state.set('saving');

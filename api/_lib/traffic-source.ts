@@ -1,7 +1,7 @@
 /**
  * Phân loại nguồn truy cập từ trường `ref` của lượt xem đầu tiên mỗi lần mở web:
  *   "<document.referrer hoặc (direct)>[ ##utm_source=..&utm_medium=..&utm_campaign=..&click=fb]"
- * (trình duyệt gửi — xem src/app/services/tracker.service.ts).
+ * (trình duyệt gửi - xem src/app/services/tracker.service.ts).
  */
 
 export type SourceKind = 'search' | 'social' | 'campaign' | 'referral' | 'direct' | 'internal';

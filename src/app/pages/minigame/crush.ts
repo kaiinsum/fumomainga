@@ -16,7 +16,7 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
       <header class="head">
         <span class="chip">💎 Ghép fumo · Thủ đền</span>
         <h1>Fumo <span class="hl">Crush Saga</span></h1>
-        <p class="muted">Đổi chỗ 2 bé cạnh nhau để ghép 3 bé cùng màu trở lên — mỗi lần ghép là một đòn đánh lũ yêu quái đang kéo tới đền Hakurei!</p>
+        <p class="muted">Đổi chỗ 2 bé cạnh nhau để ghép 3 bé cùng màu trở lên - mỗi lần ghép là một đòn đánh lũ yêu quái đang kéo tới đền Hakurei!</p>
       </header>
 
       <div class="layout">
@@ -27,7 +27,7 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
           @if (state() === 'title') {
             <div class="overlay">
               <h2>💎 Fumo Crush Saga</h2>
-              <p>Gensokyo đang có dị biến! Yêu quái kéo về đền Hakurei — ghép các bé fumo để bảo vệ đền.</p>
+              <p>Gensokyo đang có dị biến! Yêu quái kéo về đền Hakurei - ghép các bé fumo để bảo vệ đền.</p>
               <button class="btn primary big" type="button" (click)="start()">▶ Bắt đầu</button>
               @if (best()) { <small>Kỷ lục: {{ best().toLocaleString('vi-VN') }}</small> }
             </div>
@@ -50,9 +50,9 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
             <li><b class="n">3</b><span>⚔️ <b>Chém</b> 1 nhát vào con quái gần đền nhất</span></li>
             <li><b class="n">4</b><span>💣 <b>Bom</b> nổ lan, trúng cả cụm quái</span></li>
             <li><b class="n">5</b><span>⚡ <b>Laser Zap</b> xuyên cả hàng quái</span></li>
-            <li><b class="n">6+</b><span>✨ <b>Mộng Tưởng Phong Ấn</b> — trúng mọi quái và hồi máu đền</span></li>
+            <li><b class="n">6+</b><span>✨ <b>Mộng Tưởng Phong Ấn</b> - trúng mọi quái và hồi máu đền</span></li>
           </ul>
-          <p class="muted small">Ghép dây chuyền (combo) để tăng sát thương. Bé bị <b>❄ đóng băng</b> không đổi chỗ được — ghép trúng hoặc ghép sát bên cạnh để phá băng. Bàn luôn có nước đi; hết nước sẽ tự xáo bàn.</p>
+          <p class="muted small">Ghép dây chuyền (combo) để tăng sát thương. Bé bị <b>❄ đóng băng</b> không đổi chỗ được - ghép trúng hoặc ghép sát bên cạnh để phá băng. Bàn luôn có nước đi; hết nước sẽ tự xáo bàn.</p>
 
           <h3>6 bé fumo</h3>
           <div class="gems">
@@ -64,7 +64,7 @@ import { CHAPTERS, CrushGame, CrushResult, CrushState, GEMS, H, W } from './crus
           <h3>Cốt truyện</h3>
           <ol class="story">
             @for (c of chapters; track c.boss; let i = $index) {
-              <li [style.--c]="c.aura"><b>{{ c.place }}</b> — boss {{ c.boss }}</li>
+              <li [style.--c]="c.aura"><b>{{ c.place }}</b> - boss {{ c.boss }}</li>
             }
           </ol>
           <p class="muted small">Hạ hết 5 boss sẽ sang vòng mới: quái đông hơn, khoẻ hơn, điểm cũng cao hơn. Chơi vô tận!</p>

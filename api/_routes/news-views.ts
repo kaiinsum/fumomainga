@@ -1,6 +1,6 @@
 /**
- * /api/news-views — lượt xem từng bài viết (công khai, để hiện "👁 123 lượt xem" ở trang Tin tức).
- * Lấy từ bảng thống kê đang có (khoá 'news:<slug>' — xem analytics.ts). Lưu đệm 5 phút trên CDN.
+ * /api/news-views - lượt xem từng bài viết (công khai, để hiện "👁 123 lượt xem" ở trang Tin tức).
+ * Lấy từ bảng thống kê đang có (khoá 'news:<slug>' - xem analytics.ts). Lưu đệm 5 phút trên CDN.
  */
 import { getStore, handle } from '../_lib/orders';
 

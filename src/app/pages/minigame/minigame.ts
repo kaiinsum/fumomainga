@@ -28,7 +28,7 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
             @case ('title') {
               <div class="overlay">
                 <h2>Sẵn sàng chưa?</h2>
-                <p>Bé tự động bắn — bạn chỉ cần di chuyển và né đạn.</p>
+                <p>Bé tự động bắn - bạn chỉ cần di chuyển và né đạn.</p>
                 <div class="levels" role="group" aria-label="Chọn độ khó">
                   @for (lv of levels; track lv.id) {
                     <button type="button" class="level" [class]="'level ' + lv.id" (click)="start(lv.id)">
@@ -105,13 +105,13 @@ import { DanmakuGame, Difficulty, GameResult, GameState, H, W } from './engine';
           <ul>
             <li><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> hoặc <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>: di chuyển</li>
             <li><kbd>Shift</kbd>: đi chậm để luồn lách, hiện điểm trúng đạn</li>
-            <li><kbd>X</kbd>: bom ★ — xoá sạch đạn trên màn hình</li>
+            <li><kbd>X</kbd>: bom ★ - xoá sạch đạn trên màn hình</li>
             <li><kbd>P</kbd> / <kbd>Esc</kbd>: tạm dừng</li>
             <li>📱 Điện thoại: kéo ngón tay ở bất kỳ đâu để di chuyển, nút ★ để thả bom</li>
           </ul>
           <h3>Mẹo</h3>
           <ul>
-            <li>Chỉ <b>chấm nhỏ giữa người</b> bé mới bị trúng đạn — hãy mạnh dạn len qua khe hở.</li>
+            <li>Chỉ <b>chấm nhỏ giữa người</b> bé mới bị trúng đạn - hãy mạnh dạn len qua khe hở.</li>
             <li>Sượt sát đạn (graze) được cộng điểm.</li>
             <li>Nhặt <span class="tag p">P</span> để bắn nhiều tia hơn, <span class="tag b">B</span> thêm bom, <span class="tag l">♥</span> thêm mạng.</li>
             <li>Bay lên sát mép trên để hút hết vật phẩm.</li>

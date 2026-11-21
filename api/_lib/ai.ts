@@ -50,7 +50,7 @@ export function readKnowledgeFile(): string {
   }
 }
 
-/** Bỏ ghi chú HTML (<!-- -->) — dành cho người soạn, không gửi cho AI. */
+/** Bỏ ghi chú HTML (<!-- -->) - dành cho người soạn, không gửi cho AI. */
 export const stripComments = (md: string) => md.replace(/<!--[\s\S]*?-->/g, '').trim();
 
 // ---------- Kiểm tra dữ liệu đồng bộ ----------
@@ -142,7 +142,7 @@ export function catalogToPrompt(c: CatalogSnapshot): string {
   ];
 
   const news = c.news.length
-    ? ['', '### Tin tức đang đăng', ...c.news.map((n) => `- ${n.date} — ${n.title} (${n.path}): ${n.excerpt}`)]
+    ? ['', '### Tin tức đang đăng', ...c.news.map((n) => `- ${n.date} - ${n.title} (${n.path}): ${n.excerpt}`)]
     : [];
 
   return [

@@ -16,7 +16,7 @@
       >
         @switch (sync.state()) {
           @case ('saving') { <span class="spin">⟳</span><span class="sp-txt"> {{ sync.message() || 'Đang lưu lên máy chủ…' }}</span> }
-          @case ('error') { ⚠<span class="sp-txt"> Chưa lưu lên máy chủ — bấm để thử lại</span> }
+          @case ('error') { ⚠<span class="sp-txt"> Chưa lưu lên máy chủ - bấm để thử lại</span> }
           @default {
             @if (sync.dirty()) { ⟳<span class="sp-txt"> Sắp lưu lên máy chủ…</span> } @else if (sync.message()) { ⚠<span class="sp-txt"> Đã lưu · bảng products lỗi</span> } @else { ☁<span class="sp-txt"> Đã lưu lên máy chủ</span> }
           }

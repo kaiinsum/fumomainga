@@ -74,7 +74,7 @@ export function fmtDuration(sec: number): string {
             <div class="tile"><span>Người chơi</span><b>{{ gameTotals().players | number }}</b><small>khách khác nhau (cộng theo từng game)</small></div>
             <div class="tile"><span>Lượt chơi</span><b>{{ gameTotals().plays | number }}</b><small>lần vào trang game</small></div>
             <div class="tile"><span>Tổng thời gian chơi</span><b>{{ dur(gameTotals().seconds) }}</b><small>chỉ tính lúc đang chơi thật</small></div>
-            <div class="tile"><span>Chơi lâu nhất</span><b>{{ gameRows()[0]?.title ?? '—' }}</b><small>{{ gameRows()[0] ? dur(gameRows()[0].seconds) : 'chưa có dữ liệu' }}</small></div>
+            <div class="tile"><span>Chơi lâu nhất</span><b>{{ gameRows()[0]?.title ?? '-' }}</b><small>{{ gameRows()[0] ? dur(gameRows()[0].seconds) : 'chưa có dữ liệu' }}</small></div>
           </div>
 
           @if (gameRows().length) {
@@ -125,7 +125,7 @@ export function fmtDuration(sec: number): string {
             <div class="tile"><span>Lượt đọc</span><b>{{ newsTotals().plays | number }}</b><small>lần mở bài viết</small></div>
             <div class="tile"><span>Người đọc</span><b>{{ newsTotals().players | number }}</b><small>khách khác nhau (cộng theo từng bài)</small></div>
             <div class="tile"><span>Thời gian đọc TB</span><b>{{ dur(newsTotals().plays ? newsTotals().seconds / newsTotals().plays : 0) }}</b><small>mỗi lượt đọc</small></div>
-            <div class="tile"><span>Xem nhiều nhất</span><b [title]="newsTop()[0]?.title ?? ''">{{ newsTop()[0]?.title ?? '—' }}</b><small>{{ newsTop()[0] ? newsTop()[0].plays + ' lượt' : 'chưa có dữ liệu' }}</small></div>
+            <div class="tile"><span>Xem nhiều nhất</span><b [title]="newsTop()[0]?.title ?? ''">{{ newsTop()[0]?.title ?? '-' }}</b><small>{{ newsTop()[0] ? newsTop()[0].plays + ' lượt' : 'chưa có dữ liệu' }}</small></div>
           </div>
           @if (newsRows().length) {
             <h3>Lượt xem theo bài</h3>
@@ -179,7 +179,7 @@ export function fmtDuration(sec: number): string {
           <div class="tile"><span>Đơn hoàn thành</span><b>{{ orderTotals().orders | number }}</b><small>không tính đơn huỷ / đang xử lý</small></div>
           <div class="tile"><span>Bé đã bán</span><b>{{ orderTotals().qty | number }}</b><small>tổng số lượng</small></div>
           <div class="tile"><span>Doanh thu</span><b>{{ orderTotals().revenue | vnd }}</b><small>đơn đã hoàn thành · <a routerLink="/admin/doanh-thu">xem lãi ròng →</a></small></div>
-          <div class="tile"><span>Đặt nhiều nhất</span><b>{{ topQty()[0]?.name ?? '—' }}</b><small>{{ topQty()[0] ? topQty()[0].qty + ' bé' : 'chưa có đơn' }}</small></div>
+          <div class="tile"><span>Đặt nhiều nhất</span><b>{{ topQty()[0]?.name ?? '-' }}</b><small>{{ topQty()[0] ? topQty()[0].qty + ' bé' : 'chưa có đơn' }}</small></div>
         </div>
 
         <div class="cols">
@@ -235,7 +235,7 @@ export function fmtDuration(sec: number): string {
                     <td class="num">{{ p.orders | number }}</td>
                     <td class="num">{{ p.revenue | vnd }}</td>
                     <td class="num">{{ p.views | number }}</td>
-                    <td class="num">{{ p.visitors ? ((p.orders / p.visitors) * 100 | number: '1.0-1') + '%' : '—' }}</td>
+                    <td class="num">{{ p.visitors ? ((p.orders / p.visitors) * 100 | number: '1.0-1') + '%' : '-' }}</td>
                   </tr>
                 }
               </tbody>
@@ -391,7 +391,7 @@ export class AdminInsights {
       for (const it of o.items) {
         // id trong đơn có thể kèm biến thể (id::bienthe) → gộp về sản phẩm.
         const key = String(it.id).split('::')[0];
-        const r = row(key, it.name.split(' — ')[0]);
+        const r = row(key, it.name.split(' - ')[0]);
         r.qty += it.qty;
         r.revenue += it.price * it.qty;
         if (!seen.has(key)) r.orders++;

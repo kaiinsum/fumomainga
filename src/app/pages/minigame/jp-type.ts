@@ -111,7 +111,7 @@ interface LevelCard {
         <aside class="guide card-surface">
           <h2>Cách chơi</h2>
           <ul>
-            <li>Đọc chữ trên đầu bé fumo rồi gõ <b>cách đọc bằng chữ Latin</b> (vd: ねこ → <code>neko</code>) — đúng là bé nổ tung, không cần bấm Enter.</li>
+            <li>Đọc chữ trên đầu bé fumo rồi gõ <b>cách đọc bằng chữ Latin</b> (vd: ねこ → <code>neko</code>) - đúng là bé nổ tung, không cần bấm Enter.</li>
             <li>Chấp nhận cả kiểu gõ <code>shi/si</code>, <code>tsu/tu</code>, <code>chi/ti</code>, <code>ou/o</code>… hoặc gõ thẳng kana / kanji bằng bộ gõ tiếng Nhật.</li>
             <li><kbd>Esc</kbd> xoá ô gõ · bấm ⏸ để tạm dừng.</li>
             <li>Càng chơi fumo rơi càng nhanh, càng nhiều.</li>
@@ -119,21 +119,21 @@ interface LevelCard {
           <h3>Gợi ý theo độ khó</h3>
           <ul>
             <li><b class="c-easy">Dễ</b>: hiragana & từ đơn giản.</li>
-            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 — có cách đọc kana dưới chữ.</li>
-            <li><b class="c-hard">Khó</b>: kanji khó — cách đọc kana chỉ lộ ra khi bé rơi quá nửa.</li>
+            <li><b class="c-normal">Trung bình</b>: katakana & kanji N5 - có cách đọc kana dưới chữ.</li>
+            <li><b class="c-hard">Khó</b>: kanji khó - cách đọc kana chỉ lộ ra khi bé rơi quá nửa.</li>
           </ul>
           <h3>Fumo đặc biệt</h3>
           <ul class="specials">
-            <li><img src="jp-type/yuyuko.webp" alt="Yuyuko" /><span><b>♥ Hồi tim</b> — +1 mạng (tối đa 5)</span></li>
-            <li><img src="jp-type/flandre.webp" alt="Flandre" /><span><b>💣 Bom</b> — nổ tung mọi fumo & chiêu boss</span></li>
-            <li><img src="jp-type/cirno-2.webp" alt="Cirno" /><span><b>❄ Đóng băng</b> — mọi thứ chậm lại 5 giây</span></li>
+            <li><img src="jp-type/yuyuko.webp" alt="Yuyuko" /><span><b>♥ Hồi tim</b> - +1 mạng (tối đa 5)</span></li>
+            <li><img src="jp-type/flandre.webp" alt="Flandre" /><span><b>💣 Bom</b> - nổ tung mọi fumo & chiêu boss</span></li>
+            <li><img src="jp-type/cirno-2.webp" alt="Cirno" /><span><b>❄ Đóng băng</b> - mọi thứ chậm lại 5 giây</span></li>
           </ul>
           <h3>Boss</h3>
           <p>Sau một lúc, boss xuất hiện và tung chiêu mang chữ. <b>Gõ đúng chữ của chiêu để ném ngược về boss</b>. Để chiêu chạm đất sẽ mất tim. Hạ boss được thưởng lớn + 1 tim.</p>
           <div class="bosses">
-            <img src="jp-type/boss-cirno.webp" alt="Cirno" title="Cirno — Icicle Fall" />
-            <img src="jp-type/boss-reimu.webp" alt="Reimu" title="Reimu — Âm Dương Ngọc" />
-            <img src="jp-type/boss-dark-reimu.webp" alt="Reimu Hắc Hoá" title="Reimu Hắc Hoá — Bùa Trấn Yêu" />
+            <img src="jp-type/boss-cirno.webp" alt="Cirno" title="Cirno - Icicle Fall" />
+            <img src="jp-type/boss-reimu.webp" alt="Reimu" title="Reimu - Âm Dương Ngọc" />
+            <img src="jp-type/boss-dark-reimu.webp" alt="Reimu Hắc Hoá" title="Reimu Hắc Hoá - Bùa Trấn Yêu" />
           </div>
         </aside>
       </div>

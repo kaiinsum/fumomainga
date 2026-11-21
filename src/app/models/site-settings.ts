@@ -46,10 +46,10 @@ export interface Announcement {
   icon: string;
   title: string;
   content: string;
-  /** Link khi bấm vào (trong web, vd. /san-pham) — trống = không có. */
+  /** Link khi bấm vào (trong web, vd. /san-pham) - trống = không có. */
   link?: string;
   createdAt: number;
-  /** Hết hạn (ms) — trống = không hết hạn. */
+  /** Hết hạn (ms) - trống = không hết hạn. */
   expiresAt?: number;
   /** 'toast' (mặc định): khung nhỏ góc màn hình · 'modal': hộp lớn giữa màn hình như thiệp dịp lễ. */
   type?: 'toast' | 'modal';
@@ -116,7 +116,7 @@ export const DEFAULT_GUIDE: GuideSettings = {
   okLabel: 'OK, đi thôi!',
   noReply: 'Vậy bạn cứ tiếp tục tìm hiểu về sản phẩm bên mình nha.',
   hubWelcome: 'Chào mừng đến với minigame! Rê chuột vào trò nào để mình giới thiệu nha~',
-  hubIntro: 'Đây là trang minigame nè! Ở đây có đủ trò chill, trò đấu trí, trò chiến thuật — chơi xong còn được lên bảng xếp hạng nữa đó~',
+  hubIntro: 'Đây là trang minigame nè! Ở đây có đủ trò chill, trò đấu trí, trò chiến thuật - chơi xong còn được lên bảng xếp hạng nữa đó~',
   summonEnabled: true,
   menuText: 'Gọi mình có chuyện gì nè? Mình giúp được mấy việc này nha~',
   perfAskEnabled: true,
@@ -126,7 +126,7 @@ export const DEFAULT_GUIDE: GuideSettings = {
   perfOffReply: 'Đã chuyển sang chế độ nhẹ rồi nha! Muốn bật lại thì gọi mình.',
   slashEnabled: true,
   slashAsk: 'Bạn chơi khá đấy! Muốn thử trò Fumo Ninja không?',
-  slashCode: 'Hôm nay Fumo Ninja cần code mới chơi được — nhập code ở đây nha!',
+  slashCode: 'Hôm nay Fumo Ninja cần code mới chơi được - nhập code ở đây nha!',
   gameLines: {},
 };
 
@@ -187,13 +187,13 @@ export interface SiteSettings {
   minigames: GameSetting[];
   /** Phân loại minigame (Giải trí, Trí tuệ, Chiến thuật...). */
   gameCategories?: GameCategory[];
-  /** Người hướng dẫn (Cirno / Reimu) — Marketing & tương tác → Người hướng dẫn. */
+  /** Người hướng dẫn (Cirno / Reimu) - Marketing & tương tác → Người hướng dẫn. */
   guide?: GuideSettings;
   /** Khai báo SEO cả web (Admin → Khai báo): từng trang menu, tổ chức, ảnh chia sẻ, favicon. */
   seo?: import('./site-seo').SiteSeo;
   /** Danh mục bài viết (Admin → Tin tức → Danh mục bài viết). */
   newsCategories?: import('./news').NewsCategory[];
-  /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
+  /** Hiện thẻ "Game bí mật - Sắp ra mắt" ở cuối danh sách. */
   minigameComingSoon: boolean;
   /** Số trò được chơi miễn phí mỗi ngày (0 = mở tất cả). Có code trong ngày thì mở hết. */
   minigameDailyFree: number;
@@ -222,7 +222,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   logoEmoji: '🧸',
   tagline: 'Thế giới thú bông dễ thương',
   primaryColor: '#60B5FF',
-  /** Sắc rất nhạt của màu chủ đạo — không thêm màu khác. */
+  /** Sắc rất nhạt của màu chủ đạo - không thêm màu khác. */
   backgroundColor: '#F5FAFF',
   fontFamily: 'Montserrat',
   footerText: 'Nơi trưng bày những bé fumo, móc khóa, figure và phụ kiện dễ thương nhất.',
@@ -271,7 +271,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     {
       icon: '🚚',
       title: 'Giao hàng',
-      text: 'Giao hàng toàn quốc.\nNội thành TP.HCM 1–2 ngày, tỉnh khác 3–5 ngày.\nPhí ship tính theo đơn vị vận chuyển; miễn phí ship cho đơn từ 500.000đ.\nGói quà miễn phí — ghi chú khi đặt hàng.',
+      text: 'Giao hàng toàn quốc.\nNội thành TP.HCM 1–2 ngày, tỉnh khác 3–5 ngày.\nPhí ship tính theo đơn vị vận chuyển; miễn phí ship cho đơn từ 500.000đ.\nGói quà miễn phí - ghi chú khi đặt hàng.',
     },
     {
       icon: '🔄',

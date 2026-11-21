@@ -23,7 +23,7 @@ export const FREE_SHIP_QTY = 2;
         <span class="nudge-ico" aria-hidden="true">🥺</span>
         <span class="nudge-txt">
           <b>Mua thêm đi mà!</b>
-          <small>Mua {{ freeQty }} bé trở lên được <strong>freeship</strong> đó — chỉ còn {{ left() }} bé nữa thôi 🚚</small>
+          <small>Mua {{ freeQty }} bé trở lên được <strong>freeship</strong> đó - chỉ còn {{ left() }} bé nữa thôi 🚚</small>
         </span>
         <span class="nudge-go" aria-hidden="true">›</span>
       </button>
@@ -56,7 +56,7 @@ export const FREE_SHIP_QTY = 2;
                 <button type="button" class="choice luck" [disabled]="g.status !== 'open'" (click)="tryLuck(g.path)">
                   <span class="c-ico">🎁</span>
                   <b>Thử vận may</b>
-                  <small>{{ g.status === 'open' ? 'Bóc túi mù — số phận chọn bé cho bạn!' : g.lockMsg }}</small>
+                  <small>{{ g.status === 'open' ? 'Bóc túi mù - số phận chọn bé cho bạn!' : g.lockMsg }}</small>
                 </button>
               }
             </div>

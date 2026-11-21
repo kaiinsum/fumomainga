@@ -6,7 +6,7 @@ import { SEO_LIMITS, markdownToText } from './seo';
 
 /**
  * Tự động khai báo SEO + schema (Admin → Khai báo → ⚡ Tự động khai báo, hoặc tự điền khi đăng mục mới).
- * Chỉ điền ô đang TRỐNG (trừ khi chọn ghi đè) — không bao giờ xoá nội dung admin đã viết.
+ * Chỉ điền ô đang TRỐNG (trừ khi chọn ghi đè) - không bao giờ xoá nội dung admin đã viết.
  */
 
 /** Cắt ở ranh giới từ, không vượt quá n ký tự. */
@@ -15,7 +15,7 @@ export function clipWords(text: string, n: number): string {
   if (t.length <= n) return t;
   const cut = t.slice(0, n - 1);
   const i = cut.lastIndexOf(' ');
-  return (i > n * 0.6 ? cut.slice(0, i) : cut).replace(/[,.;:\-–—]+$/, '') + '…';
+  return (i > n * 0.6 ? cut.slice(0, i) : cut).replace(/[,.;:\-–-]+$/, '') + '…';
 }
 
 /** Mô tả meta 120–160 ký tự từ nội dung, có chứa từ khoá. */
@@ -57,6 +57,15 @@ export function autoProductSeo(p: Product, o: AutoOptions): ProductSeo {
     focusKeyword: kw,
     title: pick('title', title),
     description: pick('description', desc),
+    // Từ khoá phụ gợi ý: danh mục + thẻ sản phẩm (bỏ trùng từ khoá chính).
+    secondaryKeywords: pick(
+      'secondaryKeywords',
+      [p.category, ...(p.tags ?? [])]
+        .map((t) => (t ?? '').trim())
+        .filter((t, i, a) => t && t.toLowerCase() !== kw.toLowerCase() && a.indexOf(t) === i)
+        .slice(0, 5)
+        .join(', '),
+    ),
     // Schema Product luôn bật khi tự khai báo; thương hiệu = tên shop, SKU = mã sản phẩm.
     productSchema: true,
     brand: pick('brand', o.shopName),
@@ -103,11 +112,11 @@ export function autoPageSeo(def: SeoPageDef, seo: SiteSeo, o: AutoOptions): Part
   };
   const descByPath: Record<string, string> = {
     '/': `${shop} chuyên thú bông fumo chính hãng, móc khoá, figure và phụ kiện dễ thương. Hàng có sẵn & order, đóng gói cẩn thận, giao toàn quốc.`,
-    '/san-pham': `Xem tất cả sản phẩm fumo tại ${shop}: thú bông fumo, móc khoá, figure, phụ kiện. Lọc theo danh mục, giá, còn hàng — đặt mua nhanh.`,
+    '/san-pham': `Xem tất cả sản phẩm fumo tại ${shop}: thú bông fumo, móc khoá, figure, phụ kiện. Lọc theo danh mục, giá, còn hàng - đặt mua nhanh.`,
     '/mini-game': `Chơi minigame fumo miễn phí ngay trên trình duyệt: Fumo Ninja, Merge Fumo, Piano Tiles, đoán nhân vật... đua top bảng xếp hạng!`,
     '/tin-tuc': `Tin tức fumo mới nhất từ ${shop}: hàng mới về, mẹo chăm sóc và vệ sinh thú bông, sự kiện và ưu đãi dành cho fan fumo.`,
     '/gioi-thieu': `Giới thiệu ${shop}: câu chuyện, giá trị và hành trình mang những bé fumo dễ thương đến tay người hâm mộ trên khắp Việt Nam.`,
-    '/chinh-sach': `Chính sách của ${shop}: đổi trả, vận chuyển, thanh toán chuyển khoản, bảo hành và bảo mật thông tin khách hàng — rõ ràng, minh bạch.`,
+    '/chinh-sach': `Chính sách của ${shop}: đổi trả, vận chuyển, thanh toán chuyển khoản, bảo hành và bảo mật thông tin khách hàng - rõ ràng, minh bạch.`,
     '/lien-he': `Liên hệ ${shop} để đặt hàng, hỏi hàng order hoặc tư vấn chọn fumo: địa chỉ, số điện thoại, email, Facebook, Zalo và giờ làm việc.`,
     '/tra-cuu-don-hang': `Tra cứu tình trạng đơn hàng tại ${shop} bằng mã đơn và số điện thoại đặt hàng.`,
   };

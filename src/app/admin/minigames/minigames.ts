@@ -267,7 +267,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
     <section class="adm-box extra">
       <label class="switch">
         <input type="checkbox" [ngModel]="comingSoon()" (ngModelChange)="comingSoon.set($event)" />
-        <span>Hiện thẻ <b>"Game bí mật — Sắp ra mắt"</b> ở cuối danh sách</span>
+        <span>Hiện thẻ <b>"Game bí mật - Sắp ra mắt"</b> ở cuối danh sách</span>
       </label>
       <button class="link" type="button" (click)="resetAll()">↺ Khôi phục mặc định (mở tất cả, thứ tự gốc)</button>
     </section>
@@ -514,7 +514,7 @@ export class AdminMinigames {
 
   async loadCode(): Promise<void> {
     this.codeError.set('');
-    if (!this.api.adminKey()) return this.codeError.set('Chưa có mã quản trị — vào trang Đơn hàng để nhập mã.');
+    if (!this.api.adminKey()) return this.codeError.set('Chưa có mã quản trị - vào trang Đơn hàng để nhập mã.');
     try {
       this.code.set(await this.api.call<{ day: string; code: string }>('GET', '/api/minigame', undefined, true));
     } catch (e) {
@@ -542,7 +542,7 @@ export class AdminMinigames {
       await navigator.clipboard.writeText(c);
       this.toast.ok(`Đã sao chép code ${c}`);
     } catch {
-      this.toast.err('Không sao chép được — hãy chép tay: ' + c);
+      this.toast.err('Không sao chép được - hãy chép tay: ' + c);
     }
   }
 
@@ -672,7 +672,7 @@ export class AdminMinigames {
     this.draft.set(normalizeGameSettings(undefined));
     this.comingSoon.set(true);
     this.dailyFree.set(0);
-    this.toast.ok('Đã khôi phục mặc định — bấm "Lưu thay đổi" để áp dụng');
+    this.toast.ok('Đã khôi phục mặc định - bấm "Lưu thay đổi" để áp dụng');
   }
 
   revert(): void {

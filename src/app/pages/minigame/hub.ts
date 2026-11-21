@@ -44,7 +44,7 @@ interface GameCard {
   cats: GameCategory[];
 }
 
-/** Trang chọn mini game: carousel thẻ game, mặc định đen trắng — rê chuột / chọn mới hiện màu. */
+/** Trang chọn mini game: carousel thẻ game, mặc định đen trắng - rê chuột / chọn mới hiện màu. */
 @Component({
   selector: 'app-minigame-hub',
   imports: [RouterLink, NgTemplateOutlet, SoundToggleComponent, IconComponent],
@@ -78,7 +78,7 @@ interface GameCard {
       }
 
       @if (blockedGame(); as b) {
-        <p class="blocked" role="alert">🔒 <b>{{ b.title }}</b> {{ b.status === 'hidden' ? 'hiện không mở cho người chơi.' : 'đang tạm khoá — ' + b.lockMsg }}
+        <p class="blocked" role="alert">🔒 <b>{{ b.title }}</b> {{ b.status === 'hidden' ? 'hiện không mở cho người chơi.' : 'đang tạm khoá - ' + b.lockMsg }}
           <button type="button" (click)="blockedId.set(null)" aria-label="Đóng">✕</button></p>
       }
       @if (!intro()) {
@@ -102,7 +102,7 @@ interface GameCard {
         <div class="track" #track (mouseleave)="guide.hoverGame(null)">
           @for (g of shown(); track g.id) {
             @if (g.path && g.needCode) {
-              <button type="button" class="card need-code" (mouseenter)="guide.hoverGame(g.id)" (focus)="guide.hoverGame(g.id)" (click)="askCode(g)" [attr.aria-label]="g.title + ' — cần code hôm nay'">
+              <button type="button" class="card need-code" (mouseenter)="guide.hoverGame(g.id)" (focus)="guide.hoverGame(g.id)" (click)="askCode(g)" [attr.aria-label]="g.title + ' - cần code hôm nay'">
                 <ng-container *ngTemplateOutlet="body; context: { $implicit: g }" />
               </button>
             } @else if (g.path) {
@@ -458,7 +458,7 @@ interface GameCard {
 
     /* Màn hình cảm ứng không có hover: hiện màu sẵn. */
     @media (max-width: 600px) { .track { padding: 18px 16px; scroll-padding-inline: 16px; gap: 12px; } .arrow { display: none; }
-      /* Điện thoại: thẻ nhỏ gọn như thẻ sản phẩm — cuộn ngang ~1.7 thẻ / màn, danh sách 2 cột */
+      /* Điện thoại: thẻ nhỏ gọn như thẻ sản phẩm - cuộn ngang ~1.7 thẻ / màn, danh sách 2 cột */
       .card { flex: 0 0 min(200px, 56vw); border-radius: 16px; }
       .art { height: 120px; }
       .info { padding: 10px 11px 12px; gap: 4px; }
@@ -554,7 +554,7 @@ export class MiniGameHubPage implements AfterViewInit {
         cats: g.cats.map((id) => this.cats().find((c) => c.id === id)).filter((c): c is GameCategory => !!c),
       }));
     if (this.settings().minigameComingSoon) {
-      list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi mới đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '', cats: [] });
+      list.push({ id: 'soon', path: null, needCode: false, freeToday: false, title: 'Game bí mật', tag: '⏳ Sắp ra mắt', desc: 'Một trò chơi đang được chuẩn bị. Quay lại sau nhé!', art: 'soon', lockMsg: '', cats: [] });
     }
     // Trò đang chơi được lên trước, trò cần code / bị khoá dồn ra sau (trong mỗi nhóm giữ thứ tự admin xếp).
     const rank = (g: GameCard) => (g.id === 'soon' ? 3 : !g.path ? 2 : g.needCode ? 1 : 0);

@@ -125,7 +125,7 @@ import { AdminToastService } from '../toast.service';
                 </div>
               </td>
               <td>
-                @if (catOf(n); as c) { <span class="cat-chip"><app-icon [icon]="c.icon" /> {{ c.name }}</span> } @else { <span class="muted">—</span> }
+                @if (catOf(n); as c) { <span class="cat-chip"><app-icon [icon]="c.icon" /> {{ c.name }}</span> } @else { <span class="muted">-</span> }
               </td>
               <td class="num">{{ views.of(n) }}</td>
               <td>

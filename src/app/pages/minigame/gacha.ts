@@ -32,7 +32,7 @@ interface PoolItem {
   chance: number;
 }
 
-/** Kích thước 1 ô trên dải quay (px) — phải khớp CSS .cell (150px) và .strip gap (8px). */
+/** Kích thước 1 ô trên dải quay (px) - phải khớp CSS .cell (150px) và .strip gap (8px). */
 const CELL = 150;
 const GAP = 8;
 const STRIP_LEN = 64;
@@ -114,7 +114,7 @@ const WIN_INDEX = 54;
                 </li>
               }
             </ul>
-            <p class="muted small">Độ hiếm dựa theo giá: món càng đắt càng khó ra. Chỉ để giải trí — không phải giảm giá hay quà tặng.</p>
+            <p class="muted small">Độ hiếm dựa theo giá: món càng đắt càng khó ra. Chỉ để giải trí - không phải giảm giá hay quà tặng.</p>
           </section>
           @if (history().length) {
             <section class="history card-surface">

@@ -1,5 +1,5 @@
 /**
- * Kho dữ liệu trên Supabase (Postgres) — bảng tạo bằng supabase/schema.sql.
+ * Kho dữ liệu trên Supabase (Postgres) - bảng tạo bằng supabase/schema.sql.
  * Chỉ chạy trên máy chủ với SERVICE ROLE KEY (bỏ qua RLS); trình duyệt không bao giờ thấy khoá này.
  */
 import { SupabaseClient, createClient } from '@supabase/supabase-js';

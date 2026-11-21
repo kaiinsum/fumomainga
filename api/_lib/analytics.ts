@@ -76,7 +76,7 @@ export interface StorageInfo {
 const VN = 7 * 3600_000;
 const UNIT_MS: Record<Exclude<TimeUnit, 'month'>, number> = { minute: 60_000, hour: 3600_000, day: 86_400_000 };
 
-/** Đầu phút / giờ / ngày / tháng (giờ Việt Nam) chứa mốc t — giống date_trunc(..., 'Asia/Ho_Chi_Minh'). */
+/** Đầu phút / giờ / ngày / tháng (giờ Việt Nam) chứa mốc t - giống date_trunc(..., 'Asia/Ho_Chi_Minh'). */
 export function truncVN(t: number, unit: TimeUnit): number {
   if (unit === 'month') {
     const d = new Date(t + VN);
@@ -86,7 +86,7 @@ export function truncVN(t: number, unit: TimeUnit): number {
   return Math.floor((t + VN) / ms) * ms - VN;
 }
 
-/** Kho trong bộ nhớ — chỉ dùng khi chạy thử ở máy. */
+/** Kho trong bộ nhớ - chỉ dùng khi chạy thử ở máy. */
 export function memoryAnalytics(): AnalyticsStore {
   const views: PageView[] = [];
   const online = new Map<string, OnlineVisitor>();
@@ -213,7 +213,7 @@ export interface CleanupCounts {
 export interface CleanupOptions {
   /** Xoá lượt truy cập trước mốc này. */
   viewsBefore: number;
-  /** Đường dẫn ảnh (img/xxx.jpg) đang được dữ liệu web dùng — không bao giờ xoá. */
+  /** Đường dẫn ảnh (img/xxx.jpg) đang được dữ liệu web dùng - không bao giờ xoá. */
   referenced: Set<string>;
 }
 

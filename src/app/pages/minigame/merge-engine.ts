@@ -1,5 +1,5 @@
 /**
- * "Merge Fumo" — thả các bé fumo vào hộp quà; 2 bé cùng loại chạm nhau sẽ gộp thành bé lớn hơn.
+ * "Merge Fumo" - thả các bé fumo vào hộp quà; 2 bé cùng loại chạm nhau sẽ gộp thành bé lớn hơn.
  * Bé nào nằm vượt vạch đỏ quá 2 giây là thua. Gộp 2 bé lớn nhất → nổ tung, ăn điểm thưởng.
  * Vật lý hình tròn tự viết (trọng lực + va chạm), không dùng thư viện ngoài.
  */
@@ -61,7 +61,7 @@ interface Body {
   r: number;
   m: number;
   rot: number;
-  /** Thời điểm thả (s) — bé vừa thả chưa tính vượt vạch. */
+  /** Thời điểm thả (s) - bé vừa thả chưa tính vượt vạch. */
   born: number;
   /** Hiệu ứng phồng lên khi vừa gộp. */
   pop: number;

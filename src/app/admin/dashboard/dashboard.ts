@@ -52,10 +52,10 @@ import { OrderHeatmapComponent } from './order-heatmap';
     <section class="adm-box quick-insights">
       <h2>📊 7 ngày qua <span class="lnks"><a routerLink="/admin/doanh-thu">Doanh thu →</a> <a routerLink="/admin/phan-tich">Hiệu suất →</a></span></h2>
       <div class="box-body qi">
-        <div class="qi-tile"><span>🎮 Người chơi minigame</span><b>{{ qi().players ?? '—' }}</b></div>
-        <div class="qi-tile"><span>⏱ Thời gian chơi</span><b>{{ qi().seconds === null ? '—' : dur(qi().seconds!) }}</b></div>
-        <div class="qi-tile"><span>🔥 Game hot nhất</span><b>{{ qi().topGame || '—' }}</b></div>
-        <div class="qi-tile"><span>🏆 Đặt nhiều nhất</span><b>{{ qi().topProduct || '—' }}</b></div>
+        <div class="qi-tile"><span>🎮 Người chơi minigame</span><b>{{ qi().players ?? '-' }}</b></div>
+        <div class="qi-tile"><span>⏱ Thời gian chơi</span><b>{{ qi().seconds === null ? '-' : dur(qi().seconds!) }}</b></div>
+        <div class="qi-tile"><span>🔥 Game hot nhất</span><b>{{ qi().topGame || '-' }}</b></div>
+        <div class="qi-tile"><span>🏆 Đặt nhiều nhất</span><b>{{ qi().topProduct || '-' }}</b></div>
       </div>
     </section>
 
@@ -158,7 +158,7 @@ export class AdminDashboard implements AfterViewInit {
     void this.loadInsights();
   }
 
-  /** Số liệu nhanh 7 ngày (lỗi / chưa có máy chủ thì để "—"). */
+  /** Số liệu nhanh 7 ngày (lỗi / chưa có máy chủ thì để "-"). */
   private async loadInsights(): Promise<void> {
     const [g, o] = await Promise.all([
       this.api.call<{ games: { game: string; players: number; seconds: number }[] }>('GET', '/api/analytics?insights=1&days=7', undefined, true).catch(() => null),

@@ -14,7 +14,7 @@ export interface Product {
   name: string;
   /** Đường dẫn đẹp: /san-pham/<slug>, tự sinh từ tên (bỏ dấu, khoảng trắng → -). */
   slug?: string;
-  /** Các slug cũ (sau khi đổi tên) — link cũ vẫn mở được và tự chuyển sang link mới. */
+  /** Các slug cũ (sau khi đổi tên) - link cũ vẫn mở được và tự chuyển sang link mới. */
   oldSlugs?: string[];
   category: string;
   price: number;
@@ -42,9 +42,11 @@ export interface Product {
 export type ProductArticleType = 'Article' | 'BlogPosting' | 'Review';
 export type ProductCondition = 'NewCondition' | 'UsedCondition' | 'RefurbishedCondition';
 
-/** Cấu hình SEO của sản phẩm — để trống thì lấy mặc định từ tên / mô tả sản phẩm. */
+/** Cấu hình SEO của sản phẩm - để trống thì lấy mặc định từ tên / mô tả sản phẩm. */
 export interface ProductSeo {
   focusKeyword: string;
+  /** Từ khoá phụ (cách nhau bằng dấu phẩy) - tên gọi khác, cách khách hay tìm. */
+  secondaryKeywords: string;
   /** Tiêu đề SEO (thẻ <title>). Trống → tên sản phẩm. */
   title: string;
   /** Mô tả meta. Trống → đầu mô tả sản phẩm. */
@@ -71,6 +73,7 @@ export interface ProductSeo {
 
 export const EMPTY_PRODUCT_SEO: ProductSeo = {
   focusKeyword: '',
+  secondaryKeywords: '',
   title: '',
   description: '',
   noindex: false,
@@ -99,7 +102,7 @@ export interface Category {
   icon: string;
 }
 
-/** Danh mục mặc định — admin có thể thêm/sửa/xoá ở trang Quản trị → Danh mục. */
+/** Danh mục mặc định - admin có thể thêm/sửa/xoá ở trang Quản trị → Danh mục. */
 export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Fumo Plush', icon: '🧸' },
   { name: 'Móc khóa', icon: '🔑' },

@@ -1,9 +1,9 @@
 /**
- * /api/leaderboard — bảng xếp hạng top 5 của từng minigame.
+ * /api/leaderboard - bảng xếp hạng top 5 của từng minigame.
  *  GET  ?game=<id>                       → { game, top: [{ name, score, at }] }
  *  POST { game, name, score }            → { top, rank } (rank = hạng vừa đạt, 0 = không lọt top)
  *  DELETE ?game=<id>&at=<ms> (admin)     → xoá 1 dòng (tên xấu lọt lưới...) · ?all=1 → xoá cả bảng
- * Tên được lọc từ cấm (api/_lib/bad-words.ts). Điểm do trình duyệt gửi — chỉ chặn số vô lý + giới hạn tần suất.
+ * Tên được lọc từ cấm (api/_lib/bad-words.ts). Điểm do trình duyệt gửi - chỉ chặn số vô lý + giới hạn tần suất.
  */
 import { checkPlayerName } from '../_lib/bad-words';
 import { HttpError, getStore, handle, rateLimit, readJson, requireAdmin } from '../_lib/orders';

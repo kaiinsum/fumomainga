@@ -1,5 +1,5 @@
 /**
- * /api/ai/knowledge — file kiến thức (.md) của trợ lý AI (chỉ admin).
+ * /api/ai/knowledge - file kiến thức (.md) của trợ lý AI (chỉ admin).
  * GET: nội dung đang dùng · PUT: lưu nội dung mới · DELETE: quay về file mặc định trong mã nguồn.
  */
 import { KNOWLEDGE_KEY, MAX_KNOWLEDGE_CHARS, SavedKnowledge, readKnowledgeFile } from '../../_lib/ai';

@@ -12,7 +12,7 @@ import { markdownToText } from '../../shared/seo';
 
 type Sort = 'new' | 'views' | 'old';
 
-/** Bỏ dấu, chữ thường — để tìm "meo" ra "Mẹo". */
+/** Bỏ dấu, chữ thường - để tìm "meo" ra "Mẹo". */
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
 
 @Component({

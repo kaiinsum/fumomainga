@@ -1,7 +1,7 @@
 /**
- * Đăng nhập / đổi mật khẩu admin — kiểm tra trên máy chủ để mọi máy dùng chung một mật khẩu.
+ * Đăng nhập / đổi mật khẩu admin - kiểm tra trên máy chủ để mọi máy dùng chung một mật khẩu.
  *  POST /api/admin/login     { password }                 → { token, loginId }
- *  GET  /api/admin/login     (cần đăng nhập)              → { logins } — lịch sử đăng nhập (IP, thiết bị, thời gian)
+ *  GET  /api/admin/login     (cần đăng nhập)              → { logins } - lịch sử đăng nhập (IP, thiết bị, thời gian)
  *  PUT  /api/admin/password  { oldPassword, newPassword }  → { token }   (cần đang đăng nhập)
  * Chưa đổi mật khẩu lần nào thì mật khẩu = biến môi trường ADMIN_API_KEY.
  * Đổi mật khẩu xong: mật khẩu cũ không đăng nhập được nữa, mọi phiên trên máy khác bị đăng xuất.

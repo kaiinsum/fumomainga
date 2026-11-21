@@ -73,7 +73,7 @@ const SPRITES: Record<Theme, Omit<Sprite, 'img' | 'box'>[]> = {
   ],
 };
 const SPRITE_ALPHA: Record<Theme, number> = { light: 0.2, dark: 0.16 };
-/** Màu sao — sáng: vàng, hồng, xanh trời, tím; tối: đỏ neon, hồng, vàng, cam. */
+/** Màu sao - sáng: vàng, hồng, xanh trời, tím; tối: đỏ neon, hồng, vàng, cam. */
 const SPARK_HUES: Record<Theme, number[]> = { light: [45, 50, 330, 200, 270], dark: [350, 355, 340, 45, 15] };
 const MAX_SPARKS = 180;
 

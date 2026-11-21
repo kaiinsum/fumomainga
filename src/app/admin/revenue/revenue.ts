@@ -69,7 +69,7 @@ interface Line {
         <div class="tiles three">
           <div class="tile warn"><span>Tiền đang bị giam</span><b>{{ held().pending.total | vnd }}</b><small>{{ held().pending.count }} đơn đã đặt nhưng chưa thanh toán</small></div>
           <div class="tile"><span>Đã thanh toán, chưa xong</span><b>{{ held().inflight.total | vnd }}</b><small>{{ held().inflight.count }} đơn đã xác nhận / đang giao</small></div>
-          <div class="tile muted"><span>Đơn đã huỷ</span><b>{{ held().cancelled.total | vnd }}</b><small>{{ held().cancelled.count }} đơn trong khoảng đã chọn — không tính vào doanh thu</small></div>
+          <div class="tile muted"><span>Đơn đã huỷ</span><b>{{ held().cancelled.total | vnd }}</b><small>{{ held().cancelled.count }} đơn trong khoảng đã chọn - không tính vào doanh thu</small></div>
         </div>
         @if (held().oldest.length) {
           <h3>Đơn chờ thanh toán lâu nhất</h3>
@@ -119,7 +119,7 @@ interface Line {
                     <td class="num">{{ l.revenue | vnd }}</td>
                     <td class="num">{{ l.cost | vnd }}</td>
                     <td class="num" [class.neg]="l.revenue - l.cost < 0"><b>{{ l.revenue - l.cost | vnd }}</b></td>
-                    <td class="num">{{ l.revenue ? (((l.revenue - l.cost) / l.revenue) * 100 | number: '1.0-1') + '%' : '—' }}</td>
+                    <td class="num">{{ l.revenue ? (((l.revenue - l.cost) / l.revenue) * 100 | number: '1.0-1') + '%' : '-' }}</td>
                   </tr>
                 }
               </tbody>
@@ -288,7 +288,7 @@ export class AdminRevenue {
       for (const it of o.items) {
         const key = String(it.id).split('::')[0];
         const p = this.products.getById(key);
-        const r = rows.get(key) ?? { key, name: p?.name ?? it.name.split(' — ')[0], image: p?.images[0] ?? '', qty: 0, revenue: 0, cost: 0, missing: 0 };
+        const r = rows.get(key) ?? { key, name: p?.name ?? it.name.split(' - ')[0], image: p?.images[0] ?? '', qty: 0, revenue: 0, cost: 0, missing: 0 };
         r.qty += it.qty;
         r.revenue += it.price * it.qty;
         const c = this.costs.costOf(it.id);

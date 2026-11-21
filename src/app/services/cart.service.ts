@@ -18,7 +18,7 @@ export interface CartItem {
   key: string;
   product: Product;
   variant?: ProductVariant;
-  /** Tên hiển thị / gửi lên đơn: "Tên SP — Biến thể". */
+  /** Tên hiển thị / gửi lên đơn: "Tên SP - Biến thể". */
   name: string;
   /** Đơn giá khách trả (đã giảm). */
   unit: number;
@@ -27,7 +27,7 @@ export interface CartItem {
 
 const lineKey = (id: string, v?: string) => (v ? `${id}::${v}` : id);
 
-/** Giỏ hàng của khách — lưu trong trình duyệt của khách. */
+/** Giỏ hàng của khách - lưu trong trình duyệt của khách. */
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly products = inject(ProductService);
@@ -50,7 +50,7 @@ export class CartService {
         key: lineKey(l.id, l.v),
         product,
         variant,
-        name: variant ? `${product.name} — ${variant.name}` : product.name,
+        name: variant ? `${product.name} - ${variant.name}` : product.name,
         unit: finalPrice(variant ?? product),
         qty: l.qty,
       });

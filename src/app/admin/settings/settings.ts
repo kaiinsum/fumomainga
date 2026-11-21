@@ -56,7 +56,7 @@ export class AdminSettings implements OnDestroy {
   readonly fontOptions = FONT_OPTIONS;
 
   readonly active = signal<TabKey>('chung');
-  /** Bản nháp đang chỉnh — chỉ áp dụng khi bấm "Lưu thay đổi". */
+  /** Bản nháp đang chỉnh - chỉ áp dụng khi bấm "Lưu thay đổi". */
   draft: SiteSettings = structuredClone(this.settingsSvc.settings());
 
   oldPw = '';
@@ -189,7 +189,7 @@ export class AdminSettings implements OnDestroy {
     this.toast.ok(
       res.localOnly
         ? 'Đã đổi mật khẩu trên trình duyệt này (chưa kết nối được máy chủ).'
-        : 'Đã đổi mật khẩu cho mọi máy — mật khẩu cũ không đăng nhập được nữa, các máy khác sẽ bị đăng xuất.',
+        : 'Đã đổi mật khẩu cho mọi máy - mật khẩu cũ không đăng nhập được nữa, các máy khác sẽ bị đăng xuất.',
     );
   }
 

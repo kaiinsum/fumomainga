@@ -16,7 +16,7 @@ const DAY = 86_400_000;
   imports: [FormsModule, DatePipe, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head"><h1>Thông báo hệ thống</h1></div>
-    <p class="intro">Gửi một thông báo tới <b>mọi khách</b>, hiện trong chuông 🔔 trên thanh menu và theo 1 trong 2 dạng: <b>khung nhỏ</b> ở góc màn hình, hoặc <b>hộp lớn (modal)</b> giữa màn hình như thiệp dịp lễ — có ảnh và nút bấm. Khách đóng rồi thì không hiện lại.</p>
+    <p class="intro">Gửi một thông báo tới <b>mọi khách</b>, hiện trong chuông 🔔 trên thanh menu và theo 1 trong 2 dạng: <b>khung nhỏ</b> ở góc màn hình, hoặc <b>hộp lớn (modal)</b> giữa màn hình như thiệp dịp lễ - có ảnh và nút bấm. Khách đóng rồi thì không hiện lại.</p>
 
     <section class="adm-box">
       <h2>📣 Soạn thông báo</h2>
@@ -26,7 +26,7 @@ const DAY = 86_400_000;
             <b>💬 Khung nhỏ</b><small>Góc màn hình, không làm phiền</small>
           </button>
           <button type="button" role="radio" [attr.aria-checked]="type === 'modal'" [class.on]="type === 'modal'" (click)="type = 'modal'">
-            <b>🪧 Hộp lớn (modal)</b><small>Giữa màn hình, có ảnh + nút — như thiệp dịp lễ</small>
+            <b>🪧 Hộp lớn (modal)</b><small>Giữa màn hình, có ảnh + nút - như thiệp dịp lễ</small>
           </button>
         </div>
         <div class="row">
@@ -235,7 +235,7 @@ export class AdminAnnounce {
       try {
         this.image = (await this.api.call<{ url: string }>('POST', '/api/catalog', { dataUrl }, true, { timeoutMs: 30000 })).url;
       } catch {
-        if (dataUrl.length > 150_000) throw new Error('Không tải được ảnh lên máy chủ — hãy dán link ảnh thay thế.');
+        if (dataUrl.length > 150_000) throw new Error('Không tải được ảnh lên máy chủ - hãy dán link ảnh thay thế.');
         this.image = dataUrl;
       }
     } catch (err) {

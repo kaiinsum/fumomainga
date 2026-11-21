@@ -1,5 +1,5 @@
 /**
- * Lưu trữ đơn hàng trên máy chủ (Upstash Redis — bật trong Vercel → Storage / Marketplace).
+ * Lưu trữ đơn hàng trên máy chủ (Upstash Redis - bật trong Vercel → Storage / Marketplace).
  * Thư mục bắt đầu bằng "_" nên Vercel không biến file này thành một API riêng.
  */
 import { Redis } from '@upstash/redis';
@@ -30,7 +30,7 @@ export interface Customer {
   geo?: OrderGeo;
 }
 
-/** Vị trí ước tính theo IP lúc đặt (Vercel tự gắn) — chỉ admin xem, dùng cho bản đồ nhiệt. */
+/** Vị trí ước tính theo IP lúc đặt (Vercel tự gắn) - chỉ admin xem, dùng cho bản đồ nhiệt. */
 export interface OrderGeo {
   ip: string;
   country: string;
@@ -75,7 +75,7 @@ export interface Order {
   updatedAt: number;
   /** Lúc khách bấm "Tôi đã chuyển khoản". */
   paidClaimAt?: number;
-  /** Ghi chú nội bộ của shop — khách không xem được. */
+  /** Ghi chú nội bộ của shop - khách không xem được. */
   adminNote: string;
 }
 
@@ -172,7 +172,7 @@ export function getContacts(): ContactStore {
         return await fn(...args);
       } catch (e) {
         if (!missingTable(e)) throw e;
-        console.warn('Bảng contacts chưa có trên Supabase — lưu tạm vào app_kv. Hãy chạy lại supabase/schema.sql.');
+        console.warn('Bảng contacts chưa có trên Supabase - lưu tạm vào app_kv. Hãy chạy lại supabase/schema.sql.');
         return fallback(...args);
       }
     };
@@ -381,7 +381,7 @@ function readAdminToken(token: string): number | null {
 
 /**
  * Quyền quản trị: header x-admin-key = ADMIN_API_KEY, hoặc phiên đăng nhập có chữ ký hợp lệ
- * (kiểm tra nhanh, chưa so phiên bản mật khẩu — requireAdmin mới so).
+ * (kiểm tra nhanh, chưa so phiên bản mật khẩu - requireAdmin mới so).
  */
 export function isAdmin(req: Request): boolean {
   const expected = process.env['ADMIN_API_KEY'];

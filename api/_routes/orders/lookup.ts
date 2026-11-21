@@ -1,5 +1,5 @@
 /**
- * POST /api/orders/lookup — khách tra cứu đơn bằng mã đơn + số điện thoại đã đặt.
+ * POST /api/orders/lookup - khách tra cứu đơn bằng mã đơn + số điện thoại đã đặt.
  * Dùng POST để số điện thoại không nằm trên URL / log.
  */
 import { HttpError, digits, getStore, handle, json, normalizeCode, publicView, rateLimit, readJson } from '../../_lib/orders';

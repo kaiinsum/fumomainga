@@ -1,9 +1,9 @@
 /**
  * Dữ liệu nhân vật cho "Đoán nhân vật (Touhoudle)".
- * Soạn tay — muốn sửa / thêm nhân vật chỉ cần sửa danh sách CHARACTERS bên dưới.
+ * Soạn tay - muốn sửa / thêm nhân vật chỉ cần sửa danh sách CHARACTERS bên dưới.
  *
  * game: số thứ tự game nơi nhân vật XUẤT HIỆN LẦN ĐẦU (xem GAMES).
- * role: vai trò trong game đó — 'Màn 1'...'Màn 6', 'Extra', 'Phantasm', 'Nhân vật chính',
+ * role: vai trò trong game đó - 'Màn 1'...'Màn 6', 'Extra', 'Phantasm', 'Nhân vật chính',
  *       'Chơi được' (game mà mọi nhân vật đều chơi được), 'Trùm cuối' (game đối kháng).
  * species: một hoặc nhiều chủng loài (trùng một phần → ô màu vàng).
  */

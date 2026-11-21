@@ -3,7 +3,7 @@ import { Product, ProductInput, ProductVariant, cheapest, onSale } from '../mode
 
 /**
  * Nhập / xuất thông tin sản phẩm bằng Excel theo mẫu cố định.
- * Hình ảnh KHÔNG nằm trong file Excel — ảnh được quản lý riêng ở trang sửa sản phẩm.
+ * Hình ảnh KHÔNG nằm trong file Excel - ảnh được quản lý riêng ở trang sửa sản phẩm.
  */
 
 export const SHEET_PRODUCTS = 'SanPham';
@@ -34,7 +34,7 @@ export const COLUMNS: Column[] = [
     key: 'variants',
     header: 'Biến thể',
     width: 40,
-    note: 'Mỗi biến thể dạng  Tên: giá  hoặc  Tên: giá/giá sau giảm , cách nhau bằng dấu ; — ví dụ: 10cm: 390000; 20cm: 590000/520000. Có biến thể thì Giá của sản phẩm = biến thể rẻ nhất. Để trống = giữ nguyên biến thể đang có.',
+    note: 'Mỗi biến thể dạng  Tên: giá  hoặc  Tên: giá/giá sau giảm , cách nhau bằng dấu ; - ví dụ: 10cm: 390000; 20cm: 590000/520000. Có biến thể thì Giá của sản phẩm = biến thể rẻ nhất. Để trống = giữ nguyên biến thể đang có.',
   },
   { key: 'description', header: 'Mô tả', width: 60, required: true, note: 'Tối thiểu 10 ký tự.' },
   { key: 'tags', header: 'Thẻ', width: 26, note: 'Phân cách bằng dấu phẩy, ví dụ: dễ thương, pastel.' },
@@ -348,7 +348,7 @@ export async function readProductsFile(file: File): Promise<RawRow[]> {
     if (key) keys.set(col, key);
   });
   const missing = COLUMNS.filter((c) => c.required && ![...keys.values()].includes(c.key)).map((c) => c.header);
-  if (missing.length) throw new Error(`File không đúng mẫu — thiếu cột: ${missing.join(', ')}.`);
+  if (missing.length) throw new Error(`File không đúng mẫu - thiếu cột: ${missing.join(', ')}.`);
 
   const rows: RawRow[] = [];
   ws.eachRow((row, line) => {

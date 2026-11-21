@@ -1,7 +1,7 @@
 /**
- * Vercel Function: POST /api/chat — trợ lý AI của shop.
+ * Vercel Function: POST /api/chat - trợ lý AI của shop.
  * AI trả lời dựa trên file kiến thức (.md, admin tải lên ở Admin → Trợ lý AI; mặc định knowledge/kien-thuc.md)
- * và dữ liệu sản phẩm admin đồng bộ — chỉ trong phạm vi website.
+ * và dữ liệu sản phẩm admin đồng bộ - chỉ trong phạm vi website.
  * Cần MỘT trong hai biến môi trường trên Vercel (Project → Settings → Environment Variables):
  *  - GEMINI_API_KEY    → dùng Google Gemini (có gói miễn phí, lấy khoá ở aistudio.google.com)
  *  - ANTHROPIC_API_KEY → dùng Claude (trả phí, console.anthropic.com)
@@ -18,15 +18,15 @@ const GEMINI_MODEL = process.env['GEMINI_MODEL'] || 'gemini-3.8-flash';
 const MAX_TURNS = 12; // chỉ gửi 12 tin gần nhất
 const MAX_CHARS = 1000; // mỗi tin của khách tối đa 1000 ký tự
 
-/** Quy tắc cố định — đặt đầu system prompt. */
+/** Quy tắc cố định - đặt đầu system prompt. */
 const RULES = `Bạn là trợ lý tư vấn của shop thú bông, trò chuyện với khách ngay trên website của shop.
 
 Phạm vi trả lời:
 - CHỈ trả lời về shop và website này: sản phẩm đang bán, giá, còn hàng/hết hàng, so sánh sản phẩm (rẻ nhất, mắc nhất, theo danh mục...), cách đặt hàng, thanh toán, giao hàng, đổi trả, liên hệ, tin tức của shop.
 - Chỉ dùng thông tin trong <kien_thuc> và <du_lieu_website> bên dưới. Không dùng hiểu biết bên ngoài về sản phẩm, giá thị trường hay shop khác.
-- Câu hỏi về số liệu (bao nhiêu sản phẩm, còn hàng không, rẻ nhất / mắc nhất...) thì lấy đúng từ phần "Số liệu tính sẵn" và bảng sản phẩm; không tự ước lượng. Website chỉ biết còn hàng/hết hàng, không có số lượng tồn kho từng cái — nếu khách hỏi số lượng cụ thể, nói rõ điều đó và mời nhắn shop.
+- Câu hỏi về số liệu (bao nhiêu sản phẩm, còn hàng không, rẻ nhất / mắc nhất...) thì lấy đúng từ phần "Số liệu tính sẵn" và bảng sản phẩm; không tự ước lượng. Website chỉ biết còn hàng/hết hàng, không có số lượng tồn kho từng cái - nếu khách hỏi số lượng cụ thể, nói rõ điều đó và mời nhắn shop.
 - Khi <du_lieu_website> và <kien_thuc> khác nhau về giá hoặc tình trạng hàng, ưu tiên <du_lieu_website> (mới hơn).
-- Không có thông tin thì nói thật là chưa rõ và mời khách liên hệ shop (trang /lien-he) — không bịa giá, chính sách hay tình trạng hàng.
+- Không có thông tin thì nói thật là chưa rõ và mời khách liên hệ shop (trang /lien-he) - không bịa giá, chính sách hay tình trạng hàng.
 - Câu hỏi không liên quan tới shop (bài tập, lập trình, tin tức thế giới, chuyện riêng...) thì từ chối nhẹ nhàng trong một câu và gợi ý khách hỏi về sản phẩm của shop.
 
 Cách trả lời:
@@ -44,7 +44,7 @@ ${knowledge || '(chưa có)'}
 </kien_thuc>
 
 <du_lieu_website>
-${catalog ? catalogToPrompt(catalog) : 'Chưa đồng bộ dữ liệu sản phẩm — chỉ dùng thông tin trong <kien_thuc>.'}
+${catalog ? catalogToPrompt(catalog) : 'Chưa đồng bộ dữ liệu sản phẩm - chỉ dùng thông tin trong <kien_thuc>.'}
 </du_lieu_website>`;
 }
 
@@ -73,7 +73,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
 
 export async function POST(request: Request): Promise<Response> {
-  // Mỗi IP tối đa 60 câu hỏi / giờ (đếm chung mọi máy chủ) — chống spam làm cạn quota AI.
+  // Mỗi IP tối đa 60 câu hỏi / giờ (đếm chung mọi máy chủ) - chống spam làm cạn quota AI.
   try {
     await rateLimit(request, 'chat', 60, 3600);
   } catch (e) {

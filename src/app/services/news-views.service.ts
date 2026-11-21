@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { NewsPost } from '../models/news';
 
-/** Lượt xem bài viết (công khai) — tải 1 lần mỗi lần mở web, lỗi thì coi như 0. */
+/** Lượt xem bài viết (công khai) - tải 1 lần mỗi lần mở web, lỗi thì coi như 0. */
 @Injectable({ providedIn: 'root' })
 export class NewsViewsService {
   readonly views = signal<Record<string, number>>({});

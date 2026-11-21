@@ -99,7 +99,7 @@ type Bulk = '' | 'delete' | 'in' | 'out' | 'feature' | 'unfeature' | 'hide' | 's
               </td>
               <td>
                 <button type="button" class="eye-btn" [class.off]="p.hidden" (click)="toggleHidden(p)"
-                  [title]="p.hidden ? 'Đang ẩn — bấm để hiện lại' : 'Đang hiện — bấm để ẩn'">
+                  [title]="p.hidden ? 'Đang ẩn - bấm để hiện lại' : 'Đang hiện - bấm để ẩn'">
                   {{ p.hidden ? '🙈 Ẩn' : '👁 Hiện' }}
                 </button>
               </td>
@@ -133,7 +133,7 @@ export class AdminProductsList {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(ProductService);
   private readonly toast = inject(AdminToastService);
-  /** Ghi chú nội bộ (chỉ admin) — hiện 📝 cạnh tên, rê chuột để đọc. */
+  /** Ghi chú nội bộ (chỉ admin) - hiện 📝 cạnh tên, rê chuột để đọc. */
   readonly notes = inject(NoteService);
 
   /** ?danhMuc=... (từ trang Danh mục) để lọc sẵn. */

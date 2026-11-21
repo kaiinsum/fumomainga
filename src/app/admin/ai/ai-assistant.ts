@@ -60,7 +60,7 @@ const MAX_CHARS = 100_000;
         <form class="box-body" (ngSubmit)="connect()">
           <p class="hint">
             Kiến thức và dữ liệu của trợ lý AI được lưu trên máy chủ. Nhập <b>mã quản trị</b> (biến môi trường
-            <code>ADMIN_API_KEY</code> trên Vercel) — dùng chung với trang Đơn hàng.
+            <code>ADMIN_API_KEY</code> trên Vercel) - dùng chung với trang Đơn hàng.
           </p>
           <div class="field">
             <label for="ai-key">Mã quản trị</label>
@@ -85,7 +85,7 @@ const MAX_CHARS = 100_000;
             <p class="hint">
               Đang dùng:
               @if (knowledge()?.source === 'admin') {
-                <b>{{ knowledge()?.fileName }}</b> — tải lên lúc {{ knowledge()?.updatedAt | date: 'HH:mm dd/MM/yyyy' }}
+                <b>{{ knowledge()?.fileName }}</b> - tải lên lúc {{ knowledge()?.updatedAt | date: 'HH:mm dd/MM/yyyy' }}
               } @else {
                 <b>file mặc định</b> trong mã nguồn (<code>knowledge/kien-thuc.md</code>)
               }
@@ -111,7 +111,7 @@ const MAX_CHARS = 100_000;
             </div>
             <p class="hint">
               Viết như dặn nhân viên mới: giới thiệu shop, cách đặt hàng, phí ship, đổi trả, câu hỏi thường gặp...
-              Giá và tình trạng hàng không cần viết ở đây — AI lấy từ phần đồng bộ sản phẩm bên cạnh.
+              Giá và tình trạng hàng không cần viết ở đây - AI lấy từ phần đồng bộ sản phẩm bên cạnh.
               Ghi chú dạng <code>&lt;!-- ... --&gt;</code> chỉ dành cho người soạn, AI không đọc.
             </p>
             <div class="row-btns end">
@@ -146,7 +146,7 @@ const MAX_CHARS = 100_000;
               </div>
             </dl>
             @if (outOfDate()) {
-              <p class="warn">⚠ Số liệu trên trang admin khác với dữ liệu AI đang biết — hãy đồng bộ lại.</p>
+              <p class="warn">⚠ Số liệu trên trang admin khác với dữ liệu AI đang biết - hãy đồng bộ lại.</p>
             }
             <button class="btn primary small" type="button" [disabled]="syncing()" (click)="sync()">
               {{ syncing() ? 'Đang đồng bộ...' : '⟳ Đồng bộ dữ liệu cho AI' }}
@@ -244,7 +244,7 @@ export class AdminAiAssistant {
       const msg = e instanceof Error ? e.message : 'Không tải được dữ liệu.';
       this.setup.set(status === 503 || status === 404 ? msg : '');
       this.needKey.set(status === 401);
-      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng — nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
+      this.error.set(status === 401 && this.api.adminKey() ? 'Mã quản trị không đúng - nhập lại giá trị ADMIN_API_KEY đã đặt trên Vercel.' : status === 503 || status === 404 || status === 401 ? '' : msg);
       if (!status) this.needKey.set(true);
     } finally {
       this.loading.set(false);
@@ -263,7 +263,7 @@ export class AdminAiAssistant {
     this.text = content;
     this.fileName = file.name;
     this.dirty.set(true);
-    this.toast.ok(`Đã nạp "${file.name}" — xem lại rồi bấm Lưu kiến thức.`);
+    this.toast.ok(`Đã nạp "${file.name}" - xem lại rồi bấm Lưu kiến thức.`);
   }
 
   exportFile(): void {
@@ -275,7 +275,7 @@ export class AdminAiAssistant {
     this.saving.set(true);
     try {
       this.setKnowledge(await this.api.call<Knowledge>('PUT', '/api/ai/knowledge', { text: this.text, fileName: this.fileName }, true));
-      this.toast.ok('Đã lưu — trợ lý AI dùng kiến thức mới ngay từ câu hỏi tiếp theo.');
+      this.toast.ok('Đã lưu - trợ lý AI dùng kiến thức mới ngay từ câu hỏi tiếp theo.');
     } catch (e) {
       this.toast.err(e instanceof Error ? e.message : 'Không lưu được.');
     } finally {

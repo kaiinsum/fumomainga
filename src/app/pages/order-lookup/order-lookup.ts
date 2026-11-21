@@ -57,7 +57,7 @@ const STEPS: OrderStatus[] = ['pending', 'paid', 'shipping', 'done'];
 
           @if (o.status === 'pending') {
             <p class="muted small">
-              {{ o.paidClaimAt ? 'Bạn đã báo chuyển khoản lúc ' + (o.paidClaimAt | date: 'HH:mm dd/MM/yyyy') + ' — shop đang kiểm tra.' : 'Shop chưa nhận được xác nhận chuyển khoản cho đơn này.' }}
+              {{ o.paidClaimAt ? 'Bạn đã báo chuyển khoản lúc ' + (o.paidClaimAt | date: 'HH:mm dd/MM/yyyy') + ' - shop đang kiểm tra.' : 'Shop chưa nhận được xác nhận chuyển khoản cho đơn này.' }}
             </p>
           }
 

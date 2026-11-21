@@ -16,7 +16,7 @@ const RETRY_MS = 20_000;
 
 /**
  * "Hộp thư chờ" đơn hàng trên máy khách: tự gửi lại khi có mạng, khi quay lại tab,
- * hoặc khi khách mở lại website — để không mất đơn nào.
+ * hoặc khi khách mở lại website - để không mất đơn nào.
  */
 @Injectable({ providedIn: 'root' })
 export class OrderOutboxService {

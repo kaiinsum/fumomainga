@@ -1,7 +1,7 @@
 /**
  * /api/analytics
- * POST: công khai — trình duyệt khách báo mở trang (view) / vẫn đang xem (ping). Không bao giờ báo lỗi cho khách.
- * GET: chỉ admin — số liệu cho trang "Thống kê".
+ * POST: công khai - trình duyệt khách báo mở trang (view) / vẫn đang xem (ping). Không bao giờ báo lỗi cho khách.
+ * GET: chỉ admin - số liệu cho trang "Thống kê".
  *   (Gộp chung file để không vượt giới hạn 12 function của gói Vercel miễn phí.)
  * ?range=hour (60 phút, mỗi 1 phút) | day (24 giờ, mỗi giờ) | month (30 ngày, mỗi ngày) | all (toàn bộ, mỗi tháng)
  */
@@ -34,7 +34,7 @@ async function storageInfo() {
     const pct = Math.round((s.dbBytes / limitBytes) * 1000) / 10;
     return { ...s, limitBytes, pct, level: pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : 'ok' };
   } catch (e) {
-    if (tableMissing(e)) throw new HttpError(503, 'Chưa có hàm analytics_storage trên Supabase — hãy chạy lại file supabase/schema.sql trong SQL Editor.');
+    if (tableMissing(e)) throw new HttpError(503, 'Chưa có hàm analytics_storage trên Supabase - hãy chạy lại file supabase/schema.sql trong SQL Editor.');
     throw e;
   }
 }
@@ -104,7 +104,7 @@ export const GET = handle(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/game_stats|analytics_games|analytics_pages_prefix|does not exist|schema cache/i.test(msg)) {
-        throw new HttpError(503, 'Chưa có bảng phân tích minigame trên Supabase — hãy chạy lại file supabase/schema.sql trong SQL Editor.');
+        throw new HttpError(503, 'Chưa có bảng phân tích minigame trên Supabase - hãy chạy lại file supabase/schema.sql trong SQL Editor.');
       }
       throw e;
     }
@@ -151,7 +151,7 @@ export const GET = handle(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/page_views|visitors_online|analytics_|does not exist|schema cache/i.test(msg)) {
-      throw new HttpError(503, 'Chưa có bảng thống kê trên Supabase — hãy chạy lại file supabase/schema.sql trong SQL Editor.');
+      throw new HttpError(503, 'Chưa có bảng thống kê trên Supabase - hãy chạy lại file supabase/schema.sql trong SQL Editor.');
     }
     throw e;
   }
@@ -160,7 +160,7 @@ export const GET = handle(async (req) => {
 // ---------- Ghi lượt truy cập (trước đây là /api/track) ----------
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|headless|lighthouse|pingdom|uptime/i;
 const empty = () => new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
-/** 1 lần báo thời gian tối đa (giây) — trình duyệt báo ~30 giây/lần. */
+/** 1 lần báo thời gian tối đa (giây) - trình duyệt báo ~30 giây/lần. */
 const MAX_TIME_SEC = 120;
 /** /mini-game/<slug> → '<slug>', /tin-tuc/<slug> → 'news:<slug>', trang khác → null. */
 function timedKey(path: string): string | null {

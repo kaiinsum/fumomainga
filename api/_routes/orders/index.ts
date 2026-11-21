@@ -1,6 +1,6 @@
 /**
- * POST /api/orders — khách đặt hàng (công khai). Admin (có x-admin-key) được tạo đơn với trạng thái tuỳ chọn.
- * GET  /api/orders — danh sách đơn (chỉ admin).
+ * POST /api/orders - khách đặt hàng (công khai). Admin (có x-admin-key) được tạo đơn với trạng thái tuỳ chọn.
+ * GET  /api/orders - danh sách đơn (chỉ admin).
  */
 import {
   Order,

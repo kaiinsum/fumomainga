@@ -1,5 +1,5 @@
 /**
- * "Đại chiến Mọt Vải" — game bắn đạn màn hình dọc (danmaku) chạy trên canvas.
+ * "Đại chiến Mọt Vải" - game bắn đạn màn hình dọc (danmaku) chạy trên canvas.
  * Bé thú bông tự động bắn, né đạn, hạ các đợt mọt vải rồi đánh boss Nữ hoàng Mọt (3 giai đoạn).
  * Lõi game độc lập với Angular: component chỉ tạo, điều khiển và nhận sự kiện đổi trạng thái.
  */

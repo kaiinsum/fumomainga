@@ -1,5 +1,5 @@
 /**
- * "Fumo Ninja" — vuốt để chém các bé fumo bị tung lên. Chém trúng Reimu viền neon đỏ (bom) là thua ngay;
+ * "Fumo Ninja" - vuốt để chém các bé fumo bị tung lên. Chém trúng Reimu viền neon đỏ (bom) là thua ngay;
  * để rơi 3 bé là thua. Càng chơi càng nhiều, càng nhanh.
  */
 
@@ -119,7 +119,7 @@ export class NinjaGame {
   private popups: Popup[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private pointerDown = false;
-  /** Điểm chạm trước — dùng để chém (không phụ thuộc vệt sáng, vốn tự mờ sau 140ms). */
+  /** Điểm chạm trước - dùng để chém (không phụ thuộc vệt sáng, vốn tự mờ sau 140ms). */
   private lastPt: { x: number; y: number } | null = null;
   private swipeHits = 0;
   private swipeTimer = 0;

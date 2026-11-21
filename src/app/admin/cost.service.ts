@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { OrderApiService } from '../services/order-api.service';
 
 /**
- * Giá nhập hàng — CHỈ admin. Lưu riêng trên máy chủ (/api/admin/costs), không nằm trong dữ liệu sản phẩm công khai.
+ * Giá nhập hàng - CHỈ admin. Lưu riêng trên máy chủ (/api/admin/costs), không nằm trong dữ liệu sản phẩm công khai.
  * Khoá: "<productId>" hoặc "<productId>::<variantId>" (trùng mã dòng hàng trong đơn).
  */
 @Injectable({ providedIn: 'root' })

@@ -53,7 +53,7 @@ type Filter = 'changed' | 'all' | 'error';
         <h2>🖼 Hình ảnh quản lý riêng</h2>
         <div class="box-body">
           <p class="hint">
-            Excel chỉ cập nhật thông tin. Ảnh hiện có của sản phẩm được giữ nguyên. Sản phẩm thêm mới qua Excel sẽ có ảnh tạm —
+            Excel chỉ cập nhật thông tin. Ảnh hiện có của sản phẩm được giữ nguyên. Sản phẩm thêm mới qua Excel sẽ có ảnh tạm -
             vào trang sửa sản phẩm để tải ảnh thật.
           </p>
         </div>
@@ -124,7 +124,7 @@ type Filter = 'changed' | 'all' | 'error';
                       } @else if (r.kind === 'new') {
                         Sản phẩm mới (ảnh tạm)
                       } @else {
-                        —
+                        -
                       }
                     </td>
                   </tr>

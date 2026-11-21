@@ -6,7 +6,7 @@ import { SettingsService } from '../../services/settings.service';
 import { ThemeService } from '../../services/theme.service';
 import { IconComponent } from '../../shared/icon';
 
-/** Ảnh nhân vật hai bên phần Hành trình — cùng bộ ảnh nền của từng giao diện. */
+/** Ảnh nhân vật hai bên phần Hành trình - cùng bộ ảnh nền của từng giao diện. */
 const FIGURES = {
   light: ['bg/cirno.webp', 'bg/fumo-cirno.webp'],
   dark: ['bg/reimu-1.webp', 'bg/reimu-2.webp'],
@@ -96,7 +96,7 @@ const FIGURES = {
       50% { text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 70%, transparent), 0 0 22px color-mix(in srgb, var(--primary) 55%, transparent), 0 0 44px color-mix(in srgb, var(--primary) 35%, transparent); }
     }
     @keyframes neon-flow { to { background-position: 300% 0; } }
-    /* Dark: ống neon thật — lõi trắng, quầng đỏ, chập chờn như đèn */
+    /* Dark: ống neon thật - lõi trắng, quầng đỏ, chập chờn như đèn */
     :host(.dark) .nt-main { color: #fff; animation: neon-flicker 4.5s linear infinite; }
     :host(.dark) .nt-shop { background-image: linear-gradient(90deg, #ff2d55, #ff8fab, #fff, #ff2d55); filter: drop-shadow(0 0 4px #ff2d55) drop-shadow(0 0 14px #ff2d55) drop-shadow(0 0 30px rgba(255, 45, 85, .7)); }
     @keyframes neon-flicker {

@@ -26,7 +26,7 @@ import { SEO_LIMITS, SeoReport, analyzeProductSeo, scoreLevel, slugify } from '.
 import { VndPipe } from '../../shared/vnd.pipe';
 import { CostService } from '../cost.service';
 import { NoteService } from '../note.service';
-import { siteSeoOf } from '../../models/site-seo';
+import { siteSeoOf, splitKeywords } from '../../models/site-seo';
 import { autoProductSeo } from '../../shared/seo-auto';
 import { AdminToastService } from '../toast.service';
 
@@ -76,11 +76,11 @@ export class AdminProductForm {
   private readonly service = inject(ProductService);
   private readonly router = inject(Router);
   private readonly toast = inject(AdminToastService);
-  /** Giá nhập (chỉ admin) — lưu riêng, không nằm trong dữ liệu sản phẩm công khai. */
+  /** Giá nhập (chỉ admin) - lưu riêng, không nằm trong dữ liệu sản phẩm công khai. */
   readonly costSvc = inject(CostService);
   /** Bản nháp giá nhập: '' = giá nhập chung, còn lại = id biến thể. */
   readonly costDraft = signal<Record<string, number | null>>({});
-  /** Ghi chú nội bộ — CHỈ admin (lưu riêng trên máy chủ, không nằm trong dữ liệu công khai). */
+  /** Ghi chú nội bộ - CHỈ admin (lưu riêng trên máy chủ, không nằm trong dữ liệu công khai). */
   readonly noteSvc = inject(NoteService);
   readonly noteDraft = signal('');
   readonly noteSaving = signal(false);
@@ -125,9 +125,9 @@ export class AdminProductForm {
   readonly scoreLevel = scoreLevel;
   readonly shopName = inject(SettingsService).settings().shopName;
   readonly articleTypes: { value: ProductArticleType; label: string }[] = [
-    { value: 'Article', label: 'Article — bài viết giới thiệu' },
-    { value: 'BlogPosting', label: 'BlogPosting — bài blog' },
-    { value: 'Review', label: 'Review — bài đánh giá sản phẩm' },
+    { value: 'Article', label: 'Article - bài viết giới thiệu' },
+    { value: 'BlogPosting', label: 'BlogPosting - bài blog' },
+    { value: 'Review', label: 'Review - bài đánh giá sản phẩm' },
   ];
   private readonly formTick = toSignal(this.form.valueChanges);
 
@@ -174,7 +174,7 @@ export class AdminProductForm {
     return JSON.stringify(buildProductSchema({ product: p, url: `${this.origin}/san-pham/${p.slug}`, shopName: this.shopName }), null, 2);
   });
 
-  /** Giảm giá: nhập % hoặc giá sau giảm — ô kia tự tính theo. Để trống cả hai = không giảm. */
+  /** Giảm giá: nhập % hoặc giá sau giảm - ô kia tự tính theo. Để trống cả hai = không giảm. */
   readonly salePercent = new FormControl<number | null>(null);
   readonly salePrice = new FormControl<number | null>(null);
   readonly saleError = signal('');
@@ -252,6 +252,7 @@ export class AdminProductForm {
     return {
       ...s,
       focusKeyword: s.focusKeyword.trim(),
+      secondaryKeywords: splitKeywords(s.secondaryKeywords).join(', '),
       title: s.title.trim(),
       description: s.description.trim(),
       canonical: s.canonical.trim(),

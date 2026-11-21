@@ -37,7 +37,7 @@ interface Ripple {
 }
 /** Thời gian 1 gợn sóng (giây). */
 const RIPPLE_LIFE = 0.75;
-/** Khoảng cách tối thiểu giữa 2 lần bấm có hiệu ứng (ms) — spam click không bị lag. */
+/** Khoảng cách tối thiểu giữa 2 lần bấm có hiệu ứng (ms) - spam click không bị lag. */
 const CLICK_GAP = 90;
 /** Số hiệu ứng bấm tối đa cùng lúc. */
 const MAX_TECH = 3;
@@ -47,7 +47,7 @@ const PASTEL = ['#60b5ff', '#ff9ec4', '#ffd23f', '#9be7c4', '#c9a7ff'];
 
 /**
  * Hiệu ứng con trỏ cho trang khách:
- *  - Vệt neon chạy theo chuột (máy tính) — bản tối sáng rực, bản sáng màu đậm hơn để nổi trên nền trắng.
+ *  - Vệt neon chạy theo chuột (máy tính) - bản tối sáng rực, bản sáng màu đậm hơn để nổi trên nền trắng.
  *  - Giao diện sáng: thêm bụi lấp lánh pastel; bấm / chạm → gợn sóng (ripple) lan ra.
  *  - Giao diện tối: bấm / chạm → hiệu ứng công nghệ (khung ngắm, lục giác, mạch điện, chữ số bay).
  * Canvas phủ màn hình nhưng không bắt chuột; chỉ vẽ khi có hiệu ứng. Tắt khi "giảm chuyển động".

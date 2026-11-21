@@ -1,6 +1,6 @@
 /**
  * Chủ đề theo dịp lễ (Tết, Valentine, Trung thu...). Admin bật 1 chủ đề, "tự động theo lịch", hoặc tắt hết.
- * Chủ đề chỉ thêm hiệu ứng nền + dải màu nhỏ + lời chúc lúc mới vào web — không đổi giao diện tổng thể.
+ * Chủ đề chỉ thêm hiệu ứng nền + dải màu nhỏ + lời chúc lúc mới vào web - không đổi giao diện tổng thể.
  */
 
 export type BuiltinSeasonId =
@@ -81,7 +81,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Tết Nguyên Đán',
     icon: '🧧',
     title: 'Chúc mừng năm mới!',
-    message: 'Fumo Mai Nga chúc bạn năm mới an khang thịnh vượng, vạn sự như ý — rước một bé fumo về nhà cho năm mới thêm may mắn nhé!',
+    message: 'Fumo Mai Nga chúc bạn năm mới an khang thịnh vượng, vạn sự như ý - rước một bé fumo về nhà cho năm mới thêm may mắn nhé!',
     colors: ['#e5322d', '#ffc83d'],
     fx: { glyphs: ['🌸', '🌼', '🌸', '🧧', '🌼'], dir: 'fall', count: 26, size: [16, 30] },
     when: '10 ngày trước → mùng 7 Tết (âm lịch)',
@@ -91,7 +91,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Valentine',
     icon: '💝',
     title: 'Happy Valentine!',
-    message: 'Gửi trao yêu thương cùng những bé fumo đáng yêu — món quà ôm ấp dễ thương nhất cho người thương của bạn.',
+    message: 'Gửi trao yêu thương cùng những bé fumo đáng yêu - món quà ôm ấp dễ thương nhất cho người thương của bạn.',
     colors: ['#ff4d8d', '#ffb3cf'],
     fx: { glyphs: ['💖', '💕', '❤️', '💗', '🌹'], dir: 'rise', count: 24, size: [14, 28] },
     when: '10/2 → 14/2',
@@ -101,7 +101,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Quốc tế Phụ nữ',
     icon: '💐',
     title: 'Mừng ngày Quốc tế Phụ nữ 8/3!',
-    message: 'Chúc các chị em luôn xinh đẹp, hạnh phúc và được yêu thương — tặng nàng một bé fumo thay ngàn lời chúc nhé!',
+    message: 'Chúc các chị em luôn xinh đẹp, hạnh phúc và được yêu thương - tặng nàng một bé fumo thay ngàn lời chúc nhé!',
     colors: ['#e04f9b', '#ffc4e1'],
     fx: { glyphs: ['🌷', '🌸', '💐', '🌹', '🌺'], dir: 'fall', count: 24, size: [16, 30] },
     when: '4/3 → 8/3',
@@ -133,7 +133,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Nghỉ hè',
     icon: '🏖️',
     title: 'Hè rồi, xả hơi thôi!',
-    message: 'Mùa hè rực rỡ đã tới — cùng các bé fumo đi biển, ăn kem và tận hưởng kỳ nghỉ thật đã nhé!',
+    message: 'Mùa hè rực rỡ đã tới - cùng các bé fumo đi biển, ăn kem và tận hưởng kỳ nghỉ thật đã nhé!',
     colors: ['#00a6e0', '#ffd23f'],
     fx: { glyphs: ['☀️', '🌊', '🍉', '🍦', '🐚', '🌴'], dir: 'float', count: 18, size: [16, 30] },
     when: '1/6 → 15/8',
@@ -143,7 +143,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Tựu trường',
     icon: '🎒',
     title: 'Chào năm học mới!',
-    message: 'Chúc các bạn học sinh, sinh viên một năm học mới thật nhiều niềm vui — có bé fumo nhỏ làm bạn đồng hành trên bàn học nhé!',
+    message: 'Chúc các bạn học sinh, sinh viên một năm học mới thật nhiều niềm vui - có bé fumo nhỏ làm bạn đồng hành trên bàn học nhé!',
     colors: ['#3d7bfd', '#7ad3ff'],
     fx: { glyphs: ['📚', '✏️', '🎒', '📐', '🖍️', '📝'], dir: 'fall', count: 18, size: [16, 28] },
     when: '20/8 → 5/9',
@@ -154,7 +154,7 @@ export const SEASONS: SeasonDef[] = [
     icon: '🏮',
     art: 'lantern',
     title: 'Trung thu vui vẻ!',
-    message: 'Rước đèn, phá cỗ, ngắm trăng rằm — Fumo Mai Nga chúc bạn và gia đình một mùa Trung thu tròn đầy, ấm áp.',
+    message: 'Rước đèn, phá cỗ, ngắm trăng rằm - Fumo Mai Nga chúc bạn và gia đình một mùa Trung thu tròn đầy, ấm áp.',
     colors: ['#e8332a', '#ffc94d'],
     fx: { glyphs: ['img:lantern', '🥮', 'img:lantern', '🌕', '⭐'], dir: 'rise', count: 16, size: [22, 40] },
     when: '10 ngày trước → rằm tháng 8 (âm lịch)',
@@ -164,7 +164,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Phụ nữ Việt Nam',
     icon: '🌷',
     title: 'Mừng ngày Phụ nữ Việt Nam 20/10!',
-    message: 'Chúc mẹ, chị, em và các bạn nữ luôn rạng rỡ, hạnh phúc — một bé fumo xinh xắn là món quà dễ thương nhất ngày 20/10!',
+    message: 'Chúc mẹ, chị, em và các bạn nữ luôn rạng rỡ, hạnh phúc - một bé fumo xinh xắn là món quà dễ thương nhất ngày 20/10!',
     colors: ['#e04f9b', '#ffc4e1'],
     fx: { glyphs: ['🌷', '🌸', '💐', '🌹', '🌺'], dir: 'fall', count: 24, size: [16, 30] },
     when: '16/10 → 20/10',
@@ -174,7 +174,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Halloween',
     icon: '🎃',
     title: 'Happy Halloween!',
-    message: 'Trick or treat? Các bé fumo đã hoá trang sẵn sàng — ghé shop kẻo bị ma bí ngô doạ nhé! 👻',
+    message: 'Trick or treat? Các bé fumo đã hoá trang sẵn sàng - ghé shop kẻo bị ma bí ngô doạ nhé! 👻',
     colors: ['#ff7a00', '#7b3fe4'],
     fx: { glyphs: ['🎃', '🦇', '👻', '🕸️', '🍬'], dir: 'float', count: 18, size: [18, 32] },
     when: '25/10 → 31/10',
@@ -184,7 +184,7 @@ export const SEASONS: SeasonDef[] = [
     name: 'Giáng sinh',
     icon: '🎄',
     title: 'Merry Christmas!',
-    message: 'Giáng sinh an lành! Ông già Noel đã gói sẵn các bé fumo — chọn quà cho người thương hoặc tự thưởng cho mình nhé!',
+    message: 'Giáng sinh an lành! Ông già Noel đã gói sẵn các bé fumo - chọn quà cho người thương hoặc tự thưởng cho mình nhé!',
     colors: ['#1f9d55', '#e53935'],
     fx: { glyphs: ['❄️', '❄️', '⛄', '🎁', '❄️', '🎄'], dir: 'fall', count: 30, size: [12, 26] },
     when: '15/12 → 25/12',
@@ -211,7 +211,7 @@ const md = (year: number, s: string) => {
 
 /**
  * Admin sửa một chủ đề: các trường để trống = dùng mặc định.
- * `dates`: ngày bắt đầu / kết thúc riêng cho từng năm (YYYY-MM-DD) — vì Tết, Trung thu đổi ngày mỗi năm.
+ * `dates`: ngày bắt đầu / kết thúc riêng cho từng năm (YYYY-MM-DD) - vì Tết, Trung thu đổi ngày mỗi năm.
  */
 export interface SeasonOverride {
   name?: string;
@@ -339,7 +339,7 @@ export const seasonById = (id: string | undefined, ov?: SeasonOverrides): Season
   return d && resolveSeason(d, ov);
 };
 
-/** Chủ đề đang diễn ra hôm nay theo lịch (trùng nhau thì lấy dịp ngắn hơn — ví dụ Valentine trong dịp Tết). */
+/** Chủ đề đang diễn ra hôm nay theo lịch (trùng nhau thì lấy dịp ngắn hơn - ví dụ Valentine trong dịp Tết). */
 export function seasonByDate(now = Date.now(), ov?: SeasonOverrides): SeasonDef | undefined {
   const y = new Date(now).getFullYear();
   const hit = allSeasons().map((s) => ({ s, r: seasonRange(s.id, y, ov) }))
