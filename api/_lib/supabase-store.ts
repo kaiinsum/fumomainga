@@ -183,6 +183,25 @@ export function supabaseStore(url: string, serviceKey: string) {
       > & { at: string })[];
       return rows.map((r) => ({ ...r, at: new Date(r.at).getTime(), sid: r.sid ?? '', path: r.path ?? '', ip: r.ip ?? '', ua: r.ua ?? '', ref: r.ref ?? '' }));
     },
+    async sources(from, limit) {
+      const { data, error } = await db.rpc('analytics_sources', { p_from: isoOrNull(from), p_limit: limit });
+      if (!error) {
+        const rows = (data ?? []) as { ref: string; entries: number; visitors: number }[];
+        return { rows: rows.map((r) => ({ ref: r.ref ?? '', entries: num(r.entries), visitors: num(r.visitors) })), partial: false };
+      }
+      // Chưa chạy lại schema.sql (chưa có hàm analytics_sources) → tạm tính trên 1000 lượt vào gần nhất.
+      let q = db.from('page_views').select('ref,vid').neq('ref', '').not('ref', 'is', null).order('at', { ascending: false }).limit(1000);
+      if (from !== null) q = q.gte('at', new Date(from).toISOString());
+      const list = check(await q, 'nguồn truy cập') as { ref: string; vid: string }[];
+      const map = new Map<string, { entries: number; vids: Set<string> }>();
+      for (const r of list) {
+        const b = map.get(r.ref) ?? { entries: 0, vids: new Set<string>() };
+        b.entries++;
+        b.vids.add(r.vid);
+        map.set(r.ref, b);
+      }
+      return { rows: [...map.entries()].map(([ref, b]) => ({ ref, entries: b.entries, visitors: b.vids.size })), partial: true };
+    },
     async cleanup(before) {
       check(await db.from('visitors_online').delete().lt('last_seen', new Date(before).toISOString()), 'dọn khách online');
     },

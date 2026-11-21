@@ -7,6 +7,7 @@
  */
 import { CLEANUP_PARTS, CleanupPart, TimeUnit, truncVN } from '../_lib/analytics';
 import { HttpError, clientIp, getStore, handle, json, requireAdmin } from '../_lib/orders';
+import { sourceLabel, summarizeSources } from '../_lib/traffic-source';
 
 /** Còn "đang truy cập" nếu trình duyệt báo về trong 75 giây qua (ping ~30 giây/lần). */
 const ONLINE_MS = 75_000;
@@ -117,7 +118,7 @@ export const GET = handle(async (req) => {
   const today = truncVN(now, 'day');
 
   try {
-    const [online, total, todayTotals, rangeTotals, series, top, latest, storage] = await Promise.all([
+    const [online, total, todayTotals, rangeTotals, series, top, latest, storage, sourcesRaw] = await Promise.all([
       store.online(now - ONLINE_MS),
       store.totals(null),
       store.totals(today),
@@ -127,7 +128,11 @@ export const GET = handle(async (req) => {
       store.latest(40),
       // Dung lượng: lỗi (chưa chạy schema mới) thì bỏ qua, không làm hỏng cả trang thống kê.
       storageInfo().catch(() => null),
+      // Nguồn truy cập: lỗi thì bỏ qua, không làm hỏng cả trang thống kê.
+      store.sources(from, 500).catch(() => null),
     ]);
+    const siteHost = (req.headers.get('x-forwarded-host') ?? new URL(req.url).host).split(',')[0].trim().replace(/:\d+$/, '');
+    const sources = sourcesRaw ? { ...summarizeSources(sourcesRaw.rows, siteHost), partial: sourcesRaw.partial } : null;
     return json({
       now,
       range: key in RANGES ? key : 'hour',
@@ -139,8 +144,9 @@ export const GET = handle(async (req) => {
       inRange: rangeTotals,
       series,
       top,
-      latest,
+      latest: latest.map((v) => ({ ...v, source: sourceLabel(v.ref, siteHost) })),
       storage,
+      sources,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

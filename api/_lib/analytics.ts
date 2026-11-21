@@ -37,6 +37,8 @@ export interface AnalyticsStore {
   totals(from: number | null): Promise<{ views: number; visitors: number }>;
   top(from: number | null, limit: number): Promise<{ path: string; views: number; visitors: number }[]>;
   latest(limit: number): Promise<PageView[]>;
+  /** Lượt vào web theo nguồn (ref thô của lượt xem đầu tiên mỗi lần mở web). `partial` = chỉ tính trên một phần dữ liệu. */
+  sources(from: number | null, limit: number): Promise<{ rows: { ref: string; entries: number; visitors: number }[]; partial: boolean }>;
   /** Dọn khách online cũ (không cần giữ lâu). */
   cleanup(before: number): Promise<void>;
   /** Dung lượng đang dùng (để cảnh báo trước khi đầy bộ nhớ). */
@@ -130,6 +132,18 @@ export function memoryAnalytics(): AnalyticsStore {
     },
     async latest(limit) {
       return [...views].sort((a, b) => b.at - a.at).slice(0, limit);
+    },
+    async sources(from, limit) {
+      const map = new Map<string, { entries: number; vids: Set<string> }>();
+      for (const v of since(from)) {
+        if (!v.ref) continue;
+        const b = map.get(v.ref) ?? { entries: 0, vids: new Set<string>() };
+        b.entries++;
+        b.vids.add(v.vid);
+        map.set(v.ref, b);
+      }
+      const rows = [...map.entries()].map(([ref, b]) => ({ ref, entries: b.entries, visitors: b.vids.size })).sort((a, b) => b.entries - a.entries).slice(0, limit);
+      return { rows, partial: false };
     },
     async game(day, game, vid, plays, seconds) {
       const k = `${day}|${game}|${vid}`;

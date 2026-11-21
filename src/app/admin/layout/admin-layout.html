@@ -29,7 +29,6 @@
   </header>
 
   <aside class="sidebar">
-    <button class="side-back" type="button" (click)="back()" [disabled]="!canBack()" title="Quay lại trang trước">← Quay lại</button>
     <app-admin-search (picked)="sidebarOpen.set(false)" />
     @for (grp of groups; track grp.title) {
     <p class="group-title">{{ grp.title }}</p>

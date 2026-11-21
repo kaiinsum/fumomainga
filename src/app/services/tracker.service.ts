@@ -28,13 +28,53 @@ function stored(storage: () => Storage, key: string): string {
  * Thống kê truy cập cho admin: mỗi lần mở trang gửi 1 lượt xem, đang mở thì báo online.
  * Không gửi gì ở trang /admin. Mã khách (vid) là số ngẫu nhiên trên trình duyệt, không chứa thông tin cá nhân.
  */
+/**
+ * Đọc nguồn khách tới: document.referrer + utm_source / utm_medium / utm_campaign trên link,
+ * và mã quảng cáo (fbclid → Facebook, gclid → Google Ads, ttclid → TikTok, zarsrc → Zalo).
+ * Trả về "<referrer|(direct)>[ ##utm_source=..&...]" — máy chủ tự phân loại (api/_lib/traffic-source.ts).
+ */
+function entrySource(): string {
+  const ref = document.referrer || '(direct)';
+  let params: URLSearchParams;
+  try {
+    params = new URL(location.href).searchParams;
+  } catch {
+    return ref;
+  }
+  const tags = new URLSearchParams();
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign']) {
+    const v = params.get(k)?.trim();
+    if (v) tags.set(k, v.slice(0, 60));
+  }
+  if (!tags.has('utm_source')) {
+    if (params.has('gclid') || params.has('gbraid') || params.has('wbraid')) tags.set('click', 'gads');
+    else if (params.has('fbclid')) tags.set('click', 'fb');
+    else if (params.has('ttclid')) tags.set('click', 'tiktok');
+    else if (params.has('zarsrc')) tags.set('click', 'zalo');
+  }
+  // Bỏ các thẻ theo dõi khỏi thanh địa chỉ cho link gọn (khách copy link không mang theo mã chiến dịch).
+  const strip = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'gbraid', 'wbraid', 'ttclid', 'zarsrc', 'zarsrc_ref'];
+  if (strip.some((k) => params.has(k))) {
+    try {
+      const u = new URL(location.href);
+      strip.forEach((k) => u.searchParams.delete(k));
+      history.replaceState(history.state, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams : '') + u.hash);
+    } catch {
+      /* bỏ qua */
+    }
+  }
+  const t = tags.toString();
+  return (t ? `${ref} ##${t}` : ref).slice(0, 300);
+}
+
 @Injectable({ providedIn: 'root' })
 export class TrackerService {
   private readonly router = inject(Router);
   private readonly vid = stored(() => localStorage, VID_KEY);
   private readonly sid = stored(() => sessionStorage, SID_KEY);
   private path = '';
-  private firstRef = document.referrer;
+  /** Nguồn của lần mở web này: trang dẫn tới (hoặc "(direct)") + thẻ chiến dịch (utm / mã quảng cáo) trên link. */
+  private firstRef = entrySource();
 
   /** Lần cuối khách thao tác (chuột, phím, chạm, cuộn). */
   private lastInput = Date.now();

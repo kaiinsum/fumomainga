@@ -284,3 +284,17 @@ $$;
 revoke all on function public.game_track(date, text, text, integer, integer) from public, anon, authenticated;
 revoke all on function public.analytics_games(date) from public, anon, authenticated;
 revoke all on function public.analytics_pages_prefix(timestamptz, text, integer) from public, anon, authenticated;
+
+-- Nguồn truy cập: gom lượt vào web theo trang dẫn tới (ref) — ref chỉ có ở lượt xem đầu tiên mỗi lần mở web.
+create or replace function public.analytics_sources(p_from timestamptz, p_limit integer)
+returns table (ref text, entries bigint, visitors bigint)
+language sql stable
+as $$
+  select ref, count(*), count(distinct vid)
+  from public.page_views
+  where (p_from is null or at >= p_from) and ref is not null and ref <> ''
+  group by ref
+  order by 2 desc
+  limit p_limit;
+$$;
+revoke all on function public.analytics_sources(timestamptz, integer) from public, anon, authenticated;

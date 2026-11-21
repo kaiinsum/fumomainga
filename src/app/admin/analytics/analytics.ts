@@ -13,6 +13,16 @@ interface Visit {
   ip: string;
   ua: string;
   ref: string;
+  /** Nhãn nguồn đã phân loại (máy chủ gửi): "🔎 Google", "💬 Facebook", "📣 fb · sale"... */
+  source?: string;
+}
+
+type SourceKind = 'search' | 'social' | 'campaign' | 'referral' | 'direct';
+interface Sources {
+  list: { kind: SourceKind; name: string; entries: number; visitors: number }[];
+  kinds: Record<SourceKind, number>;
+  campaigns: { source: string; medium: string; campaign: string; entries: number; visitors: number }[];
+  partial: boolean;
 }
 
 interface Stats {
@@ -28,6 +38,7 @@ interface Stats {
   top: { path: string; views: number; visitors: number }[];
   latest: Visit[];
   storage: Storage | null;
+  sources?: Sources | null;
 }
 
 interface Storage {
@@ -259,6 +270,89 @@ export function device(ua: string): string {
         </section>
       </div>
 
+
+      <!-- Nguồn truy cập -->
+      <section class="adm-box src-box">
+        <h2>🔗 Nguồn truy cập · {{ rangeLabel() }}</h2>
+        @if (d.sources; as so) {
+          @let tot = srcTotal(so);
+          @if (tot) {
+            <div class="src-kinds">
+              <div class="kbar" role="img" aria-label="Tỉ lệ nguồn truy cập">
+                @for (k of kindList; track k.id) {
+                  @if (so.kinds[k.id]) { <i [style.width.%]="(so.kinds[k.id] / tot) * 100" [style.background]="k.color" [title]="k.label + ': ' + so.kinds[k.id]"></i> }
+                }
+              </div>
+              <ul class="klegend">
+                @for (k of kindList; track k.id) {
+                  <li><span class="sw" [style.background]="k.color"></span>{{ k.icon }} {{ k.label }} <b>{{ pct(so.kinds[k.id], tot) }}%</b> <small>({{ fmt(so.kinds[k.id]) }})</small></li>
+                }
+              </ul>
+            </div>
+            <div class="adm-table-wrap">
+              <table class="adm-table src-table">
+                <thead><tr><th>Nguồn</th><th>Loại</th><th class="num">Lượt vào web</th><th class="num">Khách</th><th class="barcol"></th></tr></thead>
+                <tbody>
+                  @for (r of so.list.slice(0, srcMore() ? 100 : 12); track r.kind + r.name) {
+                    <tr>
+                      <td><b>{{ kindOf(r.kind).icon }} {{ r.name }}</b></td>
+                      <td><span class="kchip" [style.borderColor]="kindOf(r.kind).color">{{ kindOf(r.kind).label }}</span></td>
+                      <td class="num">{{ fmt(r.entries) }}</td>
+                      <td class="num">{{ fmt(r.visitors) }}</td>
+                      <td class="barcol"><span class="bar"><i [style.width.%]="(r.entries / so.list[0].entries) * 100" [style.background]="kindOf(r.kind).color"></i></span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (so.list.length > 12) {
+              <button type="button" class="lnk" (click)="srcMore.set(!srcMore())">{{ srcMore() ? 'Thu gọn' : 'Xem tất cả ' + so.list.length + ' nguồn' }}</button>
+            }
+            @if (so.campaigns.length) {
+              <h3 class="sub-h">📣 Chiến dịch (link theo dõi)</h3>
+              <div class="adm-table-wrap">
+                <table class="adm-table src-table">
+                  <thead><tr><th>Nguồn (utm_source)</th><th>Kênh (utm_medium)</th><th>Chiến dịch (utm_campaign)</th><th class="num">Lượt vào</th><th class="num">Khách</th></tr></thead>
+                  <tbody>
+                    @for (c of so.campaigns; track $index) {
+                      <tr><td><b>{{ c.source }}</b></td><td>{{ c.medium || '—' }}</td><td>{{ c.campaign || '—' }}</td><td class="num">{{ fmt(c.entries) }}</td><td class="num">{{ fmt(c.visitors) }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          } @else {
+            <p class="none">Chưa có lượt vào web nào trong khoảng này.</p>
+          }
+          <p class="hint src-note">
+            Tính theo <b>lần mở web</b> (trang đầu tiên khách vào). <b>Trực tiếp</b> = gõ địa chỉ, bookmark, hoặc mở từ ứng dụng không báo nguồn
+            (Messenger / Zalo trên điện thoại thường như vậy) — dùng <b>link theo dõi</b> bên dưới để biết chính xác.
+            @if (so.partial) { <br />⚠ Đang tính tạm trên 1000 lượt vào gần nhất — chạy lại <code>supabase/schema.sql</code> để thống kê đủ. }
+          </p>
+        } @else {
+          <p class="none">Chưa đọc được nguồn truy cập.</p>
+        }
+
+        <details class="utm">
+          <summary>🔧 Tạo link theo dõi (biết khách đến từ bài đăng / nhóm / quảng cáo nào)</summary>
+          <div class="utm-body">
+            <div class="utm-grid">
+              <label>Trang<input [value]="utmPath()" (input)="utmPath.set($any($event.target).value)" placeholder="/ hoặc /san-pham/ten-san-pham" /></label>
+              <label>Nguồn (nơi đăng link)<input [value]="utmSource()" (input)="utmSource.set($any($event.target).value)" placeholder="facebook, zalo, tiktok…" list="utm-src" /></label>
+              <label>Kênh<input [value]="utmMedium()" (input)="utmMedium.set($any($event.target).value)" placeholder="bai-dang, nhom, quang-cao, bio…" list="utm-med" /></label>
+              <label>Tên chiến dịch<input [value]="utmCampaign()" (input)="utmCampaign.set($any($event.target).value)" placeholder="sale-11-11" /></label>
+            </div>
+            <datalist id="utm-src"><option value="facebook"></option><option value="zalo"></option><option value="tiktok"></option><option value="instagram"></option><option value="youtube"></option><option value="shopee"></option><option value="email"></option><option value="qr"></option></datalist>
+            <datalist id="utm-med"><option value="bai-dang"></option><option value="nhom"></option><option value="quang-cao"></option><option value="bio"></option><option value="tin-nhan"></option><option value="in-an"></option></datalist>
+            <div class="utm-out">
+              <input readonly [value]="utmLink()" aria-label="Link theo dõi" (focus)="$any($event.target).select()" />
+              <button type="button" class="btn primary small" [disabled]="!utmSource().trim()" (click)="copyUtm()">{{ copied() ? '✓ Đã chép' : 'Chép link' }}</button>
+            </div>
+            <p class="hint">Dán link này vào bài đăng / tin nhắn / quảng cáo. Khách bấm vào sẽ được tính vào bảng <b>Chiến dịch</b> ở trên (link tự gọn lại sau khi mở).</p>
+          </div>
+        </details>
+      </section>
+
       <!-- Dung lượng lưu trữ -->
       @if (d.storage; as st) {
         <section class="adm-box store" id="store-box">
@@ -295,7 +389,7 @@ export function device(ua: string): string {
                   <td class="mono">{{ v.ip || '—' }}</td>
                   <td class="path" [title]="v.path">{{ v.path }}</td>
                   <td class="nowrap">{{ dev(v.ua) }}</td>
-                  <td class="ref" [title]="v.ref">{{ host(v.ref) }}</td>
+                  <td class="ref" [title]="v.ref">{{ v.source || host(v.ref) }}</td>
                 </tr>
               } @empty {
                 <tr><td colspan="5" class="empty">Chưa có lượt truy cập nào.</td></tr>
@@ -429,6 +523,29 @@ export function device(ua: string): string {
     .bar { height: 8px; background: #f0f0f1; border-radius: 4px; overflow: hidden; }
     .bar i { display: block; height: 100%; background: #2271b1; border-radius: 4px; }
     .none { padding: 16px; margin: 0; color: #646970; }
+    .src-box { padding-bottom: 6px; }
+    .src-kinds { padding: 12px 16px 4px; display: grid; gap: 8px; }
+    .kbar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #f0f0f1; }
+    .kbar i { display: block; height: 100%; }
+    .klegend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .85rem; }
+    .klegend small { color: #646970; }
+    .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+    .src-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .src-table .barcol { width: 22%; }
+    .src-table .bar { display: block; height: 8px; border-radius: 4px; background: #f0f0f1; overflow: hidden; }
+    .src-table .bar i { display: block; height: 100%; }
+    .kchip { font-size: .72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1.5px solid; white-space: nowrap; }
+    .sub-h { margin: 14px 16px 6px; font-size: .95rem; }
+    .lnk { border: 0; background: none; color: #2271b1; cursor: pointer; font: inherit; font-size: .85rem; padding: 6px 16px; }
+    .src-note { padding: 6px 16px 10px; margin: 0; }
+    .utm { border-top: 1px solid #f0f0f1; margin-top: 6px; }
+    .utm > summary { cursor: pointer; padding: 12px 16px; font-weight: 700; }
+    .utm-body { padding: 0 16px 14px; display: grid; gap: 10px; }
+    .utm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+    .utm-grid label { display: grid; gap: 4px; font-size: .82rem; font-weight: 700; }
+    .utm-out { display: flex; gap: 8px; }
+    .utm-out input { flex: 1; min-width: 0; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; }
+    @media (max-width: 600px) { .src-table .barcol { display: none; } .utm-out { flex-direction: column; } }
     .latest-wrap { max-height: 520px; overflow-y: auto; }
     .latest-wrap thead th { position: sticky; top: 0; z-index: 1; }
     .latest .mono { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }
@@ -726,6 +843,59 @@ export class AdminAnalytics {
 
   dev(ua: string): string {
     return device(ua);
+  }
+
+  // ---------- Nguồn truy cập ----------
+  readonly kindList: { id: SourceKind; label: string; icon: string; color: string }[] = [
+    { id: 'search', label: 'Tìm kiếm', icon: '🔎', color: '#4285f4' },
+    { id: 'social', label: 'Mạng xã hội', icon: '💬', color: '#e1306c' },
+    { id: 'campaign', label: 'Chiến dịch', icon: '📣', color: '#f59e0b' },
+    { id: 'referral', label: 'Web khác', icon: '🔗', color: '#10b981' },
+    { id: 'direct', label: 'Trực tiếp', icon: '⌨️', color: '#8c8f94' },
+  ];
+  readonly srcMore = signal(false);
+  kindOf(id: SourceKind) {
+    return this.kindList.find((k) => k.id === id) ?? this.kindList[4];
+  }
+  srcTotal(so: Sources): number {
+    return Object.values(so.kinds).reduce((a, b) => a + b, 0);
+  }
+  pct(n: number, total: number): number {
+    return total ? Math.round((n / total) * 1000) / 10 : 0;
+  }
+
+  // Tạo link theo dõi (UTM)
+  readonly utmPath = signal('/');
+  readonly utmSource = signal('facebook');
+  readonly utmMedium = signal('bai-dang');
+  readonly utmCampaign = signal('');
+  readonly copied = signal(false);
+  readonly utmLink = computed(() => {
+    const clean = (v: string) => v.trim().toLowerCase().replace(/\s+/g, '-');
+    let path = this.utmPath().trim() || '/';
+    if (/^https?:\/\//i.test(path)) {
+      try {
+        path = new URL(path).pathname;
+      } catch {
+        path = '/';
+      }
+    }
+    if (!path.startsWith('/')) path = '/' + path;
+    const q = new URLSearchParams();
+    if (this.utmSource().trim()) q.set('utm_source', clean(this.utmSource()));
+    if (this.utmMedium().trim()) q.set('utm_medium', clean(this.utmMedium()));
+    if (this.utmCampaign().trim()) q.set('utm_campaign', clean(this.utmCampaign()));
+    const qs = q.toString();
+    return location.origin + path + (qs ? '?' + qs : '');
+  });
+  async copyUtm(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.utmLink());
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 1800);
+    } catch {
+      /* trình duyệt chặn — khách tự bôi đen ô link */
+    }
   }
 
   host(ref: string): string {
