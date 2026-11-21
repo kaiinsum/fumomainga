@@ -26,10 +26,9 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
           <span class="badge out">Hết hàng</span>
         } @else if (onSale(p)) {
           <span class="badge sale">Giảm {{ discountPercent(p) }}%</span>
-        } @else if (p.featured) {
-          <span class="badge feat-badge">★ Nổi bật</span>
         }
-        @if (p.featured && p.inStock && onSale(p)) {
+        <!-- Quy tắc chung: góc trái = giảm giá / hết hàng, góc phải = ★ nổi bật -->
+        @if (p.featured && p.inStock) {
           <span class="star" title="Nổi bật" aria-label="Nổi bật">★</span>
         }
       </div>
@@ -78,7 +77,6 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
     }
     @keyframes feat-spin { to { --feat-ang: 360deg; } }
     :host-context(html.lite) .card.feat { animation: none; }
-    .feat-badge { background: linear-gradient(135deg, #ffb020, #ff6fa5); color: #fff; box-shadow: 0 3px 10px rgba(255, 140, 60, .35); }
     .star { position: absolute; top: 10px; right: 10px; z-index: 1; width: 28px; height: 28px; display: grid; place-items: center;
       border-radius: 50%; background: linear-gradient(135deg, #ffb020, #ff6fa5); color: #fff; font-size: .9rem;
       box-shadow: 0 3px 10px rgba(255, 140, 60, .35); }
@@ -150,7 +148,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
       :host(.compact) .pt, :host(.compact) strong { font-size: .74rem; }
       :host(.compact) .go { display: none; }
       :host(.compact) .badge { font-size: .55rem; padding: 1px 5px; top: 5px; left: 5px; }
-      :host(.compact) .star { display: none; }
+      :host(.compact) .star { top: 4px; right: 4px; width: 18px; height: 18px; font-size: .6rem; }
       :host(.compact) .card { border-radius: 10px; }
     }
 

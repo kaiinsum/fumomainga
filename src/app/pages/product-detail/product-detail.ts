@@ -18,6 +18,7 @@ import { PriceTagComponent } from '../../shared/price-tag';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
 import { IconComponent } from '../../shared/icon';
 import { CategoryService } from '../../services/category.service';
+import { ProductReviewsComponent } from '../../components/product-reviews/product-reviews';
 
 /** Từ khoá trong 1 đoạn chữ (bỏ dấu, bỏ từ quá ngắn / quá chung). */
 const STOP = new Set(['fumo', 'plush', 'cho', 'cua', 'the', 'and', 'voi', 'mot', 'cac', 'nhung', 'size', 'cm', 'ban']);
@@ -28,7 +29,7 @@ function keywords(text: string): Set<string> {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent, IconComponent, RichTextPipe],
+  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent, IconComponent, RichTextPipe, ProductReviewsComponent],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
 })

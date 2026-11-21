@@ -411,6 +411,17 @@ export function supabaseStore(url: string, serviceKey: string) {
       check(await db.from('app_kv').upsert({ key, value, updated_at: new Date().toISOString() }), 'ghi dữ liệu');
     },
 
+    async lastWrite(): Promise<number | null> {
+      const latest = async (table: string, col: string) => {
+        const r = await db.from(table).select(col).order(col, { ascending: false }).limit(1).maybeSingle();
+        const v = r.error ? null : (r.data as Record<string, string> | null)?.[col];
+        return v ? Date.parse(v) : 0;
+      };
+      const all = await Promise.all([latest('app_kv', 'updated_at'), latest('orders', 'updated_at'), latest('page_views', 'at')]);
+      const max = Math.max(...all);
+      return max > 0 ? max : null;
+    },
+
     async delKey(key: string): Promise<void> {
       check(await db.from('app_kv').delete().eq('key', key), 'xoá dữ liệu');
     },

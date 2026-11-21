@@ -5,6 +5,7 @@
  * Hạn tên miền: thử tra RDAP (dữ liệu đăng ký công khai); không tra được (vd. một số đuôi .vn) thì dùng ngày admin nhập.
  */
 import { HttpError, getStore, handle, json, readJson, requireAdmin } from '../_lib/orders';
+import { HEARTBEAT_KEY, Heartbeat } from './keepalive';
 
 const KEY = 'admin:system';
 const DB_LIMIT_MB = Number(process.env['DB_LIMIT_MB']) || 500;
@@ -102,9 +103,11 @@ export const GET = handle(async (req) => {
   const store = getStore();
   const manual = clean(await store.getJson<Manual>(KEY).catch(() => null));
   const name = manual.domain || siteDomain(req);
-  const [usage, lookup] = await Promise.all([
+  const [usage, lookup, heartbeat, lastWrite] = await Promise.all([
     store.usage ? store.usage().catch((e) => ({ db: null, media: null, error: e instanceof Error ? e.message : String(e) })) : null,
     name ? rdap(name) : null,
+    store.getJson<Heartbeat>(HEARTBEAT_KEY).catch(() => null),
+    store.lastWrite ? store.lastWrite().catch(() => null) : null,
   ]);
   const domain: DomainInfo | null = name
     ? {
@@ -121,6 +124,7 @@ export const GET = handle(async (req) => {
     limits: { db: DB_LIMIT_MB * 1024 * 1024, media: MEDIA_LIMIT_MB * 1024 * 1024 },
     usage,
     hosting: hosting(),
+    keepalive: { heartbeat, lastWrite, cronSecret: !!process.env['CRON_SECRET'] },
     domain,
     manual,
   });

@@ -103,6 +103,8 @@ interface Store {
   contacts?: ContactStore;
   /** Dung lượng chi tiết: từng bảng / khoá dữ liệu + kho ảnh (chỉ có ở Supabase). */
   usage?(): Promise<UsageInfo>;
+  /** Lần ghi gần nhất vào database (app_kv, đơn hàng, lượt xem...) - để giữ Supabase không bị tạm dừng. */
+  lastWrite?(): Promise<number | null>;
 }
 
 export interface UsageInfo {

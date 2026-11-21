@@ -1,16 +1,19 @@
 /**
- * /api/feedback - khách đánh giá đơn đã thanh toán để nhận voucher.
- *  POST (khách)  { code, phone, rating, text } → { voucher, offer, expiresAt }
- *  GET  (admin)  → { config, items }
- *  PATCH (admin) { config } | { code, used } → cập nhật cấu hình / đánh dấu voucher đã dùng
- *  DELETE (admin) { code } → xoá đánh giá
- * Lưu trong app_kv: 'feedback:config' + 'feedback:list' (mỗi đơn chỉ đánh giá 1 lần).
+ * /api/feedback - khách đánh giá SẢN PHẨM ĐÃ MUA (nhập mã đơn + SĐT), mỗi sản phẩm trong 1 đơn chỉ đánh giá 1 lần.
+ * Lần đánh giá đầu tiên của một đơn → tặng 1 mã voucher cho đơn đó.
+ *  POST  (khách) { code, phone, productId, rating, text } → { review, voucher }
+ *  GET   ?product=<id> (công khai) → { reviews, count, avg }   (đánh giá hiện ở trang sản phẩm)
+ *  GET   (admin) → { config, reviews, vouchers }
+ *  PATCH (admin) { config } | { voucher, used } | { key, hidden }
+ *  DELETE (admin) { key }
+ * Lưu trong app_kv: 'feedback:config', 'feedback:reviews', 'feedback:vouchers'.
  */
 import { randomInt } from 'node:crypto';
 import { HttpError, Order, digits, getStore, handle, json, normalizeCode, rateLimit, readJson, requireAdmin } from '../_lib/orders';
 
 const CFG_KEY = 'feedback:config';
-const LIST_KEY = 'feedback:list';
+const REVIEWS_KEY = 'feedback:reviews';
+const VOUCHERS_KEY = 'feedback:vouchers';
 /** Đơn ở các trạng thái này mới được đánh giá (đã thanh toán). */
 const PAID = new Set(['paid', 'shipping', 'done']);
 
@@ -24,11 +27,22 @@ export interface FeedbackConfig {
   validDays: number;
 }
 
-export interface Feedback {
+export interface Review {
+  /** `${mã đơn}:${mã sản phẩm}` */
+  key: string;
   code: string;
+  productId: string;
+  productName: string;
   name: string;
   rating: number;
   text: string;
+  createdAt: number;
+  /** Admin ẩn khỏi trang sản phẩm. */
+  hidden: boolean;
+}
+
+export interface Voucher {
+  code: string;
   voucher: string;
   offer: string;
   createdAt: number;
@@ -38,6 +52,7 @@ export interface Feedback {
 
 const DEFAULT_CFG: FeedbackConfig = { enabled: true, offer: 'Giảm 10% cho đơn hàng tiếp theo', prefix: 'CAMON', validDays: 60 };
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+const pid = (v: unknown) => str(v, 120).replace(/[^A-Za-z0-9_:.-]/g, '');
 
 function cleanCfg(raw: unknown): FeedbackConfig {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<FeedbackConfig>;
@@ -49,18 +64,40 @@ function cleanCfg(raw: unknown): FeedbackConfig {
   };
 }
 
-export const readConfig = async () => cleanCfg(await getStore().getJson<FeedbackConfig>(CFG_KEY));
-export const readList = async () => (await getStore().getJson<Record<string, Feedback>>(LIST_KEY)) ?? {};
+const readConfig = async () => cleanCfg(await getStore().getJson<FeedbackConfig>(CFG_KEY));
+const readReviews = async () => (await getStore().getJson<Record<string, Review>>(REVIEWS_KEY)) ?? {};
+const readVouchers = async () => (await getStore().getJson<Record<string, Voucher>>(VOUCHERS_KEY)) ?? {};
 
-/** Thông tin đánh giá kèm theo khi khách tra cứu đơn (đã đánh giá chưa, ưu đãi là gì). */
+/** Tên hiện công khai: "Nguyễn Văn An" → "N. V. An" (giữ riêng tư). */
+const publicName = (n: string) => {
+  const w = n.trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return 'Khách hàng';
+  return [...w.slice(0, -1).map((x) => x[0].toUpperCase() + '.'), w[w.length - 1]].join(' ');
+};
+
+/** Các sản phẩm (không trùng) trong đơn. */
+const orderProducts = (o: Order) => {
+  const seen = new Map<string, string>();
+  for (const it of o.items) if (it.id && !seen.has(it.id)) seen.set(it.id, it.name);
+  return [...seen].map(([id, name]) => ({ id, name }));
+};
+
+const publicVoucher = (v: Voucher | undefined) =>
+  v ? { voucher: v.voucher, offer: v.offer, expiresAt: v.expiresAt, used: v.used } : null;
+
+/** Thông tin đánh giá kèm theo khi khách tra cứu đơn. */
 export async function feedbackInfo(order: Order) {
-  const [cfg, list] = await Promise.all([readConfig(), readList()]);
-  const done = list[order.code];
+  const [cfg, reviews, vouchers] = await Promise.all([readConfig(), readReviews(), readVouchers()]);
+  const paid = PAID.has(order.status);
   return {
     enabled: cfg.enabled,
     offer: cfg.offer,
-    allowed: cfg.enabled && PAID.has(order.status) && !done,
-    done: done ? { rating: done.rating, text: done.text, voucher: done.voucher, offer: done.offer, expiresAt: done.expiresAt, used: done.used } : null,
+    paid,
+    products: orderProducts(order).map((p) => {
+      const r = reviews[`${order.code}:${p.id}`];
+      return { ...p, review: r ? { rating: r.rating, text: r.text, createdAt: r.createdAt } : null };
+    }),
+    voucher: publicVoucher(vouchers[order.code]),
   };
 }
 
@@ -75,7 +112,7 @@ function voucherCode(prefix: string, taken: Set<string>): string {
 }
 
 export const POST = handle(async (req) => {
-  await rateLimit(req, 'feedback', 10, 600);
+  await rateLimit(req, 'feedback', 15, 600);
   const body = await readJson(req);
   const code = normalizeCode(body['code']);
   const phone = digits(typeof body['phone'] === 'string' ? body['phone'] : '');
@@ -84,39 +121,76 @@ export const POST = handle(async (req) => {
     throw new HttpError(404, 'Không tìm thấy đơn hàng với mã và số điện thoại này.');
   }
   const cfg = await readConfig();
-  if (!cfg.enabled) throw new HttpError(403, 'Shop đang tạm dừng chương trình đánh giá nhận voucher.');
+  if (!cfg.enabled) throw new HttpError(403, 'Shop đang tạm dừng nhận đánh giá.');
   if (!PAID.has(order.status)) throw new HttpError(403, 'Đơn hàng cần được thanh toán xong mới đánh giá được.');
+
+  const productId = pid(body['productId']);
+  const product = orderProducts(order).find((p) => p.id === productId);
+  if (!product) throw new HttpError(403, 'Bạn chỉ đánh giá được sản phẩm có trong đơn hàng đã mua.');
 
   const rating = Math.round(Number(body['rating']));
   if (!(rating >= 1 && rating <= 5)) throw new HttpError(400, 'Vui lòng chọn số sao (1 - 5).');
   const text = str(body['text'], 1000).replace(/[<>]/g, '');
   if (text.length < 10) throw new HttpError(400, 'Nội dung đánh giá tối thiểu 10 ký tự.');
 
-  const list = await readList();
-  if (list[order.code]) throw new HttpError(409, 'Đơn hàng này đã được đánh giá rồi.');
-  if (Object.keys(list).length >= 20000) throw new HttpError(507, 'Kho đánh giá đã đầy.');
+  const [reviews, vouchers] = await Promise.all([readReviews(), readVouchers()]);
+  const key = `${order.code}:${product.id}`;
+  if (reviews[key]) throw new HttpError(409, 'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.');
+  if (Object.keys(reviews).length >= 30000) throw new HttpError(507, 'Kho đánh giá đã đầy.');
 
   const now = Date.now();
-  const fb: Feedback = {
+  const review: Review = {
+    key,
     code: order.code,
+    productId: product.id,
+    productName: product.name.slice(0, 160),
     name: order.customer.name.slice(0, 80),
     rating,
     text,
-    voucher: voucherCode(cfg.prefix, new Set(Object.values(list).map((f) => f.voucher))),
-    offer: cfg.offer,
     createdAt: now,
-    expiresAt: cfg.validDays ? now + cfg.validDays * 86_400_000 : null,
-    used: false,
+    hidden: false,
   };
-  list[order.code] = fb;
-  await getStore().setJson(LIST_KEY, list);
-  return json({ voucher: fb.voucher, offer: fb.offer, expiresAt: fb.expiresAt });
+  reviews[key] = review;
+  await getStore().setJson(REVIEWS_KEY, reviews);
+
+  // Lần đánh giá đầu tiên của đơn → tặng voucher
+  if (!vouchers[order.code]) {
+    vouchers[order.code] = {
+      code: order.code,
+      voucher: voucherCode(cfg.prefix, new Set(Object.values(vouchers).map((v) => v.voucher))),
+      offer: cfg.offer,
+      createdAt: now,
+      expiresAt: cfg.validDays ? now + cfg.validDays * 86_400_000 : null,
+      used: false,
+    };
+    await getStore().setJson(VOUCHERS_KEY, vouchers);
+  }
+  return json({
+    review: { rating, text, createdAt: now },
+    voucher: publicVoucher(vouchers[order.code]),
+  });
 });
 
 export const GET = handle(async (req) => {
+  const product = pid(new URL(req.url).searchParams.get('product'));
+  if (product) {
+    const list = Object.values(await readReviews())
+      .filter((r) => r.productId === product && !r.hidden)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    const avg = list.length ? Math.round((list.reduce((s, r) => s + r.rating, 0) / list.length) * 10) / 10 : 0;
+    return json({
+      count: list.length,
+      avg,
+      reviews: list.slice(0, 50).map((r) => ({ name: publicName(r.name), rating: r.rating, text: r.text, createdAt: r.createdAt, variant: r.productName })),
+    });
+  }
   await requireAdmin(req);
-  const [config, list] = await Promise.all([readConfig(), readList()]);
-  return json({ config, items: Object.values(list).sort((a, b) => b.createdAt - a.createdAt) });
+  const [config, reviews, vouchers] = await Promise.all([readConfig(), readReviews(), readVouchers()]);
+  return json({
+    config,
+    reviews: Object.values(reviews).sort((a, b) => b.createdAt - a.createdAt),
+    vouchers: Object.values(vouchers).sort((a, b) => b.createdAt - a.createdAt),
+  });
 });
 
 export const PATCH = handle(async (req) => {
@@ -127,20 +201,28 @@ export const PATCH = handle(async (req) => {
     await getStore().setJson(CFG_KEY, config);
     return json({ config });
   }
-  const code = normalizeCode(body['code']);
-  const list = await readList();
-  if (!list[code]) throw new HttpError(404, 'Không tìm thấy đánh giá.');
-  list[code].used = !!body['used'];
-  await getStore().setJson(LIST_KEY, list);
-  return json({ item: list[code] });
+  if (typeof body['voucher'] === 'string') {
+    const vouchers = await readVouchers();
+    const v = Object.values(vouchers).find((x) => x.voucher === body['voucher']);
+    if (!v) throw new HttpError(404, 'Không tìm thấy voucher.');
+    v.used = !!body['used'];
+    await getStore().setJson(VOUCHERS_KEY, vouchers);
+    return json({ voucher: v });
+  }
+  const reviews = await readReviews();
+  const r = reviews[str(body['key'], 160)];
+  if (!r) throw new HttpError(404, 'Không tìm thấy đánh giá.');
+  r.hidden = !!body['hidden'];
+  await getStore().setJson(REVIEWS_KEY, reviews);
+  return json({ review: r });
 });
 
 export const DELETE = handle(async (req) => {
   await requireAdmin(req);
-  const code = normalizeCode((await readJson(req))['code']);
-  const list = await readList();
-  if (!list[code]) throw new HttpError(404, 'Không tìm thấy đánh giá.');
-  delete list[code];
-  await getStore().setJson(LIST_KEY, list);
+  const key = str((await readJson(req))['key'], 160);
+  const reviews = await readReviews();
+  if (!reviews[key]) throw new HttpError(404, 'Không tìm thấy đánh giá.');
+  delete reviews[key];
+  await getStore().setJson(REVIEWS_KEY, reviews);
   return json({ ok: true });
 });

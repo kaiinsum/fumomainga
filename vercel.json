@@ -129,5 +129,11 @@
       "destination": "https://www.fumomainga.io.vn/:path*",
       "permanent": true
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/keepalive",
+      "schedule": "0 2 * * *"
+    }
   ]
 }

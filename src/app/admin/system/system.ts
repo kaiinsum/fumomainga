@@ -32,6 +32,7 @@ interface SystemInfo {
     database: string;
     databaseHost: string | null;
   };
+  keepalive?: { heartbeat: { touchedAt: number | null; lastWrite: number | null; touches: number } | null; lastWrite: number | null; cronSecret: boolean };
   domain: { name: string; expires: string | null; created: string | null; registrar: string | null; source: 'rdap' | 'manual' | null; error?: string } | null;
   manual: Manual;
 }
@@ -214,8 +215,23 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
               } @else {
                 <dt>Thời hạn</dt><dd>Gói miễn phí (Vercel Hobby / Supabase Free) không có hạn - chỉ giới hạn dung lượng.</dd>
               }
+              @if (d.keepalive; as k) {
+                <dt>Giữ kết nối Supabase</dt>
+                <dd>
+                  @if (k.lastWrite) {
+                    Lần ghi database gần nhất: <b>{{ ago(k.lastWrite, d.now) }}</b>
+                  } @else {
+                    Chưa đọc được lần ghi gần nhất
+                  }
+                  <small>
+                    {{ k.heartbeat?.touchedAt ? 'Tự đánh thức gần nhất: ' + date(k.heartbeat!.touchedAt!) + ' (' + k.heartbeat!.touches + ' lần)' : 'Chưa cần tự đánh thức lần nào - web vẫn hoạt động đều.' }}
+                  </small>
+                  @if (!k.cronSecret) { <small class="red">⚠ Chưa có biến CRON_SECRET trên Vercel - lịch tự chạy hằng ngày sẽ bị chặn.</small> }
+                  <button type="button" class="btn ghost small ka" [disabled]="pinging()" (click)="ping()">{{ pinging() ? 'Đang kiểm tra…' : '⚡ Kiểm tra ngay' }}</button>
+                </dd>
+              }
             </dl>
-            <p class="hint">Gói miễn phí Vercel: 100GB băng thông/tháng. Supabase miễn phí tạm dừng dự án nếu 7 ngày không có ai truy cập.</p>
+            <p class="hint">Gói miễn phí Vercel: 100GB băng thông/tháng. Supabase miễn phí tạm dừng dự án nếu 7 ngày không hoạt động - web tự kiểm tra mỗi ngày và ghi 1 dòng nhỏ khi đã quá 6 ngày không có thay đổi.</p>
           </div>
         </section>
       </div>
@@ -281,6 +297,8 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
     dd { margin: 0; min-width: 0; word-break: break-word; }
     dd small { display: block; color: #646970; font-size: .78rem; }
     dd.red { color: #b32d2e; font-weight: 700; }
+    dd small.red { color: #b32d2e; font-weight: 700; }
+    .ka { margin-top: 6px; }
     .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 14px; padding: 14px 16px 0; }
     .form label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; }
     .form .wide { grid-column: 1 / -1; }
@@ -399,11 +417,35 @@ export class AdminSystem {
     return (n || 0).toLocaleString('vi-VN');
   }
 
+  /** "3 giờ trước", "2 ngày trước". */
+  ago(t: number, now: number): string {
+    const m = Math.max(0, Math.round((now - t) / 60_000));
+    if (m < 60) return m <= 1 ? 'vừa xong' : `${m} phút trước`;
+    const h = Math.round(m / 60);
+    return h < 48 ? `${h} giờ trước` : `${Math.floor(h / 24)} ngày trước`;
+  }
+
+  readonly pinging = signal(false);
+
+  /** Chạy tay việc giữ kết nối (giống lịch tự chạy hằng ngày). */
+  async ping(): Promise<void> {
+    this.pinging.set(true);
+    this.error.set('');
+    try {
+      await this.api.call('GET', '/api/keepalive', undefined, true);
+      await this.load();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Không kiểm tra được.');
+    } finally {
+      this.pinging.set(false);
+    }
+  }
+
   daysLeft(iso: string, now: number): number {
     return Math.floor((new Date(iso).getTime() - now) / 86_400_000);
   }
 
-  date(iso: string): string {
+  date(iso: string | number): string {
     return new Date(iso).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 }

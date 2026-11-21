@@ -54,22 +54,33 @@ export interface PublicOrder {
 
 export const EMPTY_CUSTOMER: Customer = { name: '', phone: '', email: '', address: '', note: '' };
 
-// ---------- Đánh giá nhận voucher ----------
-export interface FeedbackDone {
-  rating: number;
-  text: string;
+// ---------- Đánh giá sản phẩm đã mua + voucher ----------
+export interface VoucherInfo {
   voucher: string;
   offer: string;
   expiresAt: number | null;
   used: boolean;
 }
 
-/** Kèm theo khi tra cứu đơn: đơn đã thanh toán + chưa đánh giá → allowed. */
+export interface ReviewBrief {
+  rating: number;
+  text: string;
+  createdAt: number;
+}
+
+/** Kèm theo khi tra cứu đơn: từng sản phẩm trong đơn đã đánh giá chưa + voucher của đơn. */
 export interface FeedbackInfo {
   enabled: boolean;
   offer: string;
-  allowed: boolean;
-  done: FeedbackDone | null;
+  paid: boolean;
+  products: { id: string; name: string; review: ReviewBrief | null }[];
+  voucher: VoucherInfo | null;
+}
+
+/** Đánh giá công khai ở trang sản phẩm. */
+export interface PublicReview extends ReviewBrief {
+  name: string;
+  variant: string;
 }
 
 export interface FeedbackConfig {
@@ -79,8 +90,16 @@ export interface FeedbackConfig {
   validDays: number;
 }
 
-export interface FeedbackItem extends FeedbackDone {
+export interface AdminReview extends ReviewBrief {
+  key: string;
   code: string;
+  productId: string;
+  productName: string;
   name: string;
+  hidden: boolean;
+}
+
+export interface AdminVoucher extends VoucherInfo {
+  code: string;
   createdAt: number;
 }

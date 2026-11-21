@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Customer, FeedbackConfig, FeedbackInfo, FeedbackItem, Order, OrderItem, OrderStatus, PublicOrder } from '../models/order';
+import { AdminReview, AdminVoucher, Customer, FeedbackConfig, FeedbackInfo, Order, OrderItem, OrderStatus, PublicOrder, PublicReview, ReviewBrief, VoucherInfo } from '../models/order';
 
 const ADMIN_KEY = 'fumo.admin.apiKey';
 
@@ -46,13 +46,18 @@ export class OrderApiService {
     return this.call('POST', '/api/orders/confirm', { code, phone });
   }
 
-  /** Khách đánh giá đơn đã thanh toán → nhận mã voucher. */
-  sendFeedback(code: string, phone: string, rating: number, text: string): Promise<{ voucher: string; offer: string; expiresAt: number | null }> {
-    return this.call('POST', '/api/feedback', { code, phone, rating, text });
+  /** Khách đánh giá 1 sản phẩm đã mua (mã đơn + SĐT) → lần đầu của đơn được tặng voucher. */
+  sendReview(code: string, phone: string, productId: string, rating: number, text: string): Promise<{ review: ReviewBrief; voucher: VoucherInfo | null }> {
+    return this.call('POST', '/api/feedback', { code, phone, productId, rating, text });
+  }
+
+  /** Đánh giá công khai của một sản phẩm. */
+  productReviews(productId: string): Promise<{ count: number; avg: number; reviews: PublicReview[] }> {
+    return this.call('GET', '/api/feedback?product=' + encodeURIComponent(productId));
   }
 
   // ---------- Admin ----------
-  feedbackList(): Promise<{ config: FeedbackConfig; items: FeedbackItem[] }> {
+  feedbackList(): Promise<{ config: FeedbackConfig; reviews: AdminReview[]; vouchers: AdminVoucher[] }> {
     return this.call('GET', '/api/feedback', undefined, true);
   }
 
@@ -60,13 +65,18 @@ export class OrderApiService {
     return this.call('PATCH', '/api/feedback', { config }, true);
   }
 
-  markVoucher(code: string, used: boolean): Promise<{ item: FeedbackItem }> {
-    return this.call('PATCH', '/api/feedback', { code, used }, true);
+  markVoucher(voucher: string, used: boolean): Promise<{ voucher: AdminVoucher }> {
+    return this.call('PATCH', '/api/feedback', { voucher, used }, true);
   }
 
-  removeFeedback(code: string): Promise<{ ok: boolean }> {
-    return this.call('DELETE', '/api/feedback', { code }, true);
+  hideReview(key: string, hidden: boolean): Promise<{ review: AdminReview }> {
+    return this.call('PATCH', '/api/feedback', { key, hidden }, true);
   }
+
+  removeReview(key: string): Promise<{ ok: boolean }> {
+    return this.call('DELETE', '/api/feedback', { key }, true);
+  }
+
   list(): Promise<{ orders: Order[] }> {
     return this.call('GET', '/api/orders', undefined, true);
   }
