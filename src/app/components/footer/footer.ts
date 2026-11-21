@@ -38,7 +38,7 @@ import { IconComponent } from '../../shared/icon';
         <div>
           <h4>Danh mục</h4>
           @for (c of categories(); track c) {
-            <a routerLink="/san-pham" [queryParams]="{ danhMuc: c }"><app-icon [icon]="catIcon(c)" /> {{ c }}</a>
+            <a routerLink="/san-pham" [queryParams]="{ danhMuc: c }">{{ c }}</a>
           }
         </div>
         <div>
@@ -48,15 +48,15 @@ import { IconComponent } from '../../shared/icon';
           <a routerLink="/lien-he">Liên hệ</a>
           <a routerLink="/chinh-sach">Chính sách</a>
           <a routerLink="/gio-hang">Giỏ hàng</a>
-          <a routerLink="/tra-cuu-don-hang">📦 Tra cứu đơn hàng</a>
-          <a routerLink="/mini-game">🎮 Mini game</a>
+          <a routerLink="/tra-cuu-don-hang">Tra cứu đơn hàng</a>
+          <a routerLink="/mini-game">Mini game</a>
         </div>
         <div class="contact">
           <h4>Liên hệ</h4>
-          @if (s.contactAddress) { <p><span aria-hidden="true">📍</span> {{ s.contactAddress }}</p> }
-          @if (s.contactPhone) { <p><span aria-hidden="true">📞</span> <a class="inline" [href]="'tel:' + s.contactPhone.replace(/\s+/g, '')">{{ s.contactPhone }}</a></p> }
-          @if (s.contactEmail) { <p><span aria-hidden="true">✉️</span> <a class="inline" [href]="'mailto:' + s.contactEmail">{{ s.contactEmail }}</a></p> }
-          @if (s.contactHours) { <p><span aria-hidden="true">🕒</span> {{ s.contactHours }}</p> }
+          @if (s.contactAddress) { <p>{{ s.contactAddress }}</p> }
+          @if (s.contactPhone) { <p><a class="inline" [href]="'tel:' + s.contactPhone.replace(/\s+/g, '')">{{ s.contactPhone }}</a></p> }
+          @if (s.contactEmail) { <p><a class="inline" [href]="'mailto:' + s.contactEmail">{{ s.contactEmail }}</a></p> }
+          @if (s.contactHours) { <p>{{ s.contactHours }}</p> }
           <a routerLink="/lien-he" class="more">Gửi lời nhắn cho shop →</a>
         </div>
       </div>
@@ -116,9 +116,6 @@ export class FooterComponent {
   readonly settings = inject(SettingsService).settings;
   private readonly catSvc = inject(CategoryService);
   readonly categories = this.catSvc.names;
-  catIcon(name: string): string {
-    return this.catSvc.find(name)?.icon ?? '';
-  }
   readonly year = new Date().getFullYear();
   readonly season = inject(SeasonService);
   /** Link "Designed by San Nii" (Cài đặt → Chung) — chỉ nhận link https:// / http://. */
