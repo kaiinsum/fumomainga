@@ -12,6 +12,9 @@ import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { renderMarkdown } from '../../shared/markdown';
 import { ArticleHtmlPipe, ContentFormat, contentAsMarkdown, htmlToSeoMarkdown } from '../../shared/article-html';
 import { SEO_LIMITS, SeoReport, analyzeSeo, markdownToText, scoreLevel, slugify } from '../../shared/seo';
+import { KeywordChipsComponent } from '../../shared/keyword-chips';
+import { SeoChecksComponent } from '../../shared/seo-checks';
+import { ProductService } from '../../services/product.service';
 import { AdminToastService } from '../toast.service';
 import { siteSeoOf } from '../../models/site-seo';
 import { autoNewsSeo } from '../../shared/seo-auto';
@@ -27,7 +30,7 @@ interface ToolButton {
 
 @Component({
   selector: 'app-admin-news-form',
-  imports: [FormsModule, RouterLink, DatePipe, ArticleHtmlPipe],
+  imports: [FormsModule, RouterLink, DatePipe, ArticleHtmlPipe, KeywordChipsComponent, SeoChecksComponent],
   templateUrl: './news-form.html',
   styleUrl: './news-form.scss',
 })
@@ -36,6 +39,15 @@ export class AdminNewsForm {
 
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(NewsService);
+  private readonly productSvc = inject(ProductService);
+  /** Từ khoá chính của bài / sản phẩm khác (kiểm tra trùng). */
+  private readonly otherKeywords = computed(() => {
+    const id = this.editing()?.id;
+    return [
+      ...this.service.posts().filter((p) => p.id !== id).map((p) => p.seo?.focusKeyword ?? ''),
+      ...this.productSvc.products().map((p) => p.seo?.focusKeyword ?? ''),
+    ].filter(Boolean);
+  });
   private readonly router = inject(Router);
   private readonly toast = inject(AdminToastService);
   readonly settings = inject(SettingsService).settings;
@@ -132,8 +144,9 @@ export class AdminNewsForm {
 
   report(): SeoReport {
     return analyzeSeo(
-      { title: this.title, excerpt: this.excerpt, content: this.content, cover: this.cover(), seo: this.seo, format: this.format() },
+      { title: this.title, excerpt: this.excerpt, content: this.content, cover: this.cover(), coverAlt: this.coverAlt(), seo: this.seo, format: this.format() },
       this.autoSlug(),
+      { otherKeywords: this.otherKeywords() },
     );
   }
 

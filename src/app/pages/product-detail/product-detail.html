@@ -43,23 +43,6 @@
             }
           </div>
         }
-        <p class="desc" [innerHTML]="p.description | richText"></p>
-
-        <dl class="specs">
-          <div>
-            <dt>Tình trạng</dt>
-            <dd [class.out]="!p.inStock">{{ p.inStock ? 'Còn hàng' : 'Hết hàng' }}</dd>
-          </div>
-          <div><dt>Ngày đăng</dt><dd>{{ p.createdAt | date: 'dd/MM/yyyy' }}</dd></div>
-        </dl>
-
-        @if (p.tags.length) {
-          <div class="tags">
-            @for (t of p.tags; track t) {
-              <a class="chip" routerLink="/san-pham" [queryParams]="{ q: t }">#{{ t }}</a>
-            }
-          </div>
-        }
 
         <!-- Khu mua hàng: tách riêng, nút "Thêm vào giỏ" nổi bật -->
         <div class="buy-box">
@@ -80,6 +63,23 @@
           }
         </div>
 
+
+        <dl class="specs">
+          <div>
+            <dt>Tình trạng</dt>
+            <dd [class.out]="!p.inStock">{{ p.inStock ? 'Còn hàng' : 'Hết hàng' }}</dd>
+          </div>
+          <div><dt>Ngày đăng</dt><dd>{{ p.createdAt | date: 'dd/MM/yyyy' }}</dd></div>
+        </dl>
+
+        @if (p.tags.length) {
+          <div class="tags">
+            @for (t of p.tags; track t) {
+              <a class="chip" routerLink="/san-pham" [queryParams]="{ q: t }">#{{ t }}</a>
+            }
+          </div>
+        }
+
         <!-- Lựa chọn phụ: tách khỏi khu mua hàng -->
         <div class="actions">
           <span class="act-label">Cần thêm thông tin?</span>
@@ -88,6 +88,13 @@
         </div>
       </div>
     </article>
+
+    @if (p.description.trim()) {
+      <section class="desc-box card-surface" aria-labelledby="desc-title">
+        <h2 id="desc-title">Mô tả sản phẩm</h2>
+        <div class="desc" [innerHTML]="p.description | richText"></div>
+      </section>
+    }
 
     @if (related().length) {
       <section class="section">

@@ -11,6 +11,8 @@ export interface NewsSeo {
   slug: string;
   /** Từ khoá chính (focus keyword). */
   focusKeyword: string;
+  /** Nội dung cốt lõi (pillar content): bài quan trọng nhất cho từ khoá - yêu cầu nội dung dài hơn. */
+  pillar?: boolean;
   /** Từ khoá phụ (cách nhau bằng dấu phẩy). */
   secondaryKeywords: string;
   /** Tiêu đề SEO (thẻ <title>). Trống → tiêu đề bài. */

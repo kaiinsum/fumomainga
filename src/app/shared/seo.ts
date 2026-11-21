@@ -45,34 +45,20 @@ function countOccurrences(haystack: string, needle: string): number {
   return n;
 }
 
-/**
- * Từ khoá phụ (kiểu Rank Math "secondary keywords"): mỗi từ khoá nên xuất hiện ít nhất 1 lần trong tiêu đề / mô tả / nội dung.
- * Chưa có từ khoá phụ chỉ trừ nhẹ điểm.
- */
-function secondaryCheck(add: (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => void, raw: string | undefined, mainKw: string, texts: string[]): void {
-  const list = (raw ?? '')
+/** Tách chuỗi từ khoá phụ → danh sách (chuẩn hoá chữ thường), bỏ trùng và bỏ từ khoá chính. */
+const splitKw = (raw: string | undefined, mainKw: string) =>
+  (raw ?? '')
     .split(/[,\n;]+/)
     .map((k) => norm(k))
     .filter((k, i, a) => k && k !== mainKw && a.indexOf(k) === i);
-  if (!list.length) {
-    add('warn', 3, '', 'Chưa có từ khoá phụ - thêm 2–5 cách gọi khác mà khách hay tìm (cách nhau bằng dấu phẩy).');
-    return;
-  }
-  const hay = norm(texts.join(' '));
-  const missing = list.filter((k) => !hay.includes(k));
-  add(
-    !missing.length ? true : missing.length < list.length ? 'warn' : false,
-    5,
-    `Đã dùng đủ ${list.length} từ khoá phụ trong nội dung.`,
-    `Từ khoá phụ chưa xuất hiện: ${missing.map((k) => '"' + k + '"').join(', ')} - hãy viết chúng vào tiêu đề, mô tả hoặc nội dung.`,
-  );
-}
 
 export interface SeoSource {
   title: string;
   excerpt: string;
   content: string;
   cover: string;
+  /** Mô tả ảnh đại diện (alt). */
+  coverAlt?: string;
   seo: NewsSeo;
   /** Bài soạn bằng HTML → tự đổi sang dạng chữ để chấm điểm. */
   format?: ContentFormat;
@@ -80,11 +66,22 @@ export interface SeoSource {
 
 export type CheckLevel = 'ok' | 'warn' | 'bad';
 
+/** 4 nhóm tiêu chí giống Rank Math. */
+export type CheckGroup = 'basic' | 'additional' | 'title' | 'content';
+
+export const CHECK_GROUPS: { id: CheckGroup; label: string }[] = [
+  { id: 'basic', label: 'SEO cơ bản' },
+  { id: 'additional', label: 'Bổ sung' },
+  { id: 'title', label: 'Khả năng đọc tiêu đề' },
+  { id: 'content', label: 'Khả năng đọc nội dung' },
+];
+
 export interface SeoCheck {
   level: CheckLevel;
   text: string;
   /** Trọng số khi tính điểm. */
   weight: number;
+  group: CheckGroup;
 }
 
 export interface SeoReport {
@@ -107,102 +104,247 @@ export function effectiveSeo(src: SeoSource): { title: string; description: stri
   };
 }
 
-/** Chấm điểm SEO theo các tiêu chí tương tự Rank Math. */
-export function analyzeSeo(input: SeoSource, slugFallback: string): SeoReport {
-  // Bài HTML: đổi sang dạng Markdown giản lược để các tiêu chí (H2/H3, alt ảnh, link) chấm như nhau.
-  const src: SeoSource = input.format === 'html' ? { ...input, content: contentAsMarkdown(input), format: 'markdown' } : input;
-  const { title, description } = effectiveSeo(src);
-  const slug = src.seo.slug || slugFallback;
-  const kw = norm(src.seo.focusKeyword);
-  const text = markdownToText(src.content);
-  const total = words(text).length;
-  const occurrences = countOccurrences(norm(text), kw);
-  const density = kw && total ? (occurrences * words(kw).length * 100) / total : 0;
+export function scoreLevel(score: number): CheckLevel {
+  return score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+}
 
-  const checks: SeoCheck[] = [];
-  const add = (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => {
-    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
-    checks.push({ level, weight, text: level === 'ok' ? ok : bad });
-  };
+// ================= Bộ chấm chung (kiểu Rank Math) =================
 
-  // --- Từ khoá chính ---
+interface RankInput {
+  /** Từ khoá chính (đã chuẩn hoá). */
+  kw: string;
+  secondary: string[];
+  title: string;
+  description: string;
+  slug: string;
+  /** Chữ trơn của nội dung. */
+  text: string;
+  /** Các đoạn văn (để kiểm tra đoạn quá dài). */
+  paragraphs: string[];
+  /** Tiêu đề phụ H2/H3 (null = loại nội dung không có tiêu đề phụ, vd. mô tả sản phẩm). */
+  subheads: string[] | null;
+  alts: string[];
+  internalLinks: number;
+  externalLinks: number;
+  dofollowLinks: number;
+  hasMedia: boolean;
+  /** Có mục lục (danh sách link #...)? null = không áp dụng. */
+  hasToc: boolean | null;
+  minWords: number;
+  /** Đã dùng từ khoá chính này ở sản phẩm / bài khác chưa (undefined = không kiểm tra được). */
+  usedBefore?: boolean;
+  noun: string;
+}
+
+type Add = (group: CheckGroup, cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => void;
+
+function rankChecks(i: RankInput, add: Add): { total: number; density: number } {
+  const total = words(i.text).length;
+  const normText = norm(i.text);
+  const t = norm(i.title);
+  const { kw } = i;
+
+  // ---------- SEO cơ bản ----------
   if (!kw) {
-    add(false, 30, '', 'Chưa đặt từ khoá chính - hãy nhập từ khoá bạn muốn bài lên Google.');
+    add('basic', false, 30, '', `Chưa đặt từ khoá chính - nhập cụm từ khách hay gõ trên Google để tìm ${i.noun} này.`);
   } else {
-    const t = norm(title);
-    add(t.includes(kw), 8, 'Từ khoá có trong tiêu đề SEO.', 'Thêm từ khoá chính vào tiêu đề SEO.');
+    add('basic', t.includes(kw), 8, 'Tuyệt vời! Bạn đang sử dụng từ khoá chính trong Tiêu đề SEO.', 'Thêm từ khoá chính vào Tiêu đề SEO.');
+    add('basic', norm(i.description).includes(kw), 6, 'Đã sử dụng từ khoá chính trong Mô tả Meta SEO.', 'Thêm từ khoá chính vào Mô tả Meta SEO.');
+    add('basic', !!i.slug && i.slug.includes(slugify(kw)), 6, 'Từ khoá chính đã được sử dụng trong URL.', 'Dùng từ khoá chính trong URL (đường dẫn).');
+    const head = norm(words(i.text).slice(0, Math.max(30, Math.ceil(total * 0.1))).join(' '));
+    add('basic', head.includes(kw), 5, 'Từ khoá chính xuất hiện trong 10% nội dung đầu tiên.', 'Dùng từ khoá chính ngay trong 10% nội dung đầu tiên.');
+    add('basic', normText.includes(kw), 6, 'Đã tìm thấy từ khoá chính trong nội dung.', 'Chưa thấy từ khoá chính trong nội dung - hãy viết nó vào bài.');
+  }
+  const longEnough = total >= i.minWords;
+  add(
+    'basic',
+    longEnough ? true : total >= i.minWords / 2 ? 'warn' : false,
+    12,
+    `Nội dung dài ${total} từ. Làm tốt lắm!`,
+    `Nội dung có ${total} từ - nên viết từ ${i.minWords} từ trở lên.`,
+  );
+
+  // ---------- Bổ sung ----------
+  let hits = 0;
+  if (kw) {
+    if (i.subheads) {
+      add('additional', i.subheads.some((h) => norm(h).includes(kw)), 4, 'Đã tìm thấy từ khoá chính trong các tiêu đề phụ.', 'Dùng từ khoá chính trong ít nhất một tiêu đề phụ (H2, H3).');
+    }
     add(
-      t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2,
+      'additional',
+      i.alts.some((a) => norm(a).includes(kw)),
       3,
-      'Từ khoá nằm ở nửa đầu tiêu đề.',
-      'Nên đưa từ khoá về gần đầu tiêu đề.',
+      'Đã tìm thấy Từ khóa chính trong (các) thuộc tính alt của hình ảnh.',
+      i.alts.length ? 'Thêm từ khoá chính vào alt (mô tả) của ít nhất một hình ảnh.' : 'Thêm hình ảnh có alt chứa từ khoá chính.',
     );
-    add(norm(description).includes(kw), 6, 'Từ khoá có trong mô tả meta.', 'Thêm từ khoá chính vào mô tả meta.');
-    add(slug.includes(slugify(kw)), 6, 'Từ khoá có trong đường dẫn (URL).', 'Đưa từ khoá vào đường dẫn (slug).');
-    const head = norm(words(text).slice(0, Math.max(30, Math.ceil(total * 0.1))).join(' '));
-    add(head.includes(kw), 5, 'Từ khoá xuất hiện ở đầu nội dung.', 'Dùng từ khoá trong đoạn mở đầu (10% đầu bài).');
-    const subheads = (src.content.match(/^#{2,3}\s+.*$/gm) ?? []).map(norm);
-    add(subheads.some((h) => h.includes(kw)), 4, 'Từ khoá có trong tiêu đề phụ (H2/H3).', 'Thêm từ khoá vào ít nhất một tiêu đề phụ H2/H3.');
-    const alts = [...src.content.matchAll(/!\[([^\]]*)\]/g)].map((m) => norm(m[1]));
-    add(alts.some((a) => a.includes(kw)), 3, 'Từ khoá có trong mô tả ảnh (alt).', 'Đặt từ khoá vào mô tả (alt) của một ảnh trong bài.');
+    // Mật độ: từ khoá chính + từ khoá phụ.
+    hits = [kw, ...i.secondary].reduce((s, k) => s + countOccurrences(normText, k), 0);
+  }
+  const density = kw && total ? (countOccurrences(normText, kw) * words(kw).length * 100) / total : 0;
+  if (kw) {
     add(
-      density >= 1 && density <= 2.5,
+      'additional',
+      density >= 0.5 && density <= 2.5 ? true : density > 2.5 ? false : density > 0 ? 'warn' : false,
       5,
-      `Mật độ từ khoá ${density.toFixed(1)}% - hợp lý.`,
+      `Mật độ từ khóa là ${density.toFixed(2)}, từ khóa chính và sự kết hợp xuất hiện ${hits} lần.`,
       density > 2.5
-        ? `Mật độ từ khoá ${density.toFixed(1)}% - quá dày, nên giảm (1–2.5%).`
-        : `Mật độ từ khoá ${density.toFixed(1)}% (${occurrences} lần) - nên đạt 1–2.5%.`,
+        ? `Mật độ từ khóa là ${density.toFixed(2)} - quá cao (nên 0.5–2.5), hãy giảm bớt.`
+        : `Mật độ từ khóa là ${density.toFixed(2)}, từ khóa chính và sự kết hợp xuất hiện ${hits} lần - nên đạt 0.5–2.5.`,
     );
   }
-
-  // --- Tiêu đề, mô tả, URL ---
+  const url = i.slug ? i.slug.length + 1 : 0;
+  add('additional', !!i.slug && url <= SEO_LIMITS.url, 3, `URL dài ${url} ký tự. Rất tốt!`, i.slug ? `URL dài ${url} ký tự - nên ≤ ${SEO_LIMITS.url}.` : 'Chưa có đường dẫn (URL) thân thiện.');
+  add('additional', i.externalLinks > 0, 3, 'Tuyệt vời! Bạn đang liên kết đến các tài nguyên bên ngoài.', 'Liên kết tới ít nhất một nguồn bên ngoài (trang uy tín) trong nội dung.');
   add(
-    (title.length >= 30 && title.length <= SEO_LIMITS.title) || 'warn',
-    5,
-    `Tiêu đề SEO dài ${title.length} ký tự - vừa đẹp.`,
-    title.length > SEO_LIMITS.title
-      ? `Tiêu đề SEO dài ${title.length} ký tự - Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).`
-      : `Tiêu đề SEO hơi ngắn (${title.length} ký tự) - nên 30–${SEO_LIMITS.title}.`,
-  );
-  add(/\d/.test(title), 2, 'Tiêu đề có con số.', 'Thêm con số vào tiêu đề (vd: "5 mẹo…") để tăng tỉ lệ nhấp.');
-  add(
-    !src.seo.description ? 'warn' : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
-    6,
-    `Mô tả meta dài ${description.length} ký tự - vừa đẹp.`,
-    !src.seo.description
-      ? 'Chưa viết mô tả meta riêng - đang tự lấy từ tóm tắt.'
-      : `Mô tả meta dài ${description.length} ký tự - nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
+    'additional',
+    i.dofollowLinks > 0,
+    2,
+    'Ít nhất một liên kết bên ngoài với DoFollow được tìm thấy trong nội dung của bạn.',
+    'Chưa có liên kết ra ngoài dạng DoFollow trong nội dung.',
   );
   add(
-    !!src.seo.slug && slug.length <= SEO_LIMITS.url,
+    'additional',
+    i.internalLinks > 0,
     4,
-    `Đường dẫn ngắn gọn (${slug.length} ký tự).`,
-    src.seo.slug ? `Đường dẫn dài ${slug.length} ký tự - nên ≤ ${SEO_LIMITS.url}.` : 'Chưa đặt đường dẫn thân thiện (slug).',
+    'Bạn đang liên kết tới các trang khác trong web (liên kết nội bộ).',
+    'Chúng tôi không thể tìm thấy bất kỳ liên kết nội bộ nào trong nội dung của bạn.',
   );
+  if (kw && i.usedBefore !== undefined) {
+    add(
+      'additional',
+      !i.usedBefore,
+      3,
+      'Bạn chưa sử dụng Từ khóa chính này trước đây.',
+      'Từ khoá chính này đã dùng cho trang khác - nên chọn từ khoá riêng để không tự cạnh tranh trên Google.',
+    );
+  }
+  if (i.secondary.length) {
+    const missing = i.secondary.filter((k) => !norm(`${i.title} ${i.description} ${i.text}`).includes(k));
+    add(
+      'additional',
+      !missing.length ? true : missing.length < i.secondary.length ? 'warn' : false,
+      4,
+      `Đã dùng đủ ${i.secondary.length} từ khoá phụ trong nội dung.`,
+      `Từ khoá phụ chưa xuất hiện: ${missing.map((k) => '"' + k + '"').join(', ')}.`,
+    );
+  } else {
+    add('additional', 'warn', 2, '', 'Chưa có từ khoá phụ - thêm 2–4 cách gọi khác mà khách hay tìm.');
+  }
 
-  // --- Nội dung ---
-  add(
-    total >= SEO_LIMITS.minWords ? true : total >= 300 ? 'warn' : false,
-    15,
-    `Nội dung dài ${total} từ - tốt.`,
-    `Nội dung có ${total} từ - nên viết từ ${SEO_LIMITS.minWords} từ trở lên.`,
-  );
-  add(/^#{2,3}\s+/m.test(src.content), 3, 'Bài có tiêu đề phụ H2/H3.', 'Chia bài bằng tiêu đề phụ (H2/H3) để dễ đọc.');
-  add(/\]\(\/(?!\/)/.test(src.content), 3, 'Có liên kết nội bộ.', 'Thêm liên kết tới trang khác trong website (vd: /san-pham).');
-  add(/\]\(https?:\/\//.test(src.content), 2, 'Có liên kết ra ngoài.', 'Thêm một liên kết ra nguồn tham khảo bên ngoài.');
-  add(!!src.cover || /!\[/.test(src.content), 4, 'Bài có hình ảnh.', 'Thêm ảnh đại diện hoặc ảnh trong bài.');
-  add(!src.seo.noindex, 5, 'Bài được phép lập chỉ mục (index).', 'Bài đang đặt noindex - Google sẽ không hiển thị bài này.');
-  secondaryCheck(add, src.seo.secondaryKeywords, kw, [title, description, text]);
+  // ---------- Khả năng đọc tiêu đề ----------
+  if (kw) {
+    const at = t.indexOf(kw);
+    add('title', at >= 0 && at <= t.length / 2, 3, 'Từ khóa chính được sử dụng ở đầu tiêu đề SEO.', 'Đưa từ khoá chính về gần đầu tiêu đề SEO.');
+  }
+  add('title', /\d/.test(i.title), 2, 'Bạn đang sử dụng một số trong tiêu đề SEO của mình.', 'Thêm một con số vào tiêu đề SEO (vd. "5 mẹo…", "20cm") để tăng tỉ lệ nhấp.');
 
-  const max = checks.reduce((s, c) => s + c.weight, 0);
+  // ---------- Khả năng đọc nội dung ----------
+  if (i.hasToc !== null) {
+    add('content', i.hasToc, 2, 'Bài có mục lục (Table of Contents).', 'Có vẻ như bài chưa có mục lục (Table of Contents) - bài dài nên có danh sách link tới các tiêu đề phụ ở đầu bài.');
+  }
+  const longPara = i.paragraphs.some((p) => words(p).length > 120);
+  add('content', !longPara, 3, 'Các đoạn văn đều ngắn gọn, dễ đọc.', 'Ít nhất một đoạn văn là dài. Cân nhắc sử dụng các đoạn văn ngắn (dưới 120 từ).');
+  add('content', i.hasMedia, 3, 'Nội dung của bạn chứa hình ảnh và / hoặc video.', 'Thêm hình ảnh và / hoặc video vào nội dung.');
+
+  return { total, density };
+}
+
+function finish(checks: SeoCheck[]): number {
+  const max = checks.reduce((s, c) => s + c.weight, 0) || 1;
   const got = checks.reduce((s, c) => s + (c.level === 'ok' ? c.weight : c.level === 'warn' ? c.weight / 2 : 0), 0);
   const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
   checks.sort((a, b) => order[a.level] - order[b.level]);
-  return { score: Math.round((got / max) * 100), checks, title, description, slug, words: total, density };
+  return Math.round((got / max) * 100);
 }
 
-export function scoreLevel(score: number): CheckLevel {
-  return score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+const collector = () => {
+  const checks: SeoCheck[] = [];
+  const add: Add = (group, cond, weight, ok, bad) => {
+    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
+    checks.push({ level, weight, group, text: level === 'ok' ? ok : bad });
+  };
+  return { checks, add };
+};
+
+/** Liên kết trong Markdown: [chữ](url). */
+function mdLinks(md: string): { internal: number; external: number } {
+  // Bỏ cú pháp ảnh trước (ảnh có link [![alt](ảnh)](link) vẫn còn phần link).
+  const urls = [...md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]);
+  return {
+    internal: urls.filter((u) => u.startsWith('/') && !u.startsWith('//')).length,
+    external: urls.filter((u) => /^https?:\/\//i.test(u)).length,
+  };
+}
+
+/** Các đoạn văn của nội dung Markdown (bỏ tiêu đề, ảnh, danh sách). */
+const mdParagraphs = (md: string) =>
+  md
+    .split(/\n\s*\n/)
+    .map((b) => b.trim())
+    .filter((b) => b && !/^(#{1,6}\s|!\[|[-*]\s|\d+\.\s|>)/.test(b))
+    .map(markdownToText);
+
+// ================= Bài viết =================
+
+export interface NewsSeoExtra {
+  /** Từ khoá chính của các bài / sản phẩm khác (để kiểm tra trùng). */
+  otherKeywords?: string[];
+}
+
+/** Chấm điểm SEO bài viết theo các tiêu chí của Rank Math. */
+export function analyzeSeo(input: SeoSource, slugFallback: string, extra: NewsSeoExtra = {}): SeoReport {
+  // Bài HTML: đổi sang dạng Markdown giản lược để các tiêu chí (H2/H3, alt ảnh, link) chấm như nhau.
+  const md = input.format === 'html' ? contentAsMarkdown(input) : input.content;
+  const raw = input.content;
+  const { title, description } = effectiveSeo(input);
+  const slug = input.seo.slug || slugFallback;
+  const kw = norm(input.seo.focusKeyword);
+  const links = mdLinks(md);
+  // DoFollow: link ngoài không có rel="nofollow" (Markdown luôn là DoFollow).
+  const nofollow = input.format === 'html' ? [...raw.matchAll(/<a\b[^>]*href=["']https?:[^>]*>/gi)].filter((m) => /nofollow/i.test(m[0])).length : 0;
+  const alts = [...md.matchAll(/!\[([^\]]*)\]/g)].map((m) => m[1]);
+  if (input.cover) alts.push(input.coverAlt || input.title);
+  const hasToc = input.format === 'html' ? /href=["']#[^"']+["']/i.test(raw) : /\]\(#[^)]+\)/.test(md);
+  const { checks, add } = collector();
+  const { total, density } = rankChecks(
+    {
+      kw,
+      secondary: splitKw(input.seo.secondaryKeywords, kw),
+      title,
+      description,
+      slug,
+      text: markdownToText(md),
+      paragraphs: mdParagraphs(md),
+      subheads: (md.match(/^#{2,3}\s+.*$/gm) ?? []).map((h) => h.replace(/^#+\s+/, '')),
+      alts,
+      internalLinks: links.internal,
+      externalLinks: links.external,
+      dofollowLinks: Math.max(0, links.external - nofollow),
+      hasMedia: !!input.cover || /!\[|<video|<iframe/i.test(md + raw),
+      hasToc,
+      minWords: input.seo.pillar ? 2500 : SEO_LIMITS.minWords,
+      usedBefore: extra.otherKeywords ? !!kw && extra.otherKeywords.some((k) => norm(k) === kw) : undefined,
+      noun: 'bài',
+    },
+    add,
+  );
+  // Ngoài Rank Math: độ dài tiêu đề / mô tả, cho phép lập chỉ mục.
+  add(
+    'title',
+    (title.length >= 30 && title.length <= SEO_LIMITS.title) || 'warn',
+    3,
+    `Tiêu đề SEO dài ${title.length} ký tự - vừa đẹp.`,
+    title.length > SEO_LIMITS.title ? `Tiêu đề SEO dài ${title.length} ký tự - Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).` : `Tiêu đề SEO hơi ngắn (${title.length} ký tự) - nên 30–${SEO_LIMITS.title}.`,
+  );
+  add(
+    'additional',
+    !input.seo.description ? 'warn' : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
+    3,
+    `Mô tả meta dài ${description.length} ký tự - vừa đẹp.`,
+    !input.seo.description ? 'Chưa viết mô tả meta riêng - đang tự lấy từ tóm tắt.' : `Mô tả meta dài ${description.length} ký tự - nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
+  );
+  if (input.seo.noindex) add('basic', false, 5, '', 'Bài đang đặt noindex - Google sẽ không hiển thị bài này.');
+  return { score: finish(checks), checks, title, description, slug, words: total, density };
 }
 
 // ================= SEO sản phẩm =================
@@ -214,6 +356,10 @@ export interface ProductSeoSource {
   tags: string[];
   slug: string;
   seo: ProductSeo;
+  /** Alt / link của từng ảnh. */
+  imageMeta?: Record<string, { alt?: string; link?: string }>;
+  /** Từ khoá chính của sản phẩm / bài khác (để kiểm tra trùng). */
+  otherKeywords?: string[];
 }
 
 /** Giá trị thực tế khi trống: tiêu đề SEO → tên sản phẩm, mô tả → đầu mô tả sản phẩm. */
@@ -233,91 +379,59 @@ export function analyzeProductSeo(src: ProductSeoSource): SeoReport {
   const { title, description } = effectiveProductSeo(src);
   const slug = src.slug;
   const kw = norm(src.seo.focusKeyword);
-  const text = richToText(src.description).trim();
-  const total = words(text).length;
-  const occurrences = countOccurrences(norm(text), kw);
-  const density = kw && total ? (occurrences * words(kw).length * 100) / total : 0;
-
-  const checks: SeoCheck[] = [];
-  const add = (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => {
-    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
-    checks.push({ level, weight, text: level === 'ok' ? ok : bad });
-  };
-
-  // --- Từ khoá chính ---
-  if (!kw) {
-    add(false, 30, '', 'Chưa đặt từ khoá chính - nhập cụm từ khách hay gõ trên Google để tìm sản phẩm này.');
-  } else {
-    const t = norm(title);
-    add(t.includes(kw), 8, 'Từ khoá có trong tiêu đề SEO.', 'Thêm từ khoá chính vào tiêu đề SEO.');
-    add(t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2, 3, 'Từ khoá nằm ở nửa đầu tiêu đề.', 'Nên đưa từ khoá về gần đầu tiêu đề.');
-    add(norm(description).includes(kw), 6, 'Từ khoá có trong mô tả meta.', 'Thêm từ khoá chính vào mô tả meta.');
-    add(slug.includes(slugify(kw)), 6, 'Từ khoá có trong đường dẫn (URL).', 'Đưa từ khoá vào đường dẫn sản phẩm.');
-    const head = norm(words(text).slice(0, Math.max(30, Math.ceil(total * 0.1))).join(' '));
-    add(head.includes(kw), 5, 'Từ khoá xuất hiện ở đầu mô tả sản phẩm.', 'Dùng từ khoá ngay trong câu đầu của mô tả sản phẩm.');
-    add(
-      density >= 0.5 && density <= 3,
-      4,
-      `Mật độ từ khoá ${density.toFixed(1)}% - hợp lý.`,
-      density > 3
-        ? `Mật độ từ khoá ${density.toFixed(1)}% - quá dày, nên giảm (0.5–3%).`
-        : `Mật độ từ khoá ${density.toFixed(1)}% (${occurrences} lần) - nên lặp lại từ khoá trong mô tả (0.5–3%).`,
-    );
-    add(norm(src.name).includes(kw), 3, 'Tên sản phẩm (dùng làm alt ảnh) có từ khoá.', 'Tên sản phẩm chưa có từ khoá - ảnh sản phẩm dùng tên làm mô tả (alt).');
-    add(src.tags.some((g) => norm(g).includes(kw) || kw.includes(norm(g))), 2, 'Thẻ sản phẩm có từ khoá.', 'Thêm từ khoá vào ô Thẻ sản phẩm.');
-  }
-
-  // --- Tiêu đề, mô tả, URL ---
+  const raw = src.description ?? '';
+  const urls = [...raw.matchAll(/\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g)].map((m) => m[1]);
+  const external = urls.filter((u) => /^https?:/i.test(u)).length;
+  const links = Object.values(src.imageMeta ?? {}).map((m) => m.link ?? '');
+  const alts = src.images.map((img, i) => src.imageMeta?.[img]?.alt?.trim() || (i ? `${src.name} - ảnh ${i + 1}` : src.name));
+  const { checks, add } = collector();
+  const { total, density } = rankChecks(
+    {
+      kw,
+      secondary: splitKw(src.seo.secondaryKeywords, kw),
+      title,
+      description,
+      slug,
+      text: richToText(raw),
+      paragraphs: richToText(raw).split(/\n\s*\n/),
+      subheads: null,
+      alts,
+      internalLinks: urls.filter((u) => u.startsWith('/')).length + links.filter((l) => l.startsWith('/')).length,
+      externalLinks: external + links.filter((l) => /^https?:/i.test(l)).length,
+      dofollowLinks: external + links.filter((l) => /^https?:/i.test(l)).length,
+      hasMedia: src.images.length > 0,
+      hasToc: null,
+      minWords: src.seo.pillar ? 600 : PRODUCT_MIN_WORDS,
+      usedBefore: src.otherKeywords ? !!kw && src.otherKeywords.some((k) => norm(k) === kw) : undefined,
+      noun: 'sản phẩm',
+    },
+    add,
+  );
+  // Riêng cho sản phẩm.
   add(
+    'title',
     (title.length >= 30 && title.length <= SEO_LIMITS.title) || 'warn',
-    5,
+    3,
     `Tiêu đề SEO dài ${title.length} ký tự - vừa đẹp.`,
-    title.length > SEO_LIMITS.title
-      ? `Tiêu đề SEO dài ${title.length} ký tự - Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).`
-      : `Tiêu đề SEO hơi ngắn (${title.length} ký tự) - nên 30–${SEO_LIMITS.title}, vd: thêm kích cỡ / loại hàng.`,
+    title.length > SEO_LIMITS.title ? `Tiêu đề SEO dài ${title.length} ký tự - Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).` : `Tiêu đề SEO hơi ngắn (${title.length} ký tự) - nên 30–${SEO_LIMITS.title}, vd: thêm kích cỡ / loại hàng.`,
   );
   add(
+    'additional',
     !src.seo.description ? 'warn' : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
-    6,
+    3,
     `Mô tả meta dài ${description.length} ký tự - vừa đẹp.`,
-    !src.seo.description
-      ? 'Chưa viết mô tả meta riêng - đang tự lấy đầu mô tả sản phẩm.'
-      : `Mô tả meta dài ${description.length} ký tự - nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
-  );
-  add(!!slug && slug.length <= SEO_LIMITS.url, 4, `Đường dẫn ngắn gọn (${slug.length} ký tự).`, `Đường dẫn dài ${slug.length} ký tự - nên ≤ ${SEO_LIMITS.url}.`);
-
-  // --- Nội dung & hình ảnh ---
-  add(
-    total >= PRODUCT_MIN_WORDS ? true : total >= 60 ? 'warn' : false,
-    12,
-    `Mô tả sản phẩm dài ${total} từ - tốt.`,
-    `Mô tả sản phẩm có ${total} từ - nên viết từ ${PRODUCT_MIN_WORDS} từ (chất liệu, kích thước, cách bảo quản…).`,
+    !src.seo.description ? 'Chưa viết mô tả meta riêng - đang tự lấy đầu mô tả sản phẩm.' : `Mô tả meta dài ${description.length} ký tự - nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
   );
   const imgs = src.images.length;
-  add(imgs >= 3 ? true : imgs ? 'warn' : false, 5, `Có ${imgs} ảnh sản phẩm.`, `Mới có ${imgs} ảnh - nên có từ 3 ảnh trở lên (nhiều góc chụp).`);
-  add(
-    src.images.some((i) => /^https?:\/\//i.test(i)) || (imgs ? 'warn' : false),
-    3,
-    'Ảnh có link công khai - Google / Facebook đọc được.',
-    'Ảnh đang là ảnh tải từ máy (chưa có link https) - Google Hình ảnh không đọc được.',
-  );
-  add(src.tags.length >= 2 || (src.tags.length ? 'warn' : false), 2, 'Sản phẩm có thẻ phân loại.', 'Thêm vài thẻ (tag) để gợi ý sản phẩm liên quan tốt hơn.');
-
-  // --- Khai báo ---
-  add(src.seo.productSchema, 4, 'Đã khai báo schema Product (giá, tình trạng hàng).', 'Bật khai báo schema Product để Google hiện giá & tình trạng hàng.');
-  add(!src.seo.noindex, 5, 'Sản phẩm được phép lập chỉ mục (index).', 'Sản phẩm đang đặt noindex - Google sẽ không hiển thị.');
-  secondaryCheck(add, src.seo.secondaryKeywords, kw, [title, description, text, src.tags.join(' ')]);
-
-  const max = checks.reduce((s, c) => s + c.weight, 0);
-  const got = checks.reduce((s, c) => s + (c.level === 'ok' ? c.weight : c.level === 'warn' ? c.weight / 2 : 0), 0);
-  const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
-  checks.sort((a, b) => order[a.level] - order[b.level]);
-  return { score: Math.round((got / max) * 100), checks, title, description, slug, words: total, density };
+  add('content', imgs >= 3 ? true : imgs ? 'warn' : false, 3, `Có ${imgs} ảnh sản phẩm (nhiều góc chụp).`, `Mới có ${imgs} ảnh - nên có từ 3 ảnh trở lên (nhiều góc chụp).`);
+  add('additional', src.seo.productSchema, 4, 'Đã khai báo schema Product (giá, tình trạng hàng).', 'Bật khai báo schema Product để Google hiện giá & tình trạng hàng.');
+  if (src.seo.noindex) add('basic', false, 5, '', 'Sản phẩm đang đặt noindex - Google sẽ không hiển thị.');
+  return { score: finish(checks), checks, title, description, slug, words: total, density };
 }
 
 // ================= SEO trang (Admin → Khai báo) =================
 
-/** Chấm điểm SEO một trang tĩnh (Trang chủ, Sản phẩm, Liên hệ...). */
+/** Chấm điểm SEO một trang tĩnh (Trang chủ, Sản phẩm, Liên hệ...). Trang không có nội dung tự viết → chỉ chấm tiêu đề / mô tả. */
 export function analyzePageSeo(src: {
   title: string;
   description: string;
@@ -332,21 +446,18 @@ export function analyzePageSeo(src: {
   const title = src.title.trim();
   const description = src.description.trim();
   const kw = norm(src.focusKeyword);
-  const checks: SeoCheck[] = [];
-  const add = (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => {
-    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
-    checks.push({ level, weight, text: level === 'ok' ? ok : bad });
-  };
-  if (!kw) add(false, 25, '', 'Chưa đặt từ khoá chính cho trang này.');
+  const { checks, add } = collector();
+  if (!kw) add('basic', false, 25, '', 'Chưa đặt từ khoá chính cho trang này.');
   else {
     const t = norm(title);
-    add(t.includes(kw), 10, 'Từ khoá có trong tiêu đề SEO.', 'Thêm từ khoá chính vào tiêu đề SEO.');
-    add(t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2, 4, 'Từ khoá nằm ở nửa đầu tiêu đề.', 'Nên đưa từ khoá về gần đầu tiêu đề.');
-    add(norm(description).includes(kw), 8, 'Từ khoá có trong mô tả meta.', 'Thêm từ khoá chính vào mô tả meta.');
+    add('basic', t.includes(kw), 10, 'Tuyệt vời! Bạn đang sử dụng từ khoá chính trong Tiêu đề SEO.', 'Thêm từ khoá chính vào Tiêu đề SEO.');
+    add('basic', norm(description).includes(kw), 8, 'Đã sử dụng từ khoá chính trong Mô tả Meta SEO.', 'Thêm từ khoá chính vào Mô tả Meta SEO.');
+    add('title', t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2, 4, 'Từ khóa chính được sử dụng ở đầu tiêu đề SEO.', 'Đưa từ khoá chính về gần đầu tiêu đề SEO.');
   }
   add(
+    'title',
     !src.title ? 'warn' : title.length >= 30 && title.length <= SEO_LIMITS.title ? true : 'warn',
-    10,
+    8,
     `Tiêu đề SEO dài ${title.length} ký tự - vừa đẹp.`,
     !src.title
       ? 'Chưa viết tiêu đề SEO riêng - đang dùng "<tên trang> - <tên shop>".'
@@ -355,18 +466,20 @@ export function analyzePageSeo(src: {
         : `Tiêu đề hơi ngắn (${title.length} ký tự) - nên 30–${SEO_LIMITS.title}.`,
   );
   add(
+    'basic',
     !description ? false : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
-    12,
+    10,
     `Mô tả meta dài ${description.length} ký tự - vừa đẹp.`,
     !description ? 'Chưa có mô tả meta - Google sẽ tự lấy một đoạn bất kỳ trên trang.' : `Mô tả meta dài ${description.length} ký tự - nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
   );
   const img = src.ogImage || src.defaultOgImage;
-  add(!!src.ogImage || (img ? 'warn' : false), 5, 'Có ảnh chia sẻ riêng cho trang.', img ? 'Đang dùng ảnh chia sẻ mặc định của web - nên có ảnh riêng.' : 'Chưa có ảnh chia sẻ (Facebook / Zalo).');
-  add(!src.noindex, 10, 'Trang được phép lập chỉ mục (index).', 'Trang đang đặt noindex - Google sẽ không hiển thị trang này.');
-  secondaryCheck(add, src.secondaryKeywords, kw, [title, description]);
-  const max = checks.reduce((s, c) => s + c.weight, 0);
-  const got = checks.reduce((s, c) => s + (c.level === 'ok' ? c.weight : c.level === 'warn' ? c.weight / 2 : 0), 0);
-  const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
-  checks.sort((a, b) => order[a.level] - order[b.level]);
-  return { score: Math.round((got / max) * 100), checks, title, description, slug: src.path, words: 0, density: 0 };
+  add('additional', !!src.ogImage || (img ? 'warn' : false), 5, 'Có ảnh chia sẻ riêng cho trang.', img ? 'Đang dùng ảnh chia sẻ mặc định của web - nên có ảnh riêng.' : 'Chưa có ảnh chia sẻ (Facebook / Zalo).');
+  add('basic', !src.noindex, 10, 'Trang được phép lập chỉ mục (index).', 'Trang đang đặt noindex - Google sẽ không hiển thị trang này.');
+  const secondary = splitKw(src.secondaryKeywords, kw);
+  if (secondary.length) {
+    const missing = secondary.filter((k) => !norm(`${title} ${description}`).includes(k));
+    add('additional', !missing.length ? true : missing.length < secondary.length ? 'warn' : false, 4, `Đã dùng đủ ${secondary.length} từ khoá phụ.`, `Từ khoá phụ chưa có trong tiêu đề / mô tả: ${missing.map((k) => '"' + k + '"').join(', ')}.`);
+  } else add('additional', 'warn', 2, '', 'Chưa có từ khoá phụ cho trang này.');
+  add('title', /\d/.test(title), 1, 'Bạn đang sử dụng một số trong tiêu đề SEO của mình.', 'Có thể thêm một con số vào tiêu đề SEO để tăng tỉ lệ nhấp.');
+  return { score: finish(checks), checks, title, description, slug: src.path, words: 0, density: 0 };
 }

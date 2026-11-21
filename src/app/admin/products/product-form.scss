@@ -794,3 +794,7 @@
 .pv-in { width: 100%; box-sizing: border-box; font: inherit; font-size: .72rem; padding: 4px 6px; border: 1px solid #c3c4c7; border-radius: 5px; }
 .pv-in:focus { border-color: #2271b1; outline: none; }
 .link-tag { position: absolute; left: 4px; bottom: 4px; font-size: .7rem; background: rgba(255,255,255,.9); border-radius: 4px; padding: 1px 4px; }
+
+/* "Nội dung cốt lõi" (pillar) dưới ô từ khoá */
+.seo label.check.pillar { margin-top: 8px; font-weight: 600; }
+.help { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #a7aaad; color: #fff; font-size: .7rem; cursor: help; margin-left: 2px; }

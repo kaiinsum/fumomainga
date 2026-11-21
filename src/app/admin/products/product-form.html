@@ -212,16 +212,10 @@
             </div>
 
             <div class="field">
-              <label for="seo-kw">Từ khoá chính</label>
-              <input id="seo-kw" [value]="seo().focusKeyword" (input)="setSeo('focusKeyword', $any($event.target).value)"
-                placeholder="Ví dụ: fumo cirno 20cm" maxlength="80" />
-            </div>
-
-            <div class="field">
-              <label for="seo-kw2">Từ khoá phụ <small class="opt">(cách nhau bằng dấu phẩy)</small></label>
-              <input id="seo-kw2" [value]="seo().secondaryKeywords || ''" (input)="setSeo('secondaryKeywords', $any($event.target).value)"
-                placeholder="Ví dụ: thú bông cirno, gấu bông touhou, cirno plush" maxlength="300" />
-              <small class="hint">Các cách gọi khác khách hay gõ. Nên dùng mỗi từ khoá phụ ít nhất 1 lần trong mô tả sản phẩm.</small>
+              <app-keyword-chips inputId="seo-kw" [main]="seo().focusKeyword" [secondary]="seo().secondaryKeywords || ''"
+                (mainChange)="setSeo('focusKeyword', $event)" (secondaryChange)="setSeo('secondaryKeywords', $event)" placeholder="Ví dụ: fumo cirno 20cm" />
+              <label class="check pillar"><input type="checkbox" [checked]="!!seo().pillar" (change)="setSeo('pillar', $any($event.target).checked)" />
+                Đây là nội dung cốt lõi <span class="help" title="Trang quan trọng nhất cho từ khoá này - yêu cầu mô tả dài hơn (≥ 600 từ).">?</span></label>
             </div>
 
             <div class="field">
@@ -245,11 +239,7 @@
               <small class="hint">Đường dẫn sửa ở ô 🔗 ngay dưới tên sản phẩm.</small>
             </div>
 
-            <ul class="checks">
-              @for (c of r.checks; track c.text) {
-                <li [class]="c.level"><span class="dot">{{ c.level === 'ok' ? '✓' : c.level === 'warn' ? '!' : '✕' }}</span>{{ c.text }}</li>
-              }
-            </ul>
+            <app-seo-checks [report]="r" />
             <p class="hint">Mô tả {{ r.words }} từ · mật độ từ khoá {{ r.density.toFixed(1) }}%</p>
           }
 

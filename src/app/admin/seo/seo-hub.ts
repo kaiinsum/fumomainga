@@ -1,3 +1,5 @@
+import { KeywordChipsComponent } from '../../shared/keyword-chips';
+import { SeoChecksComponent } from '../../shared/seo-checks';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,7 +27,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
  */
 @Component({
   selector: 'app-admin-seo-hub',
-  imports: [FormsModule, RouterLink, IconComponent, IconPickerComponent],
+  imports: [FormsModule, RouterLink, IconComponent, IconPickerComponent, KeywordChipsComponent, SeoChecksComponent],
   template: `
     <div class="adm-head">
       <h1>🔍 Khai báo SEO</h1>
@@ -170,13 +172,8 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               </div>
 
               <div class="field">
-                <label for="pg-kw">Từ khoá chính</label>
-                <input id="pg-kw" maxlength="80" [ngModel]="cur.seo.focusKeyword" (ngModelChange)="setPage('focusKeyword', $event)" placeholder="VD: fumo chính hãng" />
-              </div>
-              <div class="field">
-                <label for="pg-kw2">Từ khoá phụ <small>(cách nhau bằng dấu phẩy)</small></label>
-                <input id="pg-kw2" maxlength="300" [ngModel]="cur.seo.secondaryKeywords" (ngModelChange)="setPage('secondaryKeywords', $event)" placeholder="VD: thú bông touhou, gấu bông anime" />
-                <small class="hint">Nên có mặt trong tiêu đề hoặc mô tả của trang.</small>
+                <app-keyword-chips inputId="pg-kw" [main]="cur.seo.focusKeyword" [secondary]="cur.seo.secondaryKeywords || ''"
+                  (mainChange)="setPage('focusKeyword', $event)" (secondaryChange)="setPage('secondaryKeywords', $event)" placeholder="VD: fumo chính hãng" />
               </div>
               <div class="field">
                 <label for="pg-title">Tiêu đề SEO <span class="counter" [class.over]="cur.title.length > limits.title">{{ cur.title.length }}/{{ limits.title }}</span></label>
@@ -188,11 +185,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
                 <textarea id="pg-desc" rows="3" maxlength="300" [ngModel]="cur.seo.description" (ngModelChange)="setPage('description', $event)" [placeholder]="cur.def.hint"></textarea>
                 <div class="meter"><i [style.width.%]="(cur.description.length / limits.description) * 100"></i></div>
               </div>
-              <ul class="checks">
-                @for (c of r.checks; track c.text) {
-                  <li [class]="c.level"><span class="dot">{{ c.level === 'ok' ? '✓' : c.level === 'warn' ? '!' : '✕' }}</span>{{ c.text }}</li>
-                }
-              </ul>
+              <app-seo-checks [report]="r" />
 
               <details class="adv" open>
                 <summary>Nâng cao · Chia sẻ · Schema</summary>

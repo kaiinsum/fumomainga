@@ -25,6 +25,9 @@ import { SettingsService } from '../../services/settings.service';
 import { ProductService } from '../../services/product.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { SEO_LIMITS, SeoReport, analyzeProductSeo, scoreLevel, slugify } from '../../shared/seo';
+import { KeywordChipsComponent } from '../../shared/keyword-chips';
+import { SeoChecksComponent } from '../../shared/seo-checks';
+import { NewsService } from '../../services/news.service';
 import { VndPipe } from '../../shared/vnd.pipe';
 import { CostService } from '../cost.service';
 import { NoteService } from '../note.service';
@@ -66,7 +69,7 @@ function pctFromSale(price: number, saleRaw: unknown): number | null {
 
 @Component({
   selector: 'app-admin-product-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe, DatePipe, RichTextPipe],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe, DatePipe, RichTextPipe, KeywordChipsComponent, SeoChecksComponent],
   templateUrl: './product-form.html',
   styleUrl: './product-form.scss',
 })
@@ -76,6 +79,7 @@ export class AdminProductForm {
 
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   private readonly service = inject(ProductService);
+  private readonly newsSvc = inject(NewsService);
   private readonly router = inject(Router);
   private readonly toast = inject(AdminToastService);
   /** Giá nhập (chỉ admin) - lưu riêng, không nằm trong dữ liệu sản phẩm công khai. */
@@ -253,6 +257,11 @@ export class AdminProductForm {
       tags: v.tags.split(',').map((t) => t.trim()).filter(Boolean),
       slug: slugify(this.slug()) || slugify(v.name),
       seo: this.seo(),
+      imageMeta: this.imageMeta(),
+      otherKeywords: [
+        ...this.service.products().filter((p) => p.id !== this.editing()?.id).map((p) => p.seo?.focusKeyword ?? ''),
+        ...this.newsSvc.posts().map((p) => p.seo?.focusKeyword ?? ''),
+      ].filter(Boolean),
     });
   });
 

@@ -47,6 +47,8 @@ export type ProductCondition = 'NewCondition' | 'UsedCondition' | 'RefurbishedCo
 /** Cấu hình SEO của sản phẩm - để trống thì lấy mặc định từ tên / mô tả sản phẩm. */
 export interface ProductSeo {
   focusKeyword: string;
+  /** Nội dung cốt lõi (pillar content): trang quan trọng nhất cho từ khoá - yêu cầu nội dung dài hơn. */
+  pillar?: boolean;
   /** Từ khoá phụ (cách nhau bằng dấu phẩy) - tên gọi khác, cách khách hay tìm. */
   secondaryKeywords: string;
   /** Tiêu đề SEO (thẻ <title>). Trống → tên sản phẩm. */

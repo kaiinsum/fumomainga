@@ -96,14 +96,10 @@
             </div>
 
             <div class="field">
-              <label for="seo-kw">Từ khoá chính</label>
-              <input id="seo-kw" [(ngModel)]="seo.focusKeyword" placeholder="Ví dụ: fumo mùa đông" maxlength="80" />
-            </div>
-
-            <div class="field">
-              <label for="seo-kw2">Từ khoá phụ <small class="opt">(cách nhau bằng dấu phẩy)</small></label>
-              <input id="seo-kw2" [(ngModel)]="seo.secondaryKeywords" placeholder="Ví dụ: giữ ấm fumo, đồ đông cho thú bông" maxlength="300" />
-              <small class="hint">Các cách gọi khác khách hay gõ. Nên dùng mỗi từ khoá phụ ít nhất 1 lần trong bài.</small>
+              <app-keyword-chips inputId="seo-kw" [main]="seo.focusKeyword" [secondary]="seo.secondaryKeywords || ''"
+                (mainChange)="seo.focusKeyword = $event" (secondaryChange)="seo.secondaryKeywords = $event" placeholder="Ví dụ: fumo mùa đông" />
+              <label class="check pillar"><input type="checkbox" [(ngModel)]="seo.pillar" />
+                Bài viết này là nội dung cốt lõi <span class="help" title="Bài quan trọng nhất cho từ khoá này - yêu cầu nội dung dài hơn (≥ 2500 từ).">?</span></label>
             </div>
 
             <div class="field">
@@ -143,13 +139,7 @@
               <div class="meter"><i [style.width.%]="(r.description.length / limits.description) * 100"></i></div>
             </div>
 
-            <ul class="checks">
-              @for (c of r.checks; track c.text) {
-                <li [class]="c.level">
-                  <span class="dot">{{ c.level === 'ok' ? '✓' : c.level === 'warn' ? '!' : '✕' }}</span>{{ c.text }}
-                </li>
-              }
-            </ul>
+            <app-seo-checks [report]="r" />
             <p class="hint">{{ r.words }} từ · mật độ từ khoá {{ r.density.toFixed(1) }}%</p>
           }
 
