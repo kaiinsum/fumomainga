@@ -35,7 +35,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
         <button class="btn ghost small auto-btn" type="button" (click)="autoOpen.set(!autoOpen())" [attr.aria-expanded]="autoOpen()">⚡ Tự động khai báo</button>
         <a class="btn ghost small" [href]="origin + '/sitemap.xml'" target="_blank" rel="noopener">sitemap.xml ↗</a>
         <button class="btn ghost small" type="button" [disabled]="!dirty()" (click)="revert()">Huỷ thay đổi</button>
-        <button class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu khai báo' }}</button>
+        <button data-save class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu khai báo' }}</button>
       </div>
     </div>
 
@@ -671,7 +671,7 @@ export class AdminSeoHub {
     if (!file) return;
     this.uploading.set(where);
     try {
-      const dataUrl = await fileToResizedDataUrl(file, 1200, 0.85);
+      const dataUrl = await fileToResizedDataUrl(file, 1200, 0.85, 'jpeg');
       let url = dataUrl;
       try {
         url = (await this.api.call<{ url: string }>('POST', '/api/catalog', { dataUrl }, true, { timeoutMs: 30000 })).url || dataUrl;

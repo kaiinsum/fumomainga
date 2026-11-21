@@ -146,7 +146,7 @@ interface Draft {
               @if (d.code) { <button type="button" class="link-del" (click)="remove(d.code)">Xoá đơn</button> }
               <span class="spacer"></span>
               <button class="btn ghost small" type="button" (click)="draft.set(null)">Huỷ</button>
-              <button class="btn primary small" type="button" [disabled]="saving()" (click)="save(d)">
+              <button data-save class="btn primary small" type="button" [disabled]="saving()" (click)="save(d)">
                 {{ saving() ? 'Đang lưu...' : d.code ? 'Lưu thay đổi' : 'Tạo đơn' }}
               </button>
             </div>

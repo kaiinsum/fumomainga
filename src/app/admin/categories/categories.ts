@@ -68,7 +68,7 @@ interface Draft {
                   </td>
                   <td>{{ count }}</td>
                   <td class="actions">
-                    <button class="btn primary small" type="button" (click)="saveEdit(c)">Lưu</button>
+                    <button data-save class="btn primary small" type="button" (click)="saveEdit(c)">Lưu</button>
                     <button class="btn ghost small" type="button" (click)="editing.set(null)">Huỷ</button>
                   </td>
                 } @else if (deleting() === c.name) {

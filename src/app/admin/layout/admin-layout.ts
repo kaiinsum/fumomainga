@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { animate, stagger } from 'animejs';
@@ -51,6 +51,44 @@ export class AdminLayout implements AfterViewInit {
   /** Trạng thái lưu sản phẩm / tin tức lên máy chủ. */
   readonly sync = inject(CatalogSyncService);
 
+  /**
+   * Ctrl/⌘ + S ở mọi trang admin: bấm nút lưu (đánh dấu `data-save`) gần chỗ đang gõ nhất;
+   * trang không có nút lưu riêng → đẩy ngay dữ liệu lên máy chủ. Không bao giờ mở hộp "Lưu trang" của trình duyệt.
+   */
+  @HostListener('document:keydown', ['$event'])
+  onSaveKey(e: KeyboardEvent): void {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 's') return;
+    e.preventDefault();
+    if (e.repeat) return;
+    const focus = document.activeElement;
+    const visible = [...document.querySelectorAll<HTMLButtonElement>('button[data-save]')].filter((b) => b.getClientRects().length > 0);
+    // Độ "gần": số tầng tổ tiên chung với ô đang gõ (càng sâu càng gần)
+    const depth = (el: Element) => {
+      let d = 0;
+      for (let n: Element | null = el; n; n = n.parentElement) d++;
+      return d;
+    };
+    const near = (b: HTMLButtonElement) => {
+      if (!focus || focus === document.body) return 0;
+      let a: Element | null = b;
+      while (a && !a.contains(focus)) a = a.parentElement;
+      return a ? depth(a) : 0;
+    };
+    let best: HTMLButtonElement | undefined;
+    let bestScore = -1;
+    for (const b of visible) {
+      const s = near(b);
+      if (s > bestScore) [best, bestScore] = [b, s];
+    }
+    if (best) {
+      if (best.disabled) this.toast.ok('Chưa có thay đổi nào cần lưu.');
+      else best.click();
+      return;
+    }
+    void this.sync.saveNow();
+    this.toast.ok('Đã lưu (Ctrl + S).');
+  }
+
   /** Menu chia nhóm cho đỡ rối. */
   readonly groups: { title: string; items: MenuItem[] }[] = [
     {
@@ -102,6 +140,7 @@ export class AdminLayout implements AfterViewInit {
         { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
         { icon: '🧚', label: 'Người hướng dẫn', path: '/admin/nguoi-huong-dan' },
         { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },
+        { icon: '⭐', label: 'Đánh giá & voucher', path: '/admin/danh-gia' },
         { icon: '✉️', label: 'Lời nhắn', path: '/admin/lien-he', badge: 'messages' },
       ],
     },

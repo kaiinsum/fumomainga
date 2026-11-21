@@ -22,6 +22,7 @@ import * as orderOne from './_routes/orders/[code]';
 import * as orderConfirm from './_routes/orders/confirm';
 import * as orders from './_routes/orders/index';
 import * as orderLookup from './_routes/orders/lookup';
+import * as feedback from './_routes/feedback';
 import * as settings from './_routes/settings';
 import * as adminAuth from './_routes/admin-auth';
 import * as security from './_routes/security';
@@ -60,6 +61,7 @@ const ROUTES: [RegExp, Module][] = [
   [/^ai\/catalog$/, aiCatalog],
   [/^ai\/knowledge$/, aiKnowledge],
   [/^contacts$/, contacts],
+  [/^feedback$/, feedback],
   [/^contacts\/[^/]+$/, contactOne],
   [/^orders$/, orders],
   [/^orders\/lookup$/, orderLookup],

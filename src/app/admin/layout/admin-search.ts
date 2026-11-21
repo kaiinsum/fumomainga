@@ -45,6 +45,7 @@ const INDEX: Entry[] = [
   { icon: '⚙️', label: 'Thông số từng trò chơi', where: 'Minigame → ✏️ Sửa thông tin', path: '/admin/minigame', keys: 'do kho mang toc do diem thuong' },
   { icon: '🏆', label: 'Bảng xếp hạng minigame (xoá top)', where: 'Minigame → ✏️ Sửa thông tin', path: '/admin/minigame', keys: 'xep hang top diem xoa' },
   { icon: '📣', label: 'Gửi thông báo hệ thống', where: 'Marketing & tương tác', path: '/admin/thong-bao', keys: 'thong bao modal popup khung nho' },
+  { icon: '⭐', label: 'Đánh giá & voucher', where: 'Marketing & tương tác', path: '/admin/danh-gia', keys: 'feedback review danh gia sao voucher ma giam gia khuyen mai uu dai cam on' },
   { icon: '✉️', label: 'Lời nhắn của khách', where: 'Marketing & tương tác', path: '/admin/lien-he', keys: 'lien he tin nhan' },
   // Hệ thống
   { icon: '🤖', label: 'Trợ lý AI', where: 'Công cụ & hệ thống', path: '/admin/tro-ly-ai', keys: 'chat ai gemini kien thuc dong bo du lieu' },
@@ -75,11 +76,15 @@ const HAY = INDEX.map((e) => plain(`${e.label} ${e.where} ${e.keys ?? ''}`));
 @Component({
   selector: 'app-admin-search',
   template: `
-    <div class="search">
-      <span class="mag" aria-hidden="true">🔍</span>
-      <input #inp type="search" [value]="q()" (input)="q.set($any($event.target).value); sel.set(0)" (keydown)="onKey($event)"
-        placeholder="Tìm cài đặt, trang…" aria-label="Tìm trong trang quản trị" autocomplete="off" />
-      <kbd>Ctrl K</kbd>
+    <div class="search" [class.has]="!!q()">
+      <svg class="mag" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <input #inp type="text" [value]="q()" (input)="q.set($any($event.target).value); sel.set(0)" (keydown)="onKey($event)"
+        placeholder="Tìm cài đặt, trang…" aria-label="Tìm trong trang quản trị" autocomplete="off" spellcheck="false" />
+      @if (q()) {
+        <button type="button" class="clr" (click)="clear()" aria-label="Xoá ô tìm">✕</button>
+      } @else {
+        <kbd>Ctrl K</kbd>
+      }
     </div>
     @if (q().trim()) {
       <ul class="results" role="listbox">
@@ -88,6 +93,7 @@ const HAY = INDEX.map((e) => plain(`${e.label} ${e.where} ${e.keys ?? ''}`));
             <button type="button" [class.on]="i === sel()" (mouseenter)="sel.set(i)" (click)="go(r)">
               <span class="ri">{{ r.icon }}</span>
               <span class="rt"><b>{{ r.label }}</b><small>{{ r.where }}</small></span>
+              <span class="go" aria-hidden="true">↵</span>
             </button>
           </li>
         } @empty {
@@ -97,22 +103,37 @@ const HAY = INDEX.map((e) => plain(`${e.label} ${e.where} ${e.keys ?? ''}`));
     }
   `,
   styles: `
-    :host { display: block; padding: 0 12px 10px; }
+    :host { display: block; padding: 0 12px 8px; }
     .search { position: relative; display: flex; align-items: center; }
-    .mag { position: absolute; left: 10px; font-size: .85rem; opacity: .8; pointer-events: none; }
-    input { width: 100%; font: inherit; font-size: .88rem; padding: 8px 52px 8px 32px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.22); color: #fff; outline: none; }
-    input::placeholder { color: rgba(255,255,255,.6); }
-    input:focus { border-color: var(--primary); background: rgba(0,0,0,.32); }
-    kbd { position: absolute; right: 8px; font: 700 .62rem/1 inherit; font-family: inherit; padding: 3px 5px; border-radius: 4px; color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.25); }
-    .results { list-style: none; margin: 8px 0 0; padding: 4px; border-radius: 10px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.3); max-height: 60vh; overflow-y: auto; }
-    .results button { width: 100%; display: flex; gap: 8px; align-items: flex-start; text-align: left; padding: 7px 8px; border: 0; border-radius: 8px; background: none; font: inherit; cursor: pointer; color: #1d2327; }
-    .results button.on { background: #f0f6fc; }
-    .ri { flex: none; width: 20px; text-align: center; }
-    .rt { display: flex; flex-direction: column; min-width: 0; }
-    .rt b { font-size: .85rem; line-height: 1.3; }
-    .rt small { font-size: .72rem; color: #646970; }
-    .none { padding: 10px; font-size: .82rem; color: #646970; }
+    .mag { position: absolute; left: 11px; width: 15px; height: 15px; color: rgba(255,255,255,.6); pointer-events: none; transition: color .15s; }
+    .search:focus-within .mag { color: #fff; }
+    :host .search input {
+      width: 100%; height: 36px; margin: 0; font: inherit; font-size: .84rem; padding: 0 56px 0 33px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14) !important; background: rgba(255,255,255,.08) !important; color: #fff !important;
+      outline: none; box-shadow: none !important; transition: background .15s, border-color .15s, box-shadow .15s;
+    }
+    :host .search input::placeholder { color: rgba(255,255,255,.55); }
+    :host .search input:hover { background: rgba(255,255,255,.12) !important; }
+    :host .search input:focus { border-color: rgba(255,255,255,.4) !important; background: rgba(0,0,0,.25) !important;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 45%, transparent) !important; }
+    kbd { position: absolute; right: 9px; font: 700 .6rem/1 inherit; font-family: inherit; padding: 4px 6px; border-radius: 6px;
+      color: rgba(255,255,255,.65); background: rgba(255,255,255,.1); border: 0; letter-spacing: .02em; pointer-events: none; }
+    .search:focus-within kbd { opacity: 0; }
+    .clr { position: absolute; right: 7px; width: 22px; height: 22px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center;
+      background: rgba(255,255,255,.16); color: #fff; font-size: .6rem; cursor: pointer; }
+    .clr:hover { background: rgba(255,255,255,.3); }
+    .results { list-style: none; margin: 6px 0 0; padding: 4px; border-radius: 12px; background: #fff; box-shadow: 0 12px 32px -8px rgba(0,0,0,.45);
+      max-height: 60vh; overflow-y: auto; }
+    .results button { width: 100%; display: flex; gap: 9px; align-items: center; text-align: left; padding: 6px 8px; border: 0; border-radius: 8px;
+      background: none; font: inherit; cursor: pointer; color: #1d2327; }
+    .results button.on { background: color-mix(in srgb, var(--primary) 12%, #fff); }
+    .ri { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; background: #f0f0f1; font-size: .85rem; }
+    .rt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .rt b { font-size: .82rem; line-height: 1.3; }
+    .rt small { font-size: .7rem; color: #646970; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .go { flex: none; font-size: .75rem; color: #8c8f94; opacity: 0; }
+    .results button.on .go { opacity: 1; }
+    .none { padding: 10px; font-size: .8rem; color: #646970; text-align: center; }
   `,
 })
 export class AdminSearchComponent {
@@ -162,6 +183,11 @@ export class AdminSearchComponent {
     } else if (e.key === 'Escape') {
       this.q.set('');
     }
+  }
+
+  clear(): void {
+    this.q.set('');
+    this.inp()?.nativeElement.focus();
   }
 
   go(r: Entry): void {

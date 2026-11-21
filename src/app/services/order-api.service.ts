@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Customer, Order, OrderItem, OrderStatus, PublicOrder } from '../models/order';
+import { Customer, FeedbackConfig, FeedbackInfo, FeedbackItem, Order, OrderItem, OrderStatus, PublicOrder } from '../models/order';
 
 const ADMIN_KEY = 'fumo.admin.apiKey';
 
@@ -38,7 +38,7 @@ export class OrderApiService {
     return this.call('POST', '/api/orders', { customer, items, code }, false, { keepalive: true, timeoutMs: 30000 });
   }
 
-  lookup(code: string, phone: string): Promise<{ order: PublicOrder }> {
+  lookup(code: string, phone: string): Promise<{ order: PublicOrder; feedback?: FeedbackInfo }> {
     return this.call('POST', '/api/orders/lookup', { code, phone });
   }
 
@@ -46,7 +46,27 @@ export class OrderApiService {
     return this.call('POST', '/api/orders/confirm', { code, phone });
   }
 
+  /** Khách đánh giá đơn đã thanh toán → nhận mã voucher. */
+  sendFeedback(code: string, phone: string, rating: number, text: string): Promise<{ voucher: string; offer: string; expiresAt: number | null }> {
+    return this.call('POST', '/api/feedback', { code, phone, rating, text });
+  }
+
   // ---------- Admin ----------
+  feedbackList(): Promise<{ config: FeedbackConfig; items: FeedbackItem[] }> {
+    return this.call('GET', '/api/feedback', undefined, true);
+  }
+
+  saveFeedbackConfig(config: FeedbackConfig): Promise<{ config: FeedbackConfig }> {
+    return this.call('PATCH', '/api/feedback', { config }, true);
+  }
+
+  markVoucher(code: string, used: boolean): Promise<{ item: FeedbackItem }> {
+    return this.call('PATCH', '/api/feedback', { code, used }, true);
+  }
+
+  removeFeedback(code: string): Promise<{ ok: boolean }> {
+    return this.call('DELETE', '/api/feedback', { code }, true);
+  }
   list(): Promise<{ orders: Order[] }> {
     return this.call('GET', '/api/orders', undefined, true);
   }

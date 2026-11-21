@@ -364,7 +364,7 @@
           @if (editing()) {
             <button class="link-del" type="button" (click)="remove()">Xoá sản phẩm</button>
           }
-          <button class="btn primary small" type="submit" [disabled]="processing()">
+          <button data-save class="btn primary small" type="submit" [disabled]="processing()">
             {{ editing() ? 'Cập nhật' : 'Đăng sản phẩm' }}
           </button>
         </div>
@@ -466,7 +466,7 @@
         <div class="note-foot">
           @if (editing(); as p) {
             @if (noteSvc.noteOf(p.id); as n) { <small class="hint">Sửa lần cuối {{ n.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small> } @else { <span></span> }
-            <button type="button" class="btn ghost small" [disabled]="noteSaving() || (noteSvc.noteOf(p.id)?.text ?? '') === noteDraft().trim()"
+            <button data-save type="button" class="btn ghost small" [disabled]="noteSaving() || (noteSvc.noteOf(p.id)?.text ?? '') === noteDraft().trim()"
               (click)="saveNote(p.id, false)">{{ noteSaving() ? 'Đang lưu…' : 'Lưu ghi chú' }}</button>
           } @else {
             <small class="hint">Ghi chú được lưu khi bấm Đăng sản phẩm.</small>

@@ -53,3 +53,34 @@ export interface PublicOrder {
 }
 
 export const EMPTY_CUSTOMER: Customer = { name: '', phone: '', email: '', address: '', note: '' };
+
+// ---------- Đánh giá nhận voucher ----------
+export interface FeedbackDone {
+  rating: number;
+  text: string;
+  voucher: string;
+  offer: string;
+  expiresAt: number | null;
+  used: boolean;
+}
+
+/** Kèm theo khi tra cứu đơn: đơn đã thanh toán + chưa đánh giá → allowed. */
+export interface FeedbackInfo {
+  enabled: boolean;
+  offer: string;
+  allowed: boolean;
+  done: FeedbackDone | null;
+}
+
+export interface FeedbackConfig {
+  enabled: boolean;
+  offer: string;
+  prefix: string;
+  validDays: number;
+}
+
+export interface FeedbackItem extends FeedbackDone {
+  code: string;
+  name: string;
+  createdAt: number;
+}

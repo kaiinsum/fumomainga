@@ -116,7 +116,7 @@ const MAX_CHARS = 100_000;
             </p>
             <div class="row-btns end">
               @if (dirty()) { <span class="unsaved">● Chưa lưu</span> }
-              <button class="btn primary small" type="button" [disabled]="saving() || !dirty()" (click)="saveKnowledge()">
+              <button data-save class="btn primary small" type="button" [disabled]="saving() || !dirty()" (click)="saveKnowledge()">
                 {{ saving() ? 'Đang lưu...' : 'Lưu kiến thức' }}
               </button>
             </div>

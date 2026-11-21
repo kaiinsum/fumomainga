@@ -233,7 +233,7 @@ const FOLDER_LABELS: Record<string, string> = { img: 'Ảnh sản phẩm, bài v
           <label class="wide">Ghi chú<textarea rows="2" [value]="form().note" (input)="setF('note', $event)" placeholder="Tài khoản đăng ký, email nhận nhắc gia hạn…"></textarea></label>
         </div>
         <div class="foot">
-          <button class="btn primary small" type="button" (click)="save()" [disabled]="saving()">{{ saving() ? 'Đang lưu…' : '💾 Lưu' }}</button>
+          <button data-save class="btn primary small" type="button" (click)="save()" [disabled]="saving()">{{ saving() ? 'Đang lưu…' : '💾 Lưu' }}</button>
           @if (saved()) { <span class="ok">✓ Đã lưu</span> }
           <span class="hint">Ngày tra cứu tự động (nếu có) được ưu tiên hơn ngày nhập tay. Chỉ admin xem được thông tin này.</span>
         </div>

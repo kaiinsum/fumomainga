@@ -74,25 +74,36 @@
   }
 }
 
+/* Thanh tab: luôn nằm trên 1 dòng; hẹp quá thì vuốt ngang (ẩn thanh cuộn) thay vì rớt xuống dòng 2 */
 .adm-tabs {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #c3c4c7;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* Viền dưới vẽ bằng bóng trong để tab đang chọn vẫn "đè" lên được khi có cuộn ngang */
+  box-shadow: inset 0 -1px 0 #c3c4c7;
   margin-bottom: 16px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   button,
   a {
+    flex: none;
+    white-space: nowrap;
     font: inherit;
     font-weight: 700;
-    padding: 8px 14px;
+    padding: 8px 11px;
+    font-size: 0.93rem;
     border: 1px solid transparent;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
     background: none;
     color: #50575e;
     cursor: pointer;
-    margin-bottom: -1px;
 
     &.on {
       background: #f0f0f1;

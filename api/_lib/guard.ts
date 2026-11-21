@@ -58,6 +58,7 @@ export const RULES: GuardRule[] = [
   { path: /^orders$/, method: 'POST', max: 10, windowMs: MIN },
   { path: /^orders\/(lookup|confirm)$/, max: 20, windowMs: MIN },
   { path: /^contacts$/, method: 'POST', max: 6, windowMs: MIN },
+  { path: /^feedback$/, method: 'POST', max: 6, windowMs: MIN },
   { path: /^minigame$/, method: 'POST', max: 15, windowMs: MIN },
   { path: /^admin\/login$/, method: 'POST', max: 10, windowMs: MIN },
   { path: /^leaderboard$/, method: 'POST', max: 6, windowMs: MIN },

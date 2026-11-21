@@ -120,6 +120,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./orders/orders').then((m) => m.AdminOrders),
       },
       {
+        path: 'danh-gia',
+        title: 'Đánh giá & voucher',
+        loadComponent: () => import('./feedback/feedback').then((m) => m.AdminFeedback),
+      },
+      {
         path: 'lien-he',
         title: 'Liên hệ',
         loadComponent: () => import('./contacts/contacts').then((m) => m.AdminContacts),

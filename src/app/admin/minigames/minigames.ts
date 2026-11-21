@@ -25,7 +25,7 @@ const STATUS: { id: GameStatus; label: string; hint: string }[] = [
       <div class="head-actions">
         <a class="btn ghost small" href="/mini-game" target="_blank" rel="noopener">Xem trang Mini game ↗</a>
         <button class="btn ghost small" type="button" [disabled]="!dirty()" (click)="revert()">Huỷ thay đổi</button>
-        <button class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">
+        <button data-save class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">
           {{ saving() ? 'Đang lưu…' : 'Lưu thay đổi' }}
         </button>
       </div>

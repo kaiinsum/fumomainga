@@ -3,6 +3,7 @@
  * Dùng POST để số điện thoại không nằm trên URL / log.
  */
 import { HttpError, digits, getStore, handle, json, normalizeCode, publicView, rateLimit, readJson } from '../../_lib/orders';
+import { feedbackInfo } from '../feedback';
 
 export const POST = handle(async (req) => {
   await rateLimit(req, 'lookup', 30, 600);
@@ -14,5 +15,5 @@ export const POST = handle(async (req) => {
   if (!order || digits(order.customer.phone).slice(-9) !== phone.slice(-9)) {
     throw new HttpError(404, 'Không tìm thấy đơn hàng với mã và số điện thoại này.');
   }
-  return json({ order: publicView(order) });
+  return json({ order: publicView(order), feedback: await feedbackInfo(order) });
 });

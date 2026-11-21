@@ -20,7 +20,7 @@ const IMAGES = ['bg/cirno.webp', 'bg/fumo-cirno.webp', 'bg/reimu-1.webp', 'bg/re
       <h1>Người hướng dẫn</h1>
       <div class="head-actions">
         <button class="btn ghost small" type="button" [disabled]="!dirty()" (click)="revert()">Huỷ thay đổi</button>
-        <button class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu thay đổi' }}</button>
+        <button data-save class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu thay đổi' }}</button>
       </div>
     </div>
     <p class="intro">

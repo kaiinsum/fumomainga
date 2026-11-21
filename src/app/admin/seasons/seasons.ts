@@ -185,7 +185,7 @@ const DAY = 86_400_000;
                 </label>
               }
               <div class="actions">
-                <button class="btn primary small" type="submit" [disabled]="busy()">💾 Lưu</button>
+                <button data-save class="btn primary small" type="submit" [disabled]="busy()">💾 Lưu</button>
                 <button class="btn ghost small" type="button" (click)="cancelEdit()">Huỷ</button>
                 @if (custom(id)) {
                   @if (id !== 'new') { <button class="link" type="button" (click)="removeCustom(id)" [disabled]="busy()">🗑 Xoá dịp này</button> }

@@ -47,7 +47,7 @@ import { AdminToastService } from '../toast.service';
           </form>
           <div class="cat-actions">
             <button class="btn ghost small" type="button" [disabled]="!catDirty()" (click)="resetCats()">Huỷ thay đổi</button>
-            <button class="btn primary small" type="button" [disabled]="!catDirty() || catSaving()" (click)="saveCats()">{{ catSaving() ? 'Đang lưu…' : 'Lưu danh mục' }}</button>
+            <button data-save class="btn primary small" type="button" [disabled]="!catDirty() || catSaving()" (click)="saveCats()">{{ catSaving() ? 'Đang lưu…' : 'Lưu danh mục' }}</button>
           </div>
         </div>
       </section>

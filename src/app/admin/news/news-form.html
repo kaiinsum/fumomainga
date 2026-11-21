@@ -203,10 +203,10 @@
           <p class="meta">Cập nhật: <b>{{ p.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</b></p>
         }
         <div class="publish-actions">
-          <button class="btn ghost small" type="button" (click)="save('draft')">
+          <button [attr.data-save]="editing()?.status === 'published' ? null : ''" class="btn ghost small" type="button" (click)="save('draft')">
             {{ editing()?.status === 'published' ? 'Chuyển thành nháp' : 'Lưu nháp' }}
           </button>
-          <button class="btn primary small" type="button" (click)="save('published')">
+          <button [attr.data-save]="editing()?.status === 'published' ? '' : null" class="btn primary small" type="button" (click)="save('published')">
             {{ editing()?.status === 'published' ? 'Cập nhật' : 'Đăng bài' }}
           </button>
         </div>
