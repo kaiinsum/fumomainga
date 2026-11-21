@@ -7,6 +7,7 @@ import { ThemeService } from '../../services/theme.service';
 import { CartService } from '../../services/cart.service';
 import { NotifyBellComponent } from '../notify-bell/notify-bell';
 import { IconComponent } from '../../shared/icon';
+import { CategoryService } from '../../services/category.service';
 
 interface NavItem {
   label: string;
@@ -40,6 +41,24 @@ export class HeaderComponent implements AfterViewInit {
     { label: 'Liên hệ', path: '/lien-he' },
   ];
 
+  /** Danh mục cho menu thả xuống của "Sản phẩm" - chỉ những danh mục đang có hàng. */
+  private readonly catSvc = inject(CategoryService);
+  readonly cats = computed(() => {
+    const counts = this.catSvc.counts();
+    return this.catSvc
+      .categories()
+      .map((c) => ({ name: c.name, icon: c.icon, count: counts.get(c.name) ?? 0 }))
+      .filter((c) => c.count > 0);
+  });
+  readonly total = computed(() => this.cats().reduce((n, c) => n + c.count, 0));
+  /** Vừa bấm 1 danh mục → ẩn menu thả xuống cho tới khi chuột rời khỏi. */
+  readonly dropClosed = signal(false);
+
+  closeDrop(): void {
+    this.dropClosed.set(true);
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
+
   readonly menuOpen = signal(false);
   readonly scrolled = signal(false);
 
@@ -52,7 +71,7 @@ export class HeaderComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     createTimeline({ defaults: { ease: 'outExpo' } })
       .add(this.host.querySelector('.logo')!, { translateY: [-40, 0], opacity: [0, 1], duration: 700 })
-      .add(this.host.querySelectorAll('.nav-desktop a'), {
+      .add(this.host.querySelectorAll('.nav-desktop a.top'), {
         translateY: [-20, 0],
         opacity: [0, 1],
         duration: 600,

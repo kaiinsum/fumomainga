@@ -193,7 +193,6 @@
     @for (s of stats; track s.label) {
       @if (s.show()) {
         <div class="stat">
-          <span class="st-ic" aria-hidden="true">{{ s.icon }}</span>
           <strong>{{ s.value() }}{{ s.plus ? '+' : '' }}</strong>
           <span>{{ s.label }}@if (s.label === 'Năm kinh nghiệm') { <small>trên thị trường fumo</small> }</span>
         </div>

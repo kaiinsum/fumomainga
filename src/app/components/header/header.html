@@ -7,12 +7,36 @@
 
     <nav class="nav-desktop" aria-label="Menu chính">
       @for (item of nav; track item.path) {
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
-          [class.hot]="item.hot"
-        >{{ item.label }}@if (item.hot) {<span class="hot-badge">HOT</span>}</a>
+        @if (item.path === '/san-pham' && cats().length) {
+          <!-- Rê chuột vào "Sản phẩm" → hiện danh mục; bấm danh mục → trang sản phẩm lọc sẵn theo danh mục đó -->
+          <div class="nav-drop" [class.closed]="dropClosed()" (mouseleave)="dropClosed.set(false)">
+            <a
+              class="top"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              aria-haspopup="true"
+              (click)="closeDrop()"
+            >{{ item.label }}<svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></a>
+            <div class="drop" role="menu" aria-label="Danh mục sản phẩm">
+              <a class="drop-all" role="menuitem" routerLink="/san-pham" (click)="closeDrop()">
+                <span class="ic">🛍️</span><span class="nm">Tất cả sản phẩm</span><span class="n">{{ total() }}</span>
+              </a>
+              @for (c of cats(); track c.name) {
+                <a role="menuitem" routerLink="/san-pham" [queryParams]="{ danhMuc: c.name }" (click)="closeDrop()">
+                  <app-icon class="ic" [icon]="c.icon" /><span class="nm">{{ c.name }}</span><span class="n">{{ c.count }}</span>
+                </a>
+              }
+            </div>
+          </div>
+        } @else {
+          <a
+            class="top"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            [class.hot]="item.hot"
+          >{{ item.label }}@if (item.hot) {<span class="hot-badge">HOT</span>}</a>
+        }
       }
     </nav>
 
@@ -76,6 +100,13 @@
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
           [class.hot]="item.hot"
         >{{ item.label }}@if (item.hot) {<span class="hot-badge">HOT</span>}</a>
+        @if (item.path === '/san-pham' && cats().length) {
+          <div class="m-cats">
+            @for (c of cats(); track c.name) {
+              <a routerLink="/san-pham" [queryParams]="{ danhMuc: c.name }"><app-icon [icon]="c.icon" /> {{ c.name }}</a>
+            }
+          </div>
+        }
       }
     </nav>
   }
