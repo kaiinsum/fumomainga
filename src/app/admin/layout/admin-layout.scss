@@ -337,3 +337,44 @@
     padding: calc(var(--top-h) + 12px) 12px 28px;
   }
 }
+
+// Nút quay lại (đầu menu + thanh trên)
+.side-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  margin: 10px 12px 0;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f0f0f1;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}
+.top-back {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-right: 8px;
+  flex: none;
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}

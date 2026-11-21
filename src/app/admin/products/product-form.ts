@@ -26,6 +26,8 @@ import { SEO_LIMITS, SeoReport, analyzeProductSeo, scoreLevel, slugify } from '.
 import { VndPipe } from '../../shared/vnd.pipe';
 import { CostService } from '../cost.service';
 import { NoteService } from '../note.service';
+import { siteSeoOf } from '../../models/site-seo';
+import { autoProductSeo } from '../../shared/seo-auto';
 import { AdminToastService } from '../toast.service';
 
 const MAX_IMAGES = 6;
@@ -98,6 +100,7 @@ export class AdminProductForm {
   });
 
   /** Số ngày hiện thông báo "Sản phẩm mới" cho khách (Cài đặt → Thông báo). */
+  private readonly settingsSvc = inject(SettingsService);
   readonly notifyDays = inject(SettingsService).settings().notifyDays || 14;
 
   readonly form = inject(NonNullableFormBuilder).group({
@@ -436,6 +439,14 @@ export class AdminProductForm {
       images: this.images(),
       seo: this.cleanSeo(),
     };
+    // Khai báo → "Tự động khai báo khi lưu": điền ô SEO còn trống (từ khoá, tiêu đề, mô tả, schema Product).
+    const settingsNow = this.settingsSvc.settings();
+    if (siteSeoOf(settingsNow).autoFill) {
+      const cur = this.editing();
+      const filled = autoProductSeo({ ...data, id: cur?.id ?? '', createdAt: cur?.createdAt ?? Date.now() }, { shopName: settingsNow.shopName });
+      data.seo = cur ? filled : { ...filled, sku: data.seo?.sku ?? '' };
+      this.seo.set(data.seo);
+    }
 
     const current = this.editing();
     if (current) {

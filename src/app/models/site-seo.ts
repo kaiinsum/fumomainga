@@ -42,6 +42,8 @@ export interface SiteSeo {
   sameAs: string;
   /** Khai báo ô tìm kiếm của web cho Google (Sitelinks search box). */
   searchBox: boolean;
+  /** Đăng sản phẩm / bài viết mới mà để trống SEO → tự điền từ khoá, tiêu đề, mô tả, schema. */
+  autoFill: boolean;
   pages: Record<string, Partial<PageSeo>>;
 }
 
@@ -57,6 +59,7 @@ export const DEFAULT_SITE_SEO: SiteSeo = {
   priceRange: '',
   sameAs: '',
   searchBox: true,
+  autoFill: true,
   pages: {},
 };
 

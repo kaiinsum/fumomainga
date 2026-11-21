@@ -1,6 +1,9 @@
 <div class="adm-shell" [class.side-open]="sidebarOpen()">
   <header class="topbar">
     <button class="burger" type="button" (click)="toggleSidebar()" aria-label="Mở menu quản trị">☰</button>
+    @if (canBack()) {
+      <button class="top-back" type="button" (click)="back()" title="Quay lại trang trước" aria-label="Quay lại trang trước">←</button>
+    }
     <a routerLink="/admin" class="brand"><app-icon [icon]="settings().logoEmoji" /> <span class="brand-name">{{ settings().shopName }}</span> <small>Quản trị</small></a>
     <div class="top-actions">
       <button
@@ -26,6 +29,7 @@
   </header>
 
   <aside class="sidebar">
+    <button class="side-back" type="button" (click)="back()" [disabled]="!canBack()" title="Quay lại trang trước">← Quay lại</button>
     <app-admin-search (picked)="sidebarOpen.set(false)" />
     @for (grp of groups; track grp.title) {
     <p class="group-title">{{ grp.title }}</p>

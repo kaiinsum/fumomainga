@@ -37,6 +37,16 @@ export class AdminLayout implements AfterViewInit {
   readonly usingDefaultPassword = this.auth.usingDefaultPassword;
 
   readonly sidebarOpen = signal(false);
+  /** Số trang admin đã đi qua trong lần mở này (để biết có trang trước mà quay lại không). */
+  private visited = 0;
+  readonly canBack = signal(false);
+
+  /** Nút "← Quay lại": về trang admin trước đó; mở thẳng link (chưa có trang trước) thì về Bảng tin. */
+  back(): void {
+    this.sidebarOpen.set(false);
+    if (this.visited > 1 && history.length > 1) history.back();
+    else void this.router.navigateByUrl('/admin');
+  }
   readonly inbox = inject(AdminInboxService);
   /** Trạng thái lưu sản phẩm / tin tức lên máy chủ. */
   readonly sync = inject(CatalogSyncService);
@@ -106,6 +116,10 @@ export class AdminLayout implements AfterViewInit {
   readonly menu: MenuItem[] = this.groups.flatMap((g) => g.items);
 
   constructor() {
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed()).subscribe(() => {
+      this.visited++;
+      this.canBack.set(this.visited > 1 || this.router.url.split(/[?#]/)[0] !== '/admin');
+    });
     // Có đơn hàng / lời nhắn mới trong lúc đang mở trang quản trị → hiện thông báo nổi.
     this.inbox.onNew = (items) => {
       const orders = items.filter((n) => n.kind === 'order').length;

@@ -13,6 +13,7 @@ import { IconComponent, IconPickerComponent } from '../../shared/icon';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
 import { SEO_LIMITS, analyzePageSeo, analyzeProductSeo, analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
 import { AdminToastService } from '../toast.service';
+import { autoNewsSeo, autoPageSeo, autoProductSeo } from '../../shared/seo-auto';
 
 type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
 
@@ -29,11 +30,36 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
     <div class="adm-head">
       <h1>🔍 Khai báo SEO</h1>
       <div class="head-actions">
+        <button class="btn ghost small auto-btn" type="button" (click)="autoOpen.set(!autoOpen())" [attr.aria-expanded]="autoOpen()">⚡ Tự động khai báo</button>
         <a class="btn ghost small" [href]="origin + '/sitemap.xml'" target="_blank" rel="noopener">sitemap.xml ↗</a>
         <button class="btn ghost small" type="button" [disabled]="!dirty()" (click)="revert()">Huỷ thay đổi</button>
         <button class="btn primary small" type="button" [disabled]="!dirty() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu khai báo' }}</button>
       </div>
     </div>
+
+    @if (autoOpen()) {
+      @let pv = autoPreview();
+      <section class="adm-box auto-box">
+        <h2>⚡ Tự động khai báo SEO & schema</h2>
+        <div class="box-body">
+          <p class="hint">Tự điền <b>từ khoá chính, tiêu đề SEO, mô tả meta</b> và bật <b>schema</b> (Product cho sản phẩm, NewsArticle cho bài viết,
+            WebPage / CollectionPage / AboutPage / ContactPage cho từng trang) dựa trên tên, mô tả, nội dung có sẵn.
+            Mặc định <b>chỉ điền ô đang trống</b> — không đụng tới nội dung bạn đã viết.</p>
+          <div class="auto-opts">
+            <label class="check"><input type="checkbox" [ngModel]="autoPages()" (ngModelChange)="autoPages.set($event)" /> 🧭 Trang menu <small>({{ pv.pages }} trang sẽ được điền)</small></label>
+            <label class="check"><input type="checkbox" [ngModel]="autoProducts()" (ngModelChange)="autoProducts.set($event)" /> 🧸 Sản phẩm <small>({{ pv.products }} sản phẩm)</small></label>
+            <label class="check"><input type="checkbox" [ngModel]="autoNews()" (ngModelChange)="autoNews.set($event)" /> 📰 Bài viết <small>({{ pv.news }} bài)</small></label>
+            <label class="check warn"><input type="checkbox" [ngModel]="autoOverwrite()" (ngModelChange)="autoOverwrite.set($event)" /> Ghi đè cả ô đã có nội dung</label>
+          </div>
+          <div class="row">
+            <button class="btn primary small" type="button" [disabled]="autoBusy() || !(pv.pages + pv.products + pv.news)" (click)="runAuto()">
+              {{ autoBusy() ? 'Đang khai báo…' : '⚡ Khai báo ' + (pv.pages + pv.products + pv.news) + ' mục' }}
+            </button>
+            <button class="btn ghost small" type="button" (click)="autoOpen.set(false)">Đóng</button>
+          </div>
+        </div>
+      </section>
+    }
 
     <nav class="adm-tabs">
       @for (t of tabs; track t.id) {
@@ -307,6 +333,8 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
               </div>
               <label class="check"><input type="checkbox" [ngModel]="d().searchBox" (ngModelChange)="set('searchBox', $event)" />
                 Khai báo ô tìm kiếm sản phẩm (Sitelinks search box)</label>
+              <label class="check"><input type="checkbox" [ngModel]="d().autoFill" (ngModelChange)="set('autoFill', $event)" />
+                ⚡ Tự động khai báo SEO & schema khi đăng / lưu sản phẩm, bài viết (chỉ điền ô trống)</label>
             </div>
           </section>
         </div>
@@ -315,6 +343,12 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
   `,
   styles: `
     .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .auto-btn { border-color: #dba617; color: #8a5a00; font-weight: 800; }
+    .auto-box { border-color: #dba617; margin-bottom: 14px; }
+    .auto-box .box-body { display: grid; gap: 10px; }
+    .auto-opts { display: grid; gap: 6px; }
+    .auto-opts small { color: #646970; }
+    .check.warn { color: #b32d2e; }
     .adm-tabs { margin-bottom: 14px; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .stat { display: grid; gap: 2px; text-align: left; padding: 14px; border-radius: 12px; border: 1px solid #dcdcde; background: #fff; cursor: pointer; font: inherit; }
@@ -542,6 +576,57 @@ export class AdminSeoHub {
     }
     return out;
   });
+
+  // ---------- Tự động khai báo ----------
+  readonly autoOpen = signal(false);
+  readonly autoPages = signal(true);
+  readonly autoProducts = signal(true);
+  readonly autoNews = signal(true);
+  readonly autoOverwrite = signal(false);
+  readonly autoBusy = signal(false);
+
+  /** Kế hoạch tự khai báo: chỉ các mục thực sự thay đổi. */
+  private readonly autoPlan = computed(() => {
+    const opt = { overwrite: this.autoOverwrite(), shopName: this.shopName };
+    const seo = this.d();
+    const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    const pages = this.autoPages()
+      ? SEO_PAGES.map((def) => ({ path: def.path, next: autoPageSeo(def, seo, opt) })).filter((x) => !same({ ...pageSeoOf(seo, x.path) }, { ...pageSeoOf({ ...seo, pages: { ...seo.pages, [x.path]: x.next } }, x.path) }))
+      : [];
+    const products = this.autoProducts()
+      ? this.products.products().map((p) => ({ id: p.id, before: productSeoOf(p), next: autoProductSeo(p, opt) })).filter((x) => !same(x.before, x.next))
+      : [];
+    const news = this.autoNews()
+      ? this.news.posts().map((n) => ({ id: n.id, before: { ...EMPTY_SEO, ...n.seo }, next: autoNewsSeo(n, opt) })).filter((x) => !same(x.before, x.next))
+      : [];
+    return { pages, products, news };
+  });
+  readonly autoPreview = computed(() => {
+    const p = this.autoPlan();
+    return { pages: p.pages.length, products: p.products.length, news: p.news.length };
+  });
+
+  async runAuto(): Promise<void> {
+    const plan = this.autoPlan();
+    const total = plan.pages.length + plan.products.length + plan.news.length;
+    if (!total) return;
+    if (this.autoOverwrite() && !confirm(`Ghi đè khai báo SEO của ${total} mục (kể cả ô bạn đã viết)?`)) return;
+    this.autoBusy.set(true);
+    try {
+      if (plan.products.length) this.products.applyImport(plan.products.map((x) => ({ id: x.id, patch: { seo: x.next } })), []);
+      for (const n of plan.news) this.news.update(n.id, { seo: n.next });
+      if (plan.pages.length) {
+        this.d.update((s) => ({ ...s, pages: { ...s.pages, ...Object.fromEntries(plan.pages.map((x) => [x.path, x.next])) } }));
+        await this.save();
+      }
+      this.toast.ok(`Đã tự động khai báo ${total} mục (sản phẩm & bài viết tự lưu lên máy chủ).`);
+      this.autoOpen.set(false);
+    } catch (e) {
+      this.toast.err('Chưa khai báo được: ' + (e instanceof Error ? e.message : ''));
+    } finally {
+      this.autoBusy.set(false);
+    }
+  }
 
   // ---------- Ảnh ----------
   async uploadOg(e: Event, where: 'page' | 'default'): Promise<void> {

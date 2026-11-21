@@ -12,6 +12,8 @@ import { renderMarkdown } from '../../shared/markdown';
 import { ArticleHtmlPipe, ContentFormat, contentAsMarkdown, htmlToSeoMarkdown } from '../../shared/article-html';
 import { SEO_LIMITS, SeoReport, analyzeSeo, markdownToText, scoreLevel, slugify } from '../../shared/seo';
 import { AdminToastService } from '../toast.service';
+import { siteSeoOf } from '../../models/site-seo';
+import { autoNewsSeo } from '../../shared/seo-auto';
 
 interface ToolButton {
   label: string;
@@ -268,6 +270,12 @@ export class AdminNewsForm {
       status,
       seo: { ...this.seo, slug: this.seo.slug ? slugify(this.seo.slug) : this.uniqueSlug(this.autoSlug()) },
     };
+    // Khai báo → "Tự động khai báo khi lưu": điền ô SEO còn trống (từ khoá, tiêu đề, mô tả).
+    const st = this.settings();
+    if (siteSeoOf(st).autoFill) {
+      const cur = this.editing();
+      data.seo = { ...autoNewsSeo({ ...data, id: cur?.id ?? '', createdAt: cur?.createdAt ?? Date.now(), updatedAt: Date.now() }, { shopName: st.shopName }), slug: data.seo!.slug };
+    }
     this.seo = { ...data.seo! };
     const msg = status === 'published' ? 'Đã đăng bài viết' : 'Đã lưu bản nháp';
     const current = this.editing();
