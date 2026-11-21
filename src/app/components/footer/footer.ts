@@ -63,17 +63,11 @@ import { IconComponent } from '../../shared/icon';
       @if (season.active(); as se) {
         <p class="season"><button type="button" (click)="season.open()"><app-icon [icon]="se.icon" /> Xem lại lời chúc {{ se.name }}</button></p>
       }
-      <p class="copy">© 2026 Fumo Mai Nga - Designed by
-        @if (designer(); as url) {
-          <a class="designer" [href]="url" target="_blank" rel="noopener noreferrer">San Nii</a>
-        } @else {
-          San Nii
-        }
-      </p>
+      <p class="copy">© 2026 Fumo Mai Nga - Designed by&nbsp;@if (designer(); as url) {<a class="designer" [href]="url" target="_blank" rel="noopener noreferrer">San Nii</a>} @else {San Nii}</p>
     </footer>
   `,
   styles: `
-    .designer { color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+    .copy .designer { display: inline; padding: 0; font-size: inherit; color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
     .designer:hover { color: var(--primary); }
     .footer { background: var(--footer-bg); color: #fff; padding: 48px 0 20px; margin-top: 40px; }
     .grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.4fr; gap: 32px; }
