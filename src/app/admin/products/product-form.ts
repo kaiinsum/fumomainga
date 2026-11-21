@@ -32,7 +32,7 @@ import { siteSeoOf, splitKeywords } from '../../models/site-seo';
 import { autoProductSeo } from '../../shared/seo-auto';
 import { AdminToastService } from '../toast.service';
 
-const MAX_IMAGES = 6;
+const MAX_IMAGES = 10;
 const MAX_VARIANTS = 30;
 
 /** Một dòng biến thể đang sửa: % giảm và giá sau giảm tự tính qua lại. */

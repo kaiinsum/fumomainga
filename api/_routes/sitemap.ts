@@ -87,7 +87,7 @@ export function buildSitemap(origin: string, catalog: Catalog | null, noindexPag
     ...products
       .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
       .map((p) => {
-        const imgs = (p.images ?? []).map(publicImg).filter(Boolean).slice(0, 5).map((loc) => ({ loc, title: p.name }));
+        const imgs = (p.images ?? []).map(publicImg).filter(Boolean).slice(0, 10).map((loc) => ({ loc, title: p.name }));
         return url(`/san-pham/${encodeURIComponent(p.slug || p.id)}`, p.createdAt, 'weekly', '0.8', imgs);
       }),
     url('/tin-tuc', newsLatest, 'daily', '0.8'),
