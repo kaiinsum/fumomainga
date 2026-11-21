@@ -13,6 +13,7 @@ import { AnnounceToastComponent } from '../components/announce-toast/announce-to
 import { AnnounceModalComponent } from '../components/announce-toast/announce-modal';
 import { CursorFxComponent } from '../components/cursor-fx/cursor-fx';
 import { GuideComponent } from '../components/guide/guide';
+import { PageSeoService } from '../core/page-seo.service';
 import { MinigameGateComponent } from '../components/minigame-gate/minigame-gate';
 
 @Component({
@@ -48,6 +49,8 @@ export class PublicLayout implements OnDestroy {
   readonly theme = inject(ThemeService);
 
   constructor() {
+    // Khai báo SEO các trang trên menu + favicon (Admin → Khai báo).
+    inject(PageSeoService).start();
     // Gửi lại các đơn chưa lưu được ở lần trước (mạng yếu / khách chuyển app ngân hàng).
     inject(OrderOutboxService).start();
     // Có chủ đề dịp lễ → hiện thiệp chào lần đầu vào web (mỗi phiên 1 lần, trừ khi khách chọn không hiện lại).

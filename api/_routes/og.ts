@@ -61,9 +61,15 @@ export const GET = handle(async (req) => {
     return origin + '/' + img.replace(/^\/+/, '');
   };
 
+  // Khai báo SEO (Admin → Khai báo): mô tả / ảnh chia sẻ mặc định + từng trang trên menu.
+  const seo = (s['seo'] && typeof s['seo'] === 'object' ? s['seo'] : {}) as {
+    defaultDescription?: string;
+    defaultOgImage?: string;
+    pages?: Record<string, { title?: string; description?: string; ogImage?: string }>;
+  };
   let title = shop;
-  let desc = defDesc;
-  let image = `${origin}/og/og-default.jpg`;
+  let desc = seo.defaultDescription?.trim() || defDesc;
+  let image = seo.defaultOgImage ? abs(seo.defaultOgImage) : `${origin}/og/og-default.jpg`;
   let type = 'website';
   const products = (catalog?.products ?? []).filter((p) => p && !p.hidden);
 
@@ -91,7 +97,9 @@ export const GET = handle(async (req) => {
   } else if (pathname === '/san-pham') {
     const cat = params.get('danhMuc');
     const list = cat ? products.filter((p) => p.category === cat) : products;
-    const icon = cat ? (catalog?.categories ?? []).find((c) => c.name === cat)?.icon ?? '' : '';
+    const rawIcon = cat ? (catalog?.categories ?? []).find((c) => c.name === cat)?.icon ?? '' : '';
+    // Icon dạng ảnh (link / data) thì không ghi vào tiêu đề.
+    const icon = rawIcon.length <= 8 && !/[/.:]/.test(rawIcon) ? rawIcon : '';
     title = cat ? `${icon ? icon + ' ' : ''}${cat} — ${shop}` : `Tất cả sản phẩm — ${shop}`;
     desc = `${list.length} sản phẩm${cat ? ' trong danh mục ' + cat : ''}: ${clip(list.slice(0, 4).map((p) => p.name).join(', '), 150)}`;
     // Danh mục: lấy ảnh sản phẩm đầu tiên của danh mục.
@@ -101,6 +109,14 @@ export const GET = handle(async (req) => {
     desc = 'Chơi minigame fumo miễn phí ngay trên trình duyệt, đua top bảng xếp hạng!';
   } else if (pathname === '/tin-tuc') {
     title = `Tin tức — ${shop}`;
+  }
+
+  // Trang trên menu có khai báo riêng → ưu tiên (trừ trang danh mục ?danhMuc=).
+  const page = seo.pages?.[pathname === '' ? '/' : pathname];
+  if (page && !(pathname === '/san-pham' && params.get('danhMuc'))) {
+    if (page.title?.trim()) title = page.title.trim();
+    if (page.description?.trim()) desc = clip(page.description.trim(), 200);
+    if (page.ogImage?.trim()) image = abs(page.ogImage.trim());
   }
 
   const qs = params.toString();

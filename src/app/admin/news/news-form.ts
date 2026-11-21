@@ -8,8 +8,9 @@ import { EMPTY_SEO, NewsInput, NewsPost, NewsSchemaType, NewsSeo, NewsStatus, ne
 import { NewsService } from '../../services/news.service';
 import { SettingsService } from '../../services/settings.service';
 import { fileToResizedDataUrl } from '../../shared/image-utils';
-import { MarkdownPipe } from '../../shared/markdown';
-import { SEO_LIMITS, SeoReport, analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
+import { renderMarkdown } from '../../shared/markdown';
+import { ArticleHtmlPipe, ContentFormat, contentAsMarkdown, htmlToSeoMarkdown } from '../../shared/article-html';
+import { SEO_LIMITS, SeoReport, analyzeSeo, markdownToText, scoreLevel, slugify } from '../../shared/seo';
 import { AdminToastService } from '../toast.service';
 
 interface ToolButton {
@@ -23,7 +24,7 @@ interface ToolButton {
 
 @Component({
   selector: 'app-admin-news-form',
-  imports: [FormsModule, RouterLink, DatePipe, MarkdownPipe],
+  imports: [FormsModule, RouterLink, DatePipe, ArticleHtmlPipe],
   templateUrl: './news-form.html',
   styleUrl: './news-form.scss',
 })
@@ -60,8 +61,25 @@ export class AdminNewsForm {
   readonly cover = signal('');
   readonly coverUrl = signal('');
   readonly mode = signal<'write' | 'preview'>('write');
+  /** Soạn thường (Markdown) hoặc viết / dán mã HTML. */
+  readonly format = signal<ContentFormat>('markdown');
   readonly submitted = signal(false);
   readonly uploading = signal(false);
+
+  readonly mdHint = 'Viết nội dung bài... Hỗ trợ: ## tiêu đề, **đậm**, *nghiêng*, - danh sách, [link](url), > trích dẫn';
+  readonly htmlHint = 'Dán hoặc viết mã HTML... VD: <h2>Tiêu đề</h2><p>Nội dung</p> — hỗ trợ bảng, ảnh, màu chữ, video YouTube (script sẽ tự bị bỏ).';
+  /** Nút chèn nhanh khi soạn HTML. */
+  readonly htmlTools: ToolButton[] = [
+    { label: 'H2', title: 'Tiêu đề lớn', before: '<h2>', after: '</h2>', placeholder: 'Tiêu đề', block: true },
+    { label: 'H3', title: 'Tiêu đề nhỏ', before: '<h3>', after: '</h3>', placeholder: 'Tiêu đề nhỏ', block: true },
+    { label: '¶', title: 'Đoạn văn', before: '<p>', after: '</p>', placeholder: 'Nội dung đoạn văn', block: true },
+    { label: 'B', title: 'In đậm', before: '<strong>', after: '</strong>', placeholder: 'chữ đậm' },
+    { label: 'I', title: 'In nghiêng', before: '<em>', after: '</em>', placeholder: 'chữ nghiêng' },
+    { label: '🔗', title: 'Chèn liên kết', before: '<a href="https://">', after: '</a>', placeholder: 'văn bản liên kết' },
+    { label: '• List', title: 'Danh sách', before: '<ul>\n  <li>', after: '</li>\n</ul>', placeholder: 'mục danh sách', block: true },
+    { label: '▦ Bảng', title: 'Bảng 2 cột', before: '<table>\n  <tr><th>Tiêu đề 1</th><th>Tiêu đề 2</th></tr>\n  <tr><td>', after: '</td><td>…</td></tr>\n</table>', placeholder: 'ô 1', block: true },
+    { label: '▶ YouTube', title: 'Nhúng video YouTube (thay MÃ_VIDEO)', before: '<iframe width="560" height="315" src="https://www.youtube.com/embed/', after: '" title="YouTube" allowfullscreen></iframe>', placeholder: 'MÃ_VIDEO', block: true },
+  ];
 
   readonly tools: ToolButton[] = [
     { label: 'H2', title: 'Tiêu đề lớn', before: '## ', placeholder: 'Tiêu đề', block: true },
@@ -74,6 +92,10 @@ export class AdminNewsForm {
   ];
 
   constructor() {
+    // Mở từ Admin → Khai báo (?seo=1) → cuộn tới khung SEO.
+    if (new URLSearchParams(location.search).get('seo')) {
+      setTimeout(() => this.host.querySelector<HTMLElement>('.adm-box.seo')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    }
     effect(() => {
       const id = this.id();
       untracked(() => {
@@ -81,6 +103,7 @@ export class AdminNewsForm {
         this.title = p?.title ?? '';
         this.excerpt = p?.excerpt ?? '';
         this.content = p?.content ?? '';
+        this.format.set(p?.format === 'html' ? 'html' : 'markdown');
         this.status = p?.status ?? 'draft';
         this.seo = { ...EMPTY_SEO, ...p?.seo };
         this.cover.set(p?.cover ?? '');
@@ -98,7 +121,7 @@ export class AdminNewsForm {
 
   report(): SeoReport {
     return analyzeSeo(
-      { title: this.title, excerpt: this.excerpt, content: this.content, cover: this.cover(), seo: this.seo },
+      { title: this.title, excerpt: this.excerpt, content: this.content, cover: this.cover(), seo: this.seo, format: this.format() },
       this.autoSlug(),
     );
   }
@@ -111,6 +134,7 @@ export class AdminNewsForm {
       id: cur?.id ?? 'moi',
       title: this.title || 'Tiêu đề bài viết',
       excerpt: this.excerpt,
+      format: this.format(),
       content: this.content,
       cover: this.cover(),
       status: this.status,
@@ -162,13 +186,27 @@ export class AdminNewsForm {
     try {
       const url = await fileToResizedDataUrl(file, 900, 0.8);
       const pos = textarea.selectionStart;
-      const snippet = `\n![${file.name.replace(/\.[^.]+$/, '')}](${url})\n`;
+      const alt = file.name.replace(/\.[^.]+$/, '');
+      const snippet = this.format() === 'html' ? `\n<img src="${url}" alt="${alt}" />\n` : `\n![${alt}](${url})\n`;
       this.content = this.content.slice(0, pos) + snippet + this.content.slice(pos);
       textarea.value = this.content;
       this.toast.ok('Đã chèn ảnh vào nội dung');
     } catch {
       this.toast.err('Không đọc được ảnh.');
     }
+  }
+
+  /** Đổi kiểu soạn: tự chuyển nội dung đang có sang kiểu mới (Markdown → HTML giữ nguyên định dạng). */
+  setFormat(f: ContentFormat): void {
+    if (f === this.format()) return;
+    if (this.content.trim()) {
+      if (f === 'html') this.content = renderMarkdown(this.content);
+      else {
+        if (!confirm('Chuyển sang soạn thường sẽ bỏ các định dạng HTML phức tạp (bảng, màu, video...). Tiếp tục?')) return;
+        this.content = htmlToSeoMarkdown(this.content);
+      }
+    }
+    this.format.set(f);
   }
 
   setMode(m: 'write' | 'preview'): void {
@@ -223,7 +261,8 @@ export class AdminNewsForm {
     this.status = status;
     const data: NewsInput = {
       title: this.title.trim(),
-      excerpt: this.excerpt.trim() || this.content.replace(/[#*>\-\[\]()!]/g, '').trim().slice(0, 160),
+      excerpt: this.excerpt.trim() || markdownToText(contentAsMarkdown({ content: this.content, format: this.format() })).slice(0, 160),
+      format: this.format(),
       content: this.content,
       cover: this.cover(),
       status,

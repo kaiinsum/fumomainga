@@ -36,6 +36,8 @@ const INDEX: Entry[] = [
   { icon: '✍️', label: 'Viết bài mới', where: 'Tin tức', path: '/admin/tin-tuc/moi', keys: 'dang bai' },
   { icon: '🎉', label: 'Chủ đề dịp lễ', where: 'Quản lý nội dung', path: '/admin/chu-de', keys: 'tet trung thu giang sinh halloween valentine them dip le tu dong theo lich thiep' },
   // Marketing
+  { icon: '🔍', label: 'Khai báo SEO (Google)', where: 'Marketing & tương tác', path: '/admin/khai-bao', keys: 'seo rank math google index search console sitemap tu khoa meta mo ta favicon schema' },
+  { icon: '🖼', label: 'Favicon', where: 'Khai báo SEO', path: '/admin/khai-bao?tab=general', keys: 'favicon icon tab logo' },
   { icon: '🎮', label: 'Minigame', where: 'Marketing & tương tác', path: '/admin/minigame', keys: 'khoa mo an game thu tu' },
   { icon: '🎟', label: 'Code mở khoá minigame hôm nay', where: 'Minigame', path: '/admin/minigame', keys: 'code ma mo khoa' },
   { icon: '🎲', label: 'Giới hạn trò miễn phí mỗi ngày / random lại', where: 'Minigame', path: '/admin/minigame', keys: 'mien phi random gioi han' },

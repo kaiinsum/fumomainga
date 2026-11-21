@@ -1,5 +1,6 @@
 import { NewsSeo } from '../models/news';
 import { ProductSeo } from '../models/product';
+import { ContentFormat, contentAsMarkdown } from './article-html';
 
 /** Giới hạn hiển thị của Google (xấp xỉ theo ký tự). */
 export const SEO_LIMITS = { title: 60, description: 160, descriptionMin: 120, url: 75, minWords: 600 };
@@ -49,6 +50,8 @@ export interface SeoSource {
   content: string;
   cover: string;
   seo: NewsSeo;
+  /** Bài soạn bằng HTML → tự đổi sang dạng chữ để chấm điểm. */
+  format?: ContentFormat;
 }
 
 export type CheckLevel = 'ok' | 'warn' | 'bad';
@@ -73,7 +76,7 @@ export interface SeoReport {
 
 /** Giá trị thực tế khi trống: tiêu đề SEO → tiêu đề bài, mô tả → tóm tắt. */
 export function effectiveSeo(src: SeoSource): { title: string; description: string } {
-  const description = (src.seo.description || src.excerpt || markdownToText(src.content)).trim();
+  const description = (src.seo.description || src.excerpt || markdownToText(contentAsMarkdown(src))).trim();
   return {
     title: (src.seo.title || src.title).trim(),
     description: description.length > SEO_LIMITS.description ? description.slice(0, SEO_LIMITS.description - 1) + '…' : description,
@@ -81,7 +84,9 @@ export function effectiveSeo(src: SeoSource): { title: string; description: stri
 }
 
 /** Chấm điểm SEO theo các tiêu chí tương tự Rank Math. */
-export function analyzeSeo(src: SeoSource, slugFallback: string): SeoReport {
+export function analyzeSeo(input: SeoSource, slugFallback: string): SeoReport {
+  // Bài HTML: đổi sang dạng Markdown giản lược để các tiêu chí (H2/H3, alt ảnh, link) chấm như nhau.
+  const src: SeoSource = input.format === 'html' ? { ...input, content: contentAsMarkdown(input), format: 'markdown' } : input;
   const { title, description } = effectiveSeo(src);
   const slug = src.seo.slug || slugFallback;
   const kw = norm(src.seo.focusKeyword);
@@ -282,4 +287,58 @@ export function analyzeProductSeo(src: ProductSeoSource): SeoReport {
   const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
   checks.sort((a, b) => order[a.level] - order[b.level]);
   return { score: Math.round((got / max) * 100), checks, title, description, slug, words: total, density };
+}
+
+// ================= SEO trang (Admin → Khai báo) =================
+
+/** Chấm điểm SEO một trang tĩnh (Trang chủ, Sản phẩm, Liên hệ...). */
+export function analyzePageSeo(src: {
+  title: string;
+  description: string;
+  focusKeyword: string;
+  path: string;
+  noindex: boolean;
+  ogImage: string;
+  /** Ảnh chia sẻ mặc định của web (dùng khi trang chưa đặt ảnh riêng). */
+  defaultOgImage: string;
+}): SeoReport {
+  const title = src.title.trim();
+  const description = src.description.trim();
+  const kw = norm(src.focusKeyword);
+  const checks: SeoCheck[] = [];
+  const add = (cond: boolean | CheckLevel, weight: number, ok: string, bad: string) => {
+    const level: CheckLevel = cond === true ? 'ok' : cond === false ? 'bad' : cond;
+    checks.push({ level, weight, text: level === 'ok' ? ok : bad });
+  };
+  if (!kw) add(false, 25, '', 'Chưa đặt từ khoá chính cho trang này.');
+  else {
+    const t = norm(title);
+    add(t.includes(kw), 10, 'Từ khoá có trong tiêu đề SEO.', 'Thêm từ khoá chính vào tiêu đề SEO.');
+    add(t.indexOf(kw) >= 0 && t.indexOf(kw) <= t.length / 2, 4, 'Từ khoá nằm ở nửa đầu tiêu đề.', 'Nên đưa từ khoá về gần đầu tiêu đề.');
+    add(norm(description).includes(kw), 8, 'Từ khoá có trong mô tả meta.', 'Thêm từ khoá chính vào mô tả meta.');
+  }
+  add(
+    !src.title ? 'warn' : title.length >= 30 && title.length <= SEO_LIMITS.title ? true : 'warn',
+    10,
+    `Tiêu đề SEO dài ${title.length} ký tự — vừa đẹp.`,
+    !src.title
+      ? 'Chưa viết tiêu đề SEO riêng — đang dùng "<tên trang> — <tên shop>".'
+      : title.length > SEO_LIMITS.title
+        ? `Tiêu đề dài ${title.length} ký tự — Google sẽ cắt bớt (nên ≤ ${SEO_LIMITS.title}).`
+        : `Tiêu đề hơi ngắn (${title.length} ký tự) — nên 30–${SEO_LIMITS.title}.`,
+  );
+  add(
+    !description ? false : description.length >= SEO_LIMITS.descriptionMin && description.length <= SEO_LIMITS.description ? true : 'warn',
+    12,
+    `Mô tả meta dài ${description.length} ký tự — vừa đẹp.`,
+    !description ? 'Chưa có mô tả meta — Google sẽ tự lấy một đoạn bất kỳ trên trang.' : `Mô tả meta dài ${description.length} ký tự — nên ${SEO_LIMITS.descriptionMin}–${SEO_LIMITS.description}.`,
+  );
+  const img = src.ogImage || src.defaultOgImage;
+  add(!!src.ogImage || (img ? 'warn' : false), 5, 'Có ảnh chia sẻ riêng cho trang.', img ? 'Đang dùng ảnh chia sẻ mặc định của web — nên có ảnh riêng.' : 'Chưa có ảnh chia sẻ (Facebook / Zalo).');
+  add(!src.noindex, 10, 'Trang được phép lập chỉ mục (index).', 'Trang đang đặt noindex — Google sẽ không hiển thị trang này.');
+  const max = checks.reduce((s, c) => s + c.weight, 0);
+  const got = checks.reduce((s, c) => s + (c.level === 'ok' ? c.weight : c.level === 'warn' ? c.weight / 2 : 0), 0);
+  const order: Record<CheckLevel, number> = { bad: 0, warn: 1, ok: 2 };
+  checks.sort((a, b) => order[a.level] - order[b.level]);
+  return { score: Math.round((got / max) * 100), checks, title, description, slug: src.path, words: 0, density: 0 };
 }

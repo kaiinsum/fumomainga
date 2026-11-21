@@ -261,6 +261,10 @@ export class AdminProductForm {
   }
 
   constructor() {
+    // Mở từ Admin → Khai báo (?seo=1) → cuộn tới khung SEO.
+    if (new URLSearchParams(location.search).get('seo')) {
+      setTimeout(() => this.host.querySelector<HTMLElement>('.adm-box.seo')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    }
     void this.costSvc.load().then(() => {
       const p = this.editing();
       this.fillCosts(p?.id, (p?.variants ?? []).map((v) => v.id));

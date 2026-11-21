@@ -37,7 +37,7 @@ const esc = (s: string) =>
 const day = (t?: number) => (t && Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : '');
 const publicImg = (src?: string) => (src && /^https?:\/\//i.test(src) ? src : '');
 
-export function buildSitemap(origin: string, catalog: Catalog | null): string {
+export function buildSitemap(origin: string, catalog: Catalog | null, noindexPages: Set<string> = new Set()): string {
   const products = (catalog?.products ?? []).filter((p) => p && p.id && !p.hidden && !p.seo?.noindex);
   const news = (catalog?.news ?? []).filter((n) => n && n.id && n.status === 'published' && !n.seo?.noindex);
   const usedCats = new Set(products.map((p) => p.category).filter(Boolean));
@@ -85,9 +85,15 @@ export function buildSitemap(origin: string, catalog: Catalog | null): string {
     url('/chinh-sach', undefined, 'monthly', '0.3'),
   ];
 
+  // Trang trên menu đặt noindex (Admin → Khai báo) → bỏ khỏi sitemap.
+  const pagePath = (u: string) => {
+    const m = /<loc>[^<]*?\/\/[^/]+(\/[^<?]*)/.exec(u);
+    return m ? m[1] : '';
+  };
+  const kept = entries.filter((u) => !noindexPages.has(pagePath(u)) || /\?/.test(/<loc>([^<]*)/.exec(u)?.[1] ?? ''));
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${entries.join('\n')}
+${kept.join('\n')}
 </urlset>
 `;
 }
@@ -111,6 +117,11 @@ export const GET = handle(async (req) => {
   if (url.searchParams.get('kind') === 'robots') {
     return new Response(buildRobots(origin), { headers: { ...headers, 'content-type': 'text/plain; charset=utf-8' } });
   }
-  const catalog = await getStore().getJson<Catalog>('site:catalog').catch(() => null);
-  return new Response(buildSitemap(origin, catalog), { headers: { ...headers, 'content-type': 'application/xml; charset=utf-8' } });
+  const [catalog, settingsRow] = await Promise.all([
+    getStore().getJson<Catalog>('site:catalog').catch(() => null),
+    getStore().getJson<{ settings?: { seo?: { pages?: Record<string, { noindex?: boolean }> } } }>('site:settings').catch(() => null),
+  ]);
+  const pages = settingsRow?.settings?.seo?.pages ?? {};
+  const noindex = new Set(Object.entries(pages).filter(([, p]) => p?.noindex).map(([path]) => path));
+  return new Response(buildSitemap(origin, catalog, noindex), { headers: { ...headers, 'content-type': 'application/xml; charset=utf-8' } });
 });

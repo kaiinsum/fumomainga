@@ -9,11 +9,11 @@ import { newsPath } from '../../models/news';
 import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { NewsService } from '../../services/news.service';
 import { SettingsService } from '../../services/settings.service';
-import { MarkdownPipe } from '../../shared/markdown';
+import { ArticleHtmlPipe } from '../../shared/article-html';
 
 @Component({
   selector: 'app-news-detail',
-  imports: [RouterLink, DatePipe, MarkdownPipe],
+  imports: [RouterLink, DatePipe, ArticleHtmlPipe],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/">Trang chủ</a> / <a routerLink="/tin-tuc">Tin tức</a></nav>
@@ -24,7 +24,7 @@ import { MarkdownPipe } from '../../shared/markdown';
             <h1>{{ p.title }}</h1>
           </header>
           @if (p.cover) { <img class="cover" [src]="p.cover" [alt]="p.title" /> }
-          <div class="prose" [innerHTML]="p.content | markdown"></div>
+          <div class="prose" [innerHTML]="p.content | articleHtml: p.format"></div>
         </article>
 
         @if (others().length) {

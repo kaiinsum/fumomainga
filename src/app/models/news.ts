@@ -1,3 +1,5 @@
+import type { ContentFormat } from '../shared/article-html';
+
 export type NewsStatus = 'draft' | 'published';
 
 /** Loại schema.org khai báo cho bài viết (giống Rank Math → Schema). */
@@ -24,8 +26,10 @@ export interface NewsPost {
   id: string;
   title: string;
   excerpt: string;
-  /** Nội dung dạng Markdown đơn giản. */
+  /** Nội dung: Markdown đơn giản (soạn thường) hoặc mã HTML — xem `format`. */
   content: string;
+  /** Kiểu soạn nội dung. Trống = 'markdown' (bài cũ). */
+  format?: ContentFormat;
   cover: string;
   status: NewsStatus;
   createdAt: number;
@@ -34,7 +38,7 @@ export interface NewsPost {
   seo?: NewsSeo;
 }
 
-export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'status' | 'seo'>;
+export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'status' | 'seo' | 'format'>;
 
 export const EMPTY_SEO: NewsSeo = {
   slug: '',

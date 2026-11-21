@@ -187,6 +187,8 @@ export interface SiteSettings {
   gameCategories?: GameCategory[];
   /** Người hướng dẫn (Cirno / Reimu) — Marketing & tương tác → Người hướng dẫn. */
   guide?: GuideSettings;
+  /** Khai báo SEO cả web (Admin → Khai báo): từng trang menu, tổ chức, ảnh chia sẻ, favicon. */
+  seo?: import('./site-seo').SiteSeo;
   /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
   minigameComingSoon: boolean;
   /** Số trò được chơi miễn phí mỗi ngày (0 = mở tất cả). Có code trong ngày thì mở hết. */

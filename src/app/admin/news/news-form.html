@@ -24,13 +24,17 @@
     <span class="req top-label">Nội dung</span>
     <section class="adm-box editor" [class.invalid-box]="submitted() && !content.trim()">
       <div class="editor-bar">
+        <div class="modes fmt" role="radiogroup" aria-label="Kiểu soạn nội dung">
+          <button type="button" role="radio" [attr.aria-checked]="format() === 'markdown'" [class.on]="format() === 'markdown'" (click)="setFormat('markdown')" title="Soạn bình thường: ## tiêu đề, **đậm**, - danh sách...">✍️ Soạn thường</button>
+          <button type="button" role="radio" [attr.aria-checked]="format() === 'html'" [class.on]="format() === 'html'" (click)="setFormat('html')" title="Viết hoặc dán mã HTML (bảng, màu chữ, video YouTube...)">&lt;/&gt; HTML</button>
+        </div>
         <div class="modes">
           <button type="button" [class.on]="mode() === 'write'" (click)="setMode('write')">Soạn thảo</button>
           <button type="button" [class.on]="mode() === 'preview'" (click)="setMode('preview')">Xem trước</button>
         </div>
         @if (mode() === 'write') {
           <div class="tools">
-            @for (t of tools; track t.label) {
+            @for (t of format() === 'html' ? htmlTools : tools; track t.label) {
               <button type="button" [title]="t.title" (mousedown)="$event.preventDefault()" (click)="apply(t, ta)">
                 {{ t.label }}
               </button>
@@ -46,13 +50,15 @@
         <textarea
           #ta
           [hidden]="mode() !== 'write'"
+          [class.code]="format() === 'html'"
+          spellcheck="false"
           [class.invalid]="submitted() && !content.trim()"
           [(ngModel)]="content"
           rows="18"
-          placeholder="Viết nội dung bài... Hỗ trợ: ## tiêu đề, **đậm**, *nghiêng*, - danh sách, [link](url), > trích dẫn"
+          [placeholder]="format() === 'html' ? htmlHint : mdHint"
         ></textarea>
         @if (mode() === 'preview') {
-          <article class="prose" [innerHTML]="content | markdown"></article>
+          <article class="prose" [innerHTML]="content | articleHtml: format()"></article>
           @if (!content.trim()) {
             <p class="muted">Chưa có nội dung.</p>
           }
@@ -70,7 +76,7 @@
     @let r = report();
     <section class="adm-box seo">
       <div class="box-title seo-head">
-        <span>🔍 SEO</span>
+        <span>🔍 SEO <a class="hub-link" routerLink="/admin/khai-bao" [queryParams]="{ tab: 'news' }">Tất cả khai báo →</a></span>
         <span [class]="'score ' + scoreLevel(r.score)">{{ r.score }}/100</span>
       </div>
 

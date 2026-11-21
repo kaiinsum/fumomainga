@@ -85,6 +85,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./guide/guide-settings').then((m) => m.AdminGuideSettings),
       },
       {
+        path: 'khai-bao',
+        title: 'Khai báo SEO',
+        loadComponent: () => import('./seo/seo-hub').then((m) => m.AdminSeoHub),
+      },
+      {
         path: 'danh-muc',
         title: 'Danh mục',
         loadComponent: () => import('./categories/categories').then((m) => m.AdminCategories),

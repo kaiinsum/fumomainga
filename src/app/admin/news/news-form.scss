@@ -327,3 +327,22 @@
   color: #50575e;
   margin-bottom: -10px;
 }
+
+// Soạn HTML: font code
+.editor-body textarea.code {
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  tab-size: 2;
+  background: #1d2327;
+  color: #e6e6e6;
+}
+.modes.fmt {
+  margin-right: 8px;
+}
+
+.hub-link {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-left: 8px;
+}

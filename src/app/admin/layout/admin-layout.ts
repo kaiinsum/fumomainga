@@ -87,6 +87,7 @@ export class AdminLayout implements AfterViewInit {
     {
       title: 'Marketing & tương tác',
       items: [
+        { icon: '🔍', label: 'Khai báo SEO', path: '/admin/khai-bao' },
         { icon: '🎮', label: 'Minigame', path: '/admin/minigame' },
         { icon: '🧚', label: 'Người hướng dẫn', path: '/admin/nguoi-huong-dan' },
         { icon: '📣', label: 'Thông báo', path: '/admin/thong-bao' },

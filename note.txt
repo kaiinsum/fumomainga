@@ -7,3 +7,8 @@ git commit -m "Mô tả thay đổi"
 git push
 
 https://www.facebook.com/fumomainga
+Bạn cần làm:
+
+Chạy lại supabase/schema.sql trong Supabase → SQL Editor để tạo hàm save_order. Lần chạy này cũng thêm cột giá giảm và bảng contacts còn thiếu. Nếu chưa chạy, web vẫn hoạt động nhưng chưa nhanh lên phần lưu đơn.
+Cho máy chủ Vercel cùng khu vực với Supabase. Đây là thay đổi giúp nhanh rõ nhất. Xem khu vực ở Supabase → Project Settings → General → Region, rồi vào Vercel → Project → Settings → Functions → Function Region chọn khu vực tương ứng (ví dụ Supabase ở Singapore thì chọn Singapore, sin1). Cách khác: bạn cho tôi biết khu vực, tôi ghi sẵn vào vercel.json.
+Nếu Supabase dùng gói miễn phí: project sẽ tự tạm dừng sau khoảng 7 ngày không có truy cập, và lần truy cập đầu sau đó sẽ rất chậm hoặc lỗi. Vào Dashboard bấm Restore nếu thấy project đang ở trạng thái Paused.

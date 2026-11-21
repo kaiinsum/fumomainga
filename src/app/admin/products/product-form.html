@@ -168,7 +168,7 @@
     @let r = report();
     <section class="adm-box seo">
       <div class="box-title seo-head">
-        <span>🔍 SEO sản phẩm</span>
+        <span>🔍 SEO sản phẩm <a class="hub-link" routerLink="/admin/khai-bao" [queryParams]="{ tab: 'products' }">Tất cả khai báo →</a></span>
         <span [class]="'score ' + scoreLevel(r.score)" title="Điểm SEO kiểu Rank Math">{{ r.score }}/100</span>
       </div>
 
