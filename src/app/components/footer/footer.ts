@@ -82,7 +82,7 @@ import { IconComponent } from '../../shared/icon';
     .contact p { display: flex; gap: 8px; margin: 0 0 8px; line-height: 1.5; }
     .contact a.inline { display: inline; padding: 0; }
     .contact .more { margin-top: 4px; font-weight: 700; }
-    h3 span { color: var(--primary); }
+    h3 span { color: var(--primary); margin-left: 8px; }
     h4 { margin: 0 0 12px; color: #fff; }
     a { display: block; color: rgba(255, 255, 255, .78); padding: 3px 0; transition: color .2s; }
     a:hover { color: var(--primary); }
