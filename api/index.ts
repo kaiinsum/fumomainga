@@ -89,7 +89,9 @@ async function route(req: Request): Promise<Response> {
 
   const mod = ROUTES.find(([re]) => re.test(path))?.[1];
   if (!mod) return reply({ error: 'Không tìm thấy API.' }, 404);
-  const method = req.method.toUpperCase() as keyof Module;
+  // HEAD (Google / trình duyệt hỏi trước khi tải) = GET nhưng không trả nội dung.
+  const head = req.method.toUpperCase() === 'HEAD';
+  const method = (head ? 'GET' : req.method.toUpperCase()) as keyof Module;
   const handler = mod[method];
   if (!handler) {
     const allow = Object.keys(mod).filter((k) => /^[A-Z]+$/.test(k)).join(', ');
@@ -130,7 +132,8 @@ async function route(req: Request): Promise<Response> {
     if (body.byteLength > limit) return reply({ error: 'Dữ liệu gửi lên quá lớn.' }, 413);
   }
   const forwarded = new Request(target, { method, headers: req.headers, body });
-  return handler(forwarded);
+  const res = await handler(forwarded);
+  return head ? new Response(null, { status: res.status, headers: res.headers }) : res;
 }
 
 export const GET = route;
@@ -138,3 +141,4 @@ export const POST = route;
 export const PUT = route;
 export const DELETE = route;
 export const PATCH = route;
+export const HEAD = route;

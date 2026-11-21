@@ -24,6 +24,10 @@
       "destination": "/api?__path=site-icon"
     },
     {
+      "source": "/favicon.ico",
+      "destination": "/api?__path=site-icon&ico=1"
+    },
+    {
       "source": "/robots.txt",
       "destination": "/api?__path=sitemap&kind=robots"
     },

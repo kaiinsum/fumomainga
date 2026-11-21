@@ -3,6 +3,7 @@
  * index.html trỏ thẳng <link rel="icon"> về đây nên Google (đọc HTML gốc, không chạy JavaScript) thấy đúng favicon đã đặt,
  * không chỉ tab trình duyệt. Chưa đặt favicon → chuyển về file mặc định trong /public.
  *  ?apple=1 → icon cho màn hình chính iPhone (mặc định: apple-touch-icon.png).
+ *  /favicon.ico cũng trỏ về đây (?ico=1) để mọi nơi (Google, trình duyệt cũ) thấy CÙNG một icon.
  */
 import { getStore, handle } from '../_lib/orders';
 
