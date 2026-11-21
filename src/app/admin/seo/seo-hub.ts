@@ -118,6 +118,24 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
             </div>
           </div>
         </section>
+
+        <section class="adm-box">
+          <h2>✅ Kiểm tra SEO kỹ thuật</h2>
+          <div class="box-body">
+            <ul class="tech">
+              @for (t of techChecks; track t.name) {
+                <li><span class="tk">✓</span><b>{{ t.name }}</b><span>{{ t.text }}</span></li>
+              }
+              <li class="warn-li"><span class="tk w">!</span><b>Wayback</b>
+                <span>Lưu bản chụp web lên Internet Archive (lịch sử tên miền).
+                  <a [href]="'https://web.archive.org/save/' + origin + '/'" target="_blank" rel="noopener">📸 Lưu bản chụp ngay ↗</a> ·
+                  <a [href]="'https://web.archive.org/web/*/' + host + '*'" target="_blank" rel="noopener">Xem lịch sử ↗</a></span></li>
+              <li class="warn-li"><span class="tk w">!</span><b>Core Web Vitals</b>
+                <span>Đo tốc độ thật trên điện thoại:
+                  <a [href]="'https://pagespeed.web.dev/analysis?url=' + enc(origin + '/')" target="_blank" rel="noopener">PageSpeed Insights ↗</a></span></li>
+            </ul>
+          </div>
+        </section>
       }
 
       <!-- ============ TRANG (MENU) ============ -->
@@ -361,6 +379,11 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
     .todo li > span:nth-child(2) { flex: 1; }
     .lnk { border: 0; background: none; color: #2271b1; cursor: pointer; font: inherit; padding: 0; }
     .good { margin: 0; font-weight: 700; color: #00a32a; }
+    .tech { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; font-size: .88rem; }
+    .tech li { display: grid; grid-template-columns: 20px 130px 1fr; gap: 8px; align-items: start; }
+    .tk { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 900; color: #fff; background: #00a32a; }
+    .tk.w { background: #dba617; }
+    @media (max-width: 600px) { .tech li { grid-template-columns: 20px 1fr; } .tech li > span:last-child { grid-column: 2; } }
     .steps ol { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 6px; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; }
     .split { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -449,6 +472,20 @@ export class AdminSeoHub {
     { value: 'Organization', label: 'Tổ chức (Organization)' },
   ];
   readonly seps = ['—', '–', '-', '|', '•', '·', '»', '/'];
+  readonly host = location.host;
+  /** Các mục SEO kỹ thuật web đã làm sẵn (hiển thị ở Tổng quan). */
+  readonly techChecks = [
+    { name: 'Title & Meta', text: 'Mọi trang có tiêu đề + mô tả riêng (khai báo ở đây, sản phẩm, bài viết).' },
+    { name: 'Heading', text: 'Mỗi trang đúng 1 thẻ H1; H1 trong bài viết HTML tự hạ thành H2.' },
+    { name: 'Canonical', text: 'Mọi trang có URL chuẩn; trang danh mục giữ ?danhMuc; tên miền vercel.app chuyển về www.fumomainga.io.vn.' },
+    { name: 'Robots.txt', text: 'Tự tạo, chặn /admin, /api, giỏ hàng, tra cứu đơn; có đường dẫn sitemap.' },
+    { name: 'Sitemap', text: 'Tự cập nhật: trang chính, danh mục, sản phẩm (kèm ảnh), bài viết, minigame; bỏ mục ẩn / nháp / noindex.' },
+    { name: 'Schema', text: 'Product / Offer, Article / Review, Breadcrumb, WebPage, Organization / Store, WebSite (ô tìm kiếm).' },
+    { name: 'Open Graph', text: 'Thẻ chia sẻ cho Facebook / Zalo / Messenger (máy chủ trả riêng cho bot) + Twitter Card.' },
+    { name: 'Ảnh ALT', text: 'Ảnh nội dung có mô tả (tên sản phẩm / tiêu đề); ảnh trang trí để alt rỗng đúng chuẩn.' },
+    { name: 'HTTPS', text: 'Tự chuyển http → https (308), chứng chỉ Vercel.' },
+    { name: 'Cache / HSTS', text: 'HSTS 2 năm, JS/CSS lưu đệm 1 năm, ảnh 7 ngày; thêm nosniff, Referrer-Policy, X-Frame-Options.' },
+  ];
 
   private readonly qp = inject(ActivatedRoute).snapshot.queryParamMap;
   readonly tab = signal<Tab>((this.tabs.some((t) => t.id === this.qp.get('tab')) ? this.qp.get('tab') : 'overview') as Tab);

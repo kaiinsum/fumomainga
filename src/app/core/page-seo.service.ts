@@ -29,6 +29,8 @@ export class PageSeoService {
   private readonly doc = inject(DOCUMENT);
   private readonly settings = inject(SettingsService).settings;
   private readonly path = signal(this.router.url.split(/[?#]/)[0]);
+  /** Query hiện tại (để canonical trang danh mục giữ ?danhMuc=...). */
+  private readonly query = signal(this.router.url.split('#')[0].split('?')[1] ?? '');
   private defaultDescription: string | null = null;
   private faviconDefaults: { el: HTMLLinkElement; href: string; type: string }[] | null = null;
   private started = false;
@@ -37,14 +39,16 @@ export class PageSeoService {
     if (this.started) return;
     this.started = true;
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
-      this.path.set((e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0] || '/');
+      const u = (e as NavigationEnd).urlAfterRedirects.split('#')[0];
+      this.path.set(u.split('?')[0] || '/');
+      this.query.set(u.split('?')[1] ?? '');
     });
     effect(() => {
       const s = this.settings();
       const seo = siteSeoOf(s);
       titleSep.value = seo.titleSep || '—';
       this.applyFavicon(seo.favicon);
-      this.apply(this.path(), seo, s.shopName);
+      this.apply(this.path(), seo, s.shopName, this.query());
     });
   }
 
@@ -61,18 +65,34 @@ export class PageSeoService {
     }
   }
 
+  private applyFallback(path: string, origin: string): void {
+    // Sản phẩm / bài viết đã có canonical riêng (SeoMetaService).
+    if (/^\/(san-pham|tin-tuc)\/[^/]+$/.test(path) || path.startsWith('/admin')) return;
+    const canonical = this.doc.createElement('link');
+    canonical.rel = 'canonical';
+    canonical.href = origin + path;
+    canonical.setAttribute(ATTR, '');
+    this.doc.head.appendChild(canonical);
+    if (NOINDEX_PATHS.has(path)) {
+      this.meta.removeTag('name="robots"');
+      this.meta.addTag({ name: 'robots', content: 'noindex, follow' }, true)?.setAttribute(ATTR, '');
+    }
+  }
+
   private clearOwn(): void {
     this.doc.head.querySelectorAll(`[${ATTR}]`).forEach((el) => el.remove());
   }
 
-  private apply(path: string, seo: SiteSeo, shop: string): void {
+  private apply(path: string, seo: SiteSeo, shop: string, query = ''): void {
     const def = SEO_PAGES.find((p) => p.path === path);
     this.clearOwn();
     this.defaultDescription ??= this.meta.getTag('name="description"')?.content ?? '';
-    if (!def) return;
-    const page = pageSeoOf(seo, path);
     const origin = this.doc.location.origin;
-    const url = origin + (path === '/' ? '/' : path);
+    if (!def) return this.applyFallback(path, origin);
+    const page = pageSeoOf(seo, path);
+    // Trang danh mục (/san-pham?danhMuc=..., /tin-tuc?danhMuc=...) là trang riêng → canonical giữ tham số danh mục.
+    const cat = new URLSearchParams(query).get('danhMuc');
+    const url = origin + (path === '/' ? '/' : path) + (cat && (path === '/san-pham' || path === '/tin-tuc') ? '?danhMuc=' + encodeURIComponent(cat) : '');
     const title = page.title.trim() || (path === '/' ? shop : `${def.label} ${seo.titleSep || '—'} ${shop}`);
     const description = page.description.trim() || seo.defaultDescription.trim() || this.defaultDescription || '';
     const image = publicImage(page.ogImage || seo.defaultOgImage, origin) || `${origin}/og/og-default.jpg`;
@@ -101,7 +121,7 @@ export class PageSeoService {
     }
     const canonical = this.doc.createElement('link');
     canonical.rel = 'canonical';
-    canonical.href = page.canonical.trim() || url;
+    canonical.href = (!cat && page.canonical.trim()) || url;
     canonical.setAttribute(ATTR, '');
     this.doc.head.appendChild(canonical);
 
@@ -112,6 +132,9 @@ export class PageSeoService {
     this.doc.head.appendChild(ld);
   }
 }
+
+/** Trang ngoài danh sách khai báo / sản phẩm / bài viết (vd. từng minigame, giỏ hàng): vẫn có canonical; giỏ hàng noindex. */
+const NOINDEX_PATHS = new Set(['/gio-hang']);
 
 export interface PageSchemaInput {
   path: string;

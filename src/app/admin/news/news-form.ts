@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { animate } from 'animejs';
 import { buildArticleSchema } from '../../core/seo-meta.service';
+import { newsCategoriesOf } from '../../models/news';
 import { EMPTY_SEO, NewsInput, NewsPost, NewsSchemaType, NewsSeo, NewsStatus, newsPath } from '../../models/news';
 import { NewsService } from '../../services/news.service';
 import { SettingsService } from '../../services/settings.service';
@@ -65,6 +66,9 @@ export class AdminNewsForm {
   readonly mode = signal<'write' | 'preview'>('write');
   /** Soạn thường (Markdown) hoặc viết / dán mã HTML. */
   readonly format = signal<ContentFormat>('markdown');
+  /** Danh mục bài viết đang chọn ('' = chưa phân loại). */
+  readonly category = signal('');
+  readonly categories = computed(() => newsCategoriesOf(this.settings()));
   readonly submitted = signal(false);
   readonly uploading = signal(false);
 
@@ -106,6 +110,7 @@ export class AdminNewsForm {
         this.excerpt = p?.excerpt ?? '';
         this.content = p?.content ?? '';
         this.format.set(p?.format === 'html' ? 'html' : 'markdown');
+        this.category.set(p?.category ?? '');
         this.status = p?.status ?? 'draft';
         this.seo = { ...EMPTY_SEO, ...p?.seo };
         this.cover.set(p?.cover ?? '');
@@ -263,6 +268,7 @@ export class AdminNewsForm {
     this.status = status;
     const data: NewsInput = {
       title: this.title.trim(),
+      category: this.category() || undefined,
       excerpt: this.excerpt.trim() || markdownToText(contentAsMarkdown({ content: this.content, format: this.format() })).slice(0, 160),
       format: this.format(),
       content: this.content,

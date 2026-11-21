@@ -221,6 +221,17 @@
     </section>
 
     <section class="adm-box">
+      <h2>Danh mục</h2>
+      <div class="box-body field">
+        <select [ngModel]="category()" (ngModelChange)="category.set($event)" aria-label="Danh mục bài viết">
+          <option value="">— Chưa phân loại —</option>
+          @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+        </select>
+        <a class="small-link" routerLink="/admin/tin-tuc" [queryParams]="{ danhMuc: 1 }">⚙ Quản lý danh mục bài viết</a>
+      </div>
+    </section>
+
+    <section class="adm-box">
       <h2>Ảnh đại diện</h2>
       <div class="box-body">
         @if (cover()) {

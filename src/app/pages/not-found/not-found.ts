@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, inject } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Meta } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { animate, stagger } from 'animejs';
 
@@ -24,6 +25,14 @@ import { animate, stagger } from 'animejs';
 export class NotFoundPage implements AfterViewInit {
   private readonly host: HTMLElement = inject(ElementRef).nativeElement;
   readonly chars = ['4', '0', '4'];
+
+  constructor() {
+    // Trang không tồn tại → báo Google không lập chỉ mục (tránh "soft 404").
+    const meta = inject(Meta);
+    const tag = meta.addTag({ name: 'robots', content: 'noindex, nofollow' }, true);
+    tag?.setAttribute('data-404', '');
+    inject(DestroyRef).onDestroy(() => tag?.remove());
+  }
 
   ngAfterViewInit(): void {
     animate(this.host.querySelectorAll('h1 span'), {

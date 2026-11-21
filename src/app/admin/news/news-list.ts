@@ -1,22 +1,57 @@
 import { Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { animate } from 'animejs';
-import { EMPTY_SEO, NewsPost, NewsStatus, newsPath } from '../../models/news';
+import { EMPTY_SEO, NewsCategory, NewsPost, NewsStatus, newsCategoriesOf, newsPath } from '../../models/news';
+import { NewsViewsService } from '../../services/news-views.service';
+import { SettingsService } from '../../services/settings.service';
+import { IconComponent, IconPickerComponent } from '../../shared/icon';
 import { NewsService } from '../../services/news.service';
 import { analyzeSeo, scoreLevel, slugify } from '../../shared/seo';
 import { AdminToastService } from '../toast.service';
 
 @Component({
   selector: 'app-admin-news-list',
-  imports: [FormsModule, RouterLink, DatePipe],
+  imports: [FormsModule, RouterLink, DatePipe, IconComponent, IconPickerComponent],
   template: `
     <div class="adm-head">
       <h1>Tin tức</h1>
       <a class="btn primary small" routerLink="/admin/tin-tuc/moi">+ Viết bài mới</a>
+      <button class="btn ghost small" type="button" (click)="catOpen.set(!catOpen())" [attr.aria-expanded]="catOpen()">🗂 Danh mục bài viết</button>
       <button class="btn ghost small" type="button" (click)="sitemapHelp.set(!sitemapHelp())">🗺 Sitemap</button>
     </div>
+
+    @if (catOpen()) {
+      <section class="adm-box cat-box">
+        <h2>🗂 Danh mục bài viết</h2>
+        <div class="box-body">
+          <p class="hint">Khách lọc bài theo danh mục ở trang <b>Tin tức</b>. Danh mục chưa có bài nào sẽ tự ẩn với khách.</p>
+          <div class="cat-rows">
+            @for (c of catDraft(); track c.id; let i = $index) {
+              <div class="cat-row">
+                <app-icon-picker [ngModel]="c.icon" (ngModelChange)="setCat(i, 'icon', $event)" />
+                <input [ngModel]="c.name" (ngModelChange)="setCat(i, 'name', $event)" maxlength="40" placeholder="Tên danh mục" aria-label="Tên danh mục" />
+                <span class="cnt">{{ catCount(c.id) }} bài</span>
+                <button type="button" class="mini" title="Lên" [disabled]="i === 0" (click)="moveCat(i, -1)">↑</button>
+                <button type="button" class="mini" title="Xuống" [disabled]="i === catDraft().length - 1" (click)="moveCat(i, 1)">↓</button>
+                <button type="button" class="mini del" title="Xoá" (click)="removeCat(i)">✕</button>
+              </div>
+            }
+          </div>
+          <form class="cat-add" (submit)="$event.preventDefault(); addCat()">
+            <app-icon-picker [ngModel]="newIcon()" (ngModelChange)="newIcon.set($event)" [ngModelOptions]="{ standalone: true }" />
+            <input [ngModel]="newName()" (ngModelChange)="newName.set($event)" [ngModelOptions]="{ standalone: true }" maxlength="40" placeholder="Tên danh mục mới, vd: Review fumo" />
+            <button class="btn ghost small" type="submit" [disabled]="!newName().trim()">+ Thêm</button>
+          </form>
+          <div class="cat-actions">
+            <button class="btn ghost small" type="button" [disabled]="!catDirty()" (click)="resetCats()">Huỷ thay đổi</button>
+            <button class="btn primary small" type="button" [disabled]="!catDirty() || catSaving()" (click)="saveCats()">{{ catSaving() ? 'Đang lưu…' : 'Lưu danh mục' }}</button>
+          </div>
+        </div>
+      </section>
+    }
 
     @if (sitemapHelp()) {
       <div class="adm-notice sitemap">
@@ -44,6 +79,15 @@ import { AdminToastService } from '../toast.service';
     </nav>
 
     <div class="adm-toolbar">
+      <select [ngModel]="catFilter()" (ngModelChange)="catFilter.set($event)" aria-label="Lọc theo danh mục">
+        <option value="">Tất cả danh mục</option>
+        @for (c of cats(); track c.id) { <option [value]="c.id">{{ c.name }} ({{ catCount(c.id) }})</option> }
+        <option value="__none">Chưa phân loại ({{ catCount('') }})</option>
+      </select>
+      <select [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)" aria-label="Sắp xếp">
+        <option value="updated">Mới cập nhật</option>
+        <option value="views">Xem nhiều nhất</option>
+      </select>
       <span class="spacer"></span>
       <input type="search" placeholder="Tìm bài viết..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
     </div>
@@ -54,6 +98,8 @@ import { AdminToastService } from '../toast.service';
           <tr>
             <th style="width: 64px">Ảnh</th>
             <th>Tiêu đề</th>
+            <th>Danh mục</th>
+            <th style="width: 90px" class="num">👁 Lượt xem</th>
             <th style="width: 90px">SEO</th>
             <th>Trạng thái</th>
             <th>Cập nhật</th>
@@ -79,6 +125,10 @@ import { AdminToastService } from '../toast.service';
                 </div>
               </td>
               <td>
+                @if (catOf(n); as c) { <span class="cat-chip"><app-icon [icon]="c.icon" /> {{ c.name }}</span> } @else { <span class="muted">—</span> }
+              </td>
+              <td class="num">{{ views.of(n) }}</td>
+              <td>
                 @let sc = seoScore(n);
                 <span class="seo-score" [class]="'seo-score ' + scoreLevel(sc)" [title]="n.seo?.focusKeyword ? 'Từ khoá: ' + n.seo?.focusKeyword : 'Chưa đặt từ khoá'">{{ sc }}</span>
               </td>
@@ -90,7 +140,7 @@ import { AdminToastService } from '../toast.service';
               <td>{{ n.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
             </tr>
           } @empty {
-            <tr><td colspan="5" class="empty">Không có bài viết nào.</td></tr>
+            <tr><td colspan="7" class="empty">Không có bài viết nào.</td></tr>
           }
         </tbody>
       </table>
@@ -98,6 +148,20 @@ import { AdminToastService } from '../toast.service';
   `,
   styles: `
     .sitemap p { margin: 0 0 6px; }
+    .cat-box { margin-bottom: 14px; }
+    .cat-box .box-body { display: grid; gap: 10px; }
+    .cat-rows { display: grid; gap: 6px; }
+    .cat-row, .cat-add { display: flex; gap: 8px; align-items: center; }
+    .cat-row input, .cat-add input { flex: 1; min-width: 0; }
+    .cnt { color: #646970; font-size: .8rem; white-space: nowrap; min-width: 48px; text-align: right; }
+    .mini { border: 1px solid #c3c4c7; background: #fff; border-radius: 6px; width: 28px; height: 28px; cursor: pointer; }
+    .mini:disabled { opacity: .4; cursor: default; }
+    .mini.del { color: #b32d2e; }
+    .cat-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .hint { margin: 0; color: #646970; font-size: .85rem; }
+    .cat-chip { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #e7f1fa; color: #2271b1; white-space: nowrap; }
+    .muted { color: #8c8f94; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .sitemap ol { margin: 0 0 6px; padding-left: 20px; }
     .sitemap .muted { color: #646970; font-size: .85rem; }
     .sitemap .row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -121,6 +185,72 @@ export class AdminNewsList {
     analyzeSeo({ ...n, seo: { ...EMPTY_SEO, ...n.seo } }, n.seo?.slug || slugify(n.title)).score;
   readonly tab = signal<'all' | NewsStatus>('all');
   readonly search = signal('');
+  readonly views = inject(NewsViewsService);
+  private readonly settingsSvc = inject(SettingsService);
+  readonly cats = computed(() => newsCategoriesOf(this.settingsSvc.settings()));
+  readonly catFilter = signal('');
+  readonly sortBy = signal<'updated' | 'views'>('updated');
+
+  // ---------- Quản lý danh mục bài viết ----------
+  readonly catOpen = signal(!!inject(ActivatedRoute).snapshot.queryParamMap.get('danhMuc'));
+  readonly catDraft = signal<NewsCategory[]>(this.cats().map((c) => ({ ...c })));
+  readonly catDirty = computed(() => JSON.stringify(this.catDraft()) !== JSON.stringify(this.cats()));
+  readonly catSaving = signal(false);
+  readonly newName = signal('');
+  readonly newIcon = signal('📝');
+
+  constructor() {
+    void this.views.load();
+  }
+
+  catOf(n: NewsPost): NewsCategory | undefined {
+    return n.category ? this.cats().find((c) => c.id === n.category) : undefined;
+  }
+  catCount(id: string): number {
+    const known = new Set(this.cats().map((c) => c.id));
+    return this.service.posts().filter((n) => (id ? n.category === id : !n.category || !known.has(n.category))).length;
+  }
+  setCat(i: number, key: 'name' | 'icon', v: string): void {
+    this.catDraft.update((l) => l.map((c, k) => (k === i ? { ...c, [key]: v } : c)));
+  }
+  moveCat(i: number, d: number): void {
+    this.catDraft.update((l) => {
+      const n = [...l];
+      [n[i], n[i + d]] = [n[i + d], n[i]];
+      return n;
+    });
+  }
+  removeCat(i: number): void {
+    const c = this.catDraft()[i];
+    const used = this.catCount(c.id);
+    if (used && !confirm(`Xoá danh mục "${c.name}"? ${used} bài đang thuộc danh mục này sẽ thành "Chưa phân loại".`)) return;
+    this.catDraft.update((l) => l.filter((_, k) => k !== i));
+  }
+  addCat(): void {
+    const name = this.newName().trim();
+    if (!name) return;
+    const base = slugify(name) || 'danh-muc';
+    const taken = new Set(this.catDraft().map((c) => c.id));
+    let id = base;
+    for (let k = 2; taken.has(id); k++) id = `${base}-${k}`;
+    this.catDraft.update((l) => [...l, { id, name, icon: this.newIcon().trim() || '📝' }]);
+    this.newName.set('');
+  }
+  resetCats(): void {
+    this.catDraft.set(this.cats().map((c) => ({ ...c })));
+  }
+  async saveCats(): Promise<void> {
+    const list = this.catDraft()
+      .map((c) => ({ ...c, name: c.name.trim(), icon: c.icon.trim() || '📝' }))
+      .filter((c) => c.name);
+    const next = { ...this.settingsSvc.settings(), newsCategories: list };
+    if (!this.toast.run(() => this.settingsSvc.save(next), 'Đã lưu danh mục bài viết')) return;
+    this.catDraft.set(list.map((c) => ({ ...c })));
+    this.catSaving.set(true);
+    const err = await this.settingsSvc.publish(this.settingsSvc.settings());
+    this.catSaving.set(false);
+    if (err) this.toast.err('Đã lưu trên máy này nhưng chưa gửi được lên web: ' + err);
+  }
 
   readonly tabs = computed(() => {
     const all = this.service.posts();
@@ -134,9 +264,13 @@ export class AdminNewsList {
   readonly rows = computed(() => {
     const term = this.search().trim().toLowerCase();
     const tab = this.tab();
-    return this.service
+    const cat = this.catFilter();
+    const known = new Set(this.cats().map((c) => c.id));
+    const list = this.service
       .posts()
-      .filter((n) => (tab === 'all' || n.status === tab) && (!term || n.title.toLowerCase().includes(term)));
+      .filter((n) => (tab === 'all' || n.status === tab) && (!term || n.title.toLowerCase().includes(term)))
+      .filter((n) => !cat || (cat === '__none' ? !n.category || !known.has(n.category) : n.category === cat));
+    return this.sortBy() === 'views' ? [...list].sort((a, b) => this.views.of(b) - this.views.of(a)) : list;
   });
 
 

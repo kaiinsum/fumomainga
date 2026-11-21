@@ -5,22 +5,28 @@ import { RouterLink } from '@angular/router';
 import { createTimeline, stagger } from 'animejs';
 import { SeoMetaService } from '../../core/seo-meta.service';
 import { setPageTitle } from '../../core/shop-title.strategy';
-import { newsPath } from '../../models/news';
 import { CatalogSyncService } from '../../services/catalog-sync.service';
 import { NewsService } from '../../services/news.service';
 import { SettingsService } from '../../services/settings.service';
 import { ArticleHtmlPipe } from '../../shared/article-html';
+import { IconComponent } from '../../shared/icon';
+import { NewsCategory, NewsPost, newsCategoriesOf, newsPath } from '../../models/news';
+import { NewsViewsService } from '../../services/news-views.service';
 
 @Component({
   selector: 'app-news-detail',
-  imports: [RouterLink, DatePipe, ArticleHtmlPipe],
+  imports: [RouterLink, DatePipe, ArticleHtmlPipe, IconComponent],
   template: `
     <div class="container wrap">
       <nav class="crumbs"><a routerLink="/">Trang chủ</a> / <a routerLink="/tin-tuc">Tin tức</a></nav>
       @if (post(); as p) {
         <article>
           <header>
-            <small><time [attr.datetime]="iso(p.createdAt)">{{ p.createdAt | date: 'dd/MM/yyyy' }}</time></small>
+            <div class="meta">
+              @if (catOf(p); as c) { <a class="chip" routerLink="/tin-tuc" [queryParams]="{ danhMuc: c.id }"><app-icon [icon]="c.icon" /> {{ c.name }}</a> }
+              <small><time [attr.datetime]="iso(p.createdAt)">{{ p.createdAt | date: 'dd/MM/yyyy' }}</time></small>
+              @if (views.loaded()) { <small>👁 {{ views.of(p) }} lượt xem</small> }
+            </div>
             <h1>{{ p.title }}</h1>
           </header>
           @if (p.cover) { <img class="cover" [src]="p.cover" [alt]="p.title" /> }
@@ -46,6 +52,11 @@ import { ArticleHtmlPipe } from '../../shared/article-html';
     </div>
   `,
   styles: `
+    .meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .meta small { color: var(--muted); }
+    .chip { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; font-weight: 800; padding: 2px 10px; border-radius: 999px;
+      background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary-dark); text-decoration: none; }
+    .chip:hover { background: color-mix(in srgb, var(--primary) 24%, var(--surface)); }
     .wrap { max-width: 780px; padding-bottom: 48px; }
     .crumbs { padding: 24px 0; color: var(--muted); font-size: .9rem; }
     .crumbs a:hover { color: var(--primary); }
@@ -69,6 +80,11 @@ export class NewsDetailPage {
 
   readonly path = newsPath;
   readonly iso = (t: number) => new Date(t).toISOString();
+  readonly views = inject(NewsViewsService);
+
+  catOf(p: NewsPost): NewsCategory | undefined {
+    return p.category ? newsCategoriesOf(this.settings()).find((c) => c.id === p.category) : undefined;
+  }
 
   /** Chỉ hiển thị bài đã xuất bản — bản nháp không xem được từ trang công khai. Tìm theo slug hoặc id. */
   readonly post = computed(() => {
@@ -78,6 +94,7 @@ export class NewsDetailPage {
   readonly others = computed(() => this.news.published().filter((p) => p.id !== this.post()?.id).slice(0, 4));
 
   constructor() {
+    void this.views.load();
     inject(DestroyRef).onDestroy(() => this.seo.clear());
     // Khai báo SEO (meta, Open Graph, canonical, JSON-LD) mỗi khi bài/cài đặt thay đổi.
     effect(() => {

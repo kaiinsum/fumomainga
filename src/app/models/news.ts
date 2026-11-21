@@ -30,6 +30,8 @@ export interface NewsPost {
   content: string;
   /** Kiểu soạn nội dung. Trống = 'markdown' (bài cũ). */
   format?: ContentFormat;
+  /** Mã danh mục bài viết (Admin → Tin tức → Danh mục bài viết). Trống = chưa phân loại. */
+  category?: string;
   cover: string;
   status: NewsStatus;
   createdAt: number;
@@ -38,7 +40,26 @@ export interface NewsPost {
   seo?: NewsSeo;
 }
 
-export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'status' | 'seo' | 'format'>;
+export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'status' | 'seo' | 'format' | 'category'>;
+
+/** Danh mục bài viết (admin tạo được). */
+export interface NewsCategory {
+  id: string;
+  name: string;
+  /** Emoji hoặc ảnh PNG vuông. */
+  icon: string;
+}
+
+export const DEFAULT_NEWS_CATEGORIES: NewsCategory[] = [
+  { id: 'tin-moi', name: 'Tin mới', icon: '📢' },
+  { id: 'hang-moi-ve', name: 'Hàng mới về', icon: '🧸' },
+  { id: 'meo-hay', name: 'Mẹo hay', icon: '💡' },
+  { id: 'su-kien', name: 'Sự kiện', icon: '🎉' },
+];
+
+/** Danh mục bài viết đang dùng (cài đặt admin, chưa có thì mặc định). */
+export const newsCategoriesOf = (s: { newsCategories?: NewsCategory[] }): NewsCategory[] =>
+  Array.isArray(s.newsCategories) ? s.newsCategories.filter((c) => c && c.id && c.name) : DEFAULT_NEWS_CATEGORIES;
 
 export const EMPTY_SEO: NewsSeo = {
   slug: '',

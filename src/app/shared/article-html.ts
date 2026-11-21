@@ -52,6 +52,16 @@ export function sanitizeArticleHtml(html: string): string {
       }
       if (tag === 'a' && el.getAttribute('target') === '_blank') el.setAttribute('rel', 'noopener noreferrer');
       if (tag === 'img' && !el.hasAttribute('loading')) el.setAttribute('loading', 'lazy');
+      if (tag === 'img' && !el.hasAttribute('alt')) el.setAttribute('alt', '');
+      // Tiêu đề bài đã là H1 → H1 trong nội dung hạ thành H2 (mỗi trang chỉ 1 H1).
+      if (tag === 'h1') {
+        const h2 = doc.createElement('h2');
+        for (const at of [...el.attributes]) h2.setAttribute(at.name, at.value);
+        h2.append(...el.childNodes);
+        el.replaceWith(h2);
+        walk(h2);
+        continue;
+      }
       walk(el);
     }
   };

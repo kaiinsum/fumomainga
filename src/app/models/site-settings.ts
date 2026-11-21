@@ -191,6 +191,8 @@ export interface SiteSettings {
   guide?: GuideSettings;
   /** Khai báo SEO cả web (Admin → Khai báo): từng trang menu, tổ chức, ảnh chia sẻ, favicon. */
   seo?: import('./site-seo').SiteSeo;
+  /** Danh mục bài viết (Admin → Tin tức → Danh mục bài viết). */
+  newsCategories?: import('./news').NewsCategory[];
   /** Hiện thẻ "Game bí mật — Sắp ra mắt" ở cuối danh sách. */
   minigameComingSoon: boolean;
   /** Số trò được chơi miễn phí mỗi ngày (0 = mở tất cả). Có code trong ngày thì mở hết. */

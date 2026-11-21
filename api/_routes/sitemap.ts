@@ -24,6 +24,7 @@ interface N {
   createdAt?: number;
   updatedAt?: number;
   seo?: { slug?: string; noindex?: boolean };
+  category?: string;
 }
 interface Catalog {
   products?: P[] | null;
@@ -37,7 +38,24 @@ const esc = (s: string) =>
 const day = (t?: number) => (t && Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : '');
 const publicImg = (src?: string) => (src && /^https?:\/\//i.test(src) ? src : '');
 
-export function buildSitemap(origin: string, catalog: Catalog | null, noindexPages: Set<string> = new Set()): string {
+/** Đường dẫn từng minigame (id → path, khớp src/app/models/minigames.ts). */
+const GAME_PATHS: Record<string, string> = {
+  piano: '/mini-game/anime-piano',
+  merge: '/mini-game/merge-fumo',
+  crush: '/mini-game/fumo-crush-saga',
+  'jp-type': '/mini-game/go-chu-diet-fumo',
+  gacha: '/mini-game/tui-mu',
+  touhoudle: '/mini-game/doan-nhan-vat',
+  ninja: '/mini-game/fumo-ninja',
+  shmup: '/mini-game/dai-chien-mot-vai',
+};
+
+export interface SitemapExtra {
+  /** Trạng thái minigame admin đặt (id → open / locked / hidden). */
+  gameStatus?: Record<string, string>;
+}
+
+export function buildSitemap(origin: string, catalog: Catalog | null, noindexPages: Set<string> = new Set(), extra: SitemapExtra = {}): string {
   const products = (catalog?.products ?? []).filter((p) => p && p.id && !p.hidden && !p.seo?.noindex);
   const news = (catalog?.news ?? []).filter((n) => n && n.id && n.status === 'published' && !n.seo?.noindex);
   const usedCats = new Set(products.map((p) => p.category).filter(Boolean));
@@ -79,7 +97,15 @@ export function buildSitemap(origin: string, catalog: Catalog | null, noindexPag
         const cover = publicImg(n.cover);
         return url(`/tin-tuc/${encodeURIComponent(n.seo?.slug || n.id)}`, n.updatedAt ?? n.createdAt, 'weekly', '0.7', cover ? [{ loc: cover, title: n.title }] : []);
       }),
+    // Danh mục bài viết có bài đã đăng → trang lọc riêng.
+    ...[...new Set(news.map((n) => n.category).filter((c): c is string => !!c))].map((c) =>
+      url(`/tin-tuc?danhMuc=${encodeURIComponent(c)}`, undefined, 'weekly', '0.6'),
+    ),
     url('/mini-game', undefined, 'weekly', '0.6'),
+    // Từng minigame đang mở (bỏ trò admin khoá / ẩn).
+    ...Object.entries(GAME_PATHS)
+      .filter(([id]) => !extra.gameStatus?.[id] || extra.gameStatus[id] === 'open')
+      .map(([, path]) => url(path, undefined, 'monthly', '0.5')),
     url('/gioi-thieu', undefined, 'monthly', '0.5'),
     url('/lien-he', undefined, 'monthly', '0.5'),
     url('/chinh-sach', undefined, 'monthly', '0.3'),
@@ -119,9 +145,13 @@ export const GET = handle(async (req) => {
   }
   const [catalog, settingsRow] = await Promise.all([
     getStore().getJson<Catalog>('site:catalog').catch(() => null),
-    getStore().getJson<{ settings?: { seo?: { pages?: Record<string, { noindex?: boolean }> } } }>('site:settings').catch(() => null),
+    getStore()
+      .getJson<{ settings?: { seo?: { pages?: Record<string, { noindex?: boolean }> }; minigames?: { id?: string; status?: string }[] } }>('site:settings')
+      .catch(() => null),
   ]);
   const pages = settingsRow?.settings?.seo?.pages ?? {};
   const noindex = new Set(Object.entries(pages).filter(([, p]) => p?.noindex).map(([path]) => path));
-  return new Response(buildSitemap(origin, catalog, noindex), { headers: { ...headers, 'content-type': 'application/xml; charset=utf-8' } });
+  const games = settingsRow?.settings?.minigames;
+  const gameStatus = Array.isArray(games) ? Object.fromEntries(games.filter((g) => g?.id).map((g) => [g.id!, g.status ?? 'open'])) : {};
+  return new Response(buildSitemap(origin, catalog, noindex, { gameStatus }), { headers: { ...headers, 'content-type': 'application/xml; charset=utf-8' } });
 });
