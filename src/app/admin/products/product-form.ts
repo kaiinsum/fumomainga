@@ -1,4 +1,5 @@
-import { Component, ElementRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { RICH_COLORS, RichTextPipe, richToText, wrapSelection } from '../../shared/rich-text';
 import { FormControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -8,6 +9,7 @@ import { buildProductSchema } from '../../core/seo-meta.service';
 import {
   EMPTY_PRODUCT_SEO,
   Product,
+  ImageMeta,
   ProductArticleType,
   ProductInput,
   ProductSeo,
@@ -64,7 +66,7 @@ function pctFromSale(price: number, saleRaw: unknown): number | null {
 
 @Component({
   selector: 'app-admin-product-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe, DatePipe],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, VndPipe, DatePipe, RichTextPipe],
   templateUrl: './product-form.html',
   styleUrl: './product-form.scss',
 })
@@ -89,6 +91,33 @@ export class AdminProductForm {
   readonly maxImages = MAX_IMAGES;
 
   readonly images = signal<string[]>([]);
+  /** Alt + link của từng ảnh (theo đường dẫn ảnh). */
+  readonly imageMeta = signal<Record<string, ImageMeta>>({});
+
+  imgMeta(src: string): ImageMeta {
+    return this.imageMeta()[src] ?? {};
+  }
+
+  setImgMeta(src: string, key: keyof ImageMeta, value: string): void {
+    let v = value.trim();
+    if (key === 'link' && v && !/^(https?:\/\/|\/)/i.test(v)) {
+      if (/^[\w-]+(\.[\w-]+)+/.test(v)) v = 'https://' + v;
+      else return this.toast.err('Link phải bắt đầu bằng https:// hoặc / (trang trong web).');
+    }
+    this.imageMeta.update((m) => ({ ...m, [src]: { ...m[src], [key]: v } }));
+  }
+
+  /** Chỉ giữ thông tin của ảnh còn dùng, bỏ ô trống. */
+  private cleanImageMeta(): Record<string, ImageMeta> | undefined {
+    const out: Record<string, ImageMeta> = {};
+    for (const src of this.images()) {
+      const m = this.imageMeta()[src];
+      const alt = m?.alt?.trim();
+      const link = m?.link?.trim();
+      if (alt || link) out[src] = { ...(alt ? { alt } : {}), ...(link ? { link } : {}) };
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
   readonly dragOver = signal(false);
   readonly processing = signal(false);
   readonly submitted = signal(false);
@@ -102,6 +131,85 @@ export class AdminProductForm {
   /** Số ngày hiện thông báo "Sản phẩm mới" cho khách (Cài đặt → Thông báo). */
   private readonly settingsSvc = inject(SettingsService);
   readonly notifyDays = inject(SettingsService).settings().notifyDays || 14;
+
+  // ---------- Định dạng mô tả (B / I / U / màu) ----------
+  readonly richColors = RICH_COLORS;
+  readonly descPreview = signal(false);
+  private readonly descBox = viewChild<ElementRef<HTMLTextAreaElement>>('descBox');
+  private savedSel: [number, number] | null = null;
+
+  /** Ô chọn màu mở hộp thoại riêng → nhớ đoạn đang chọn trước khi mất focus. */
+  saveSel(): void {
+    const t = this.descBox()?.nativeElement;
+    if (t) this.savedSel = [t.selectionStart, t.selectionEnd];
+  }
+
+  private wrap(open: string, close: string): void {
+    const t = this.descBox()?.nativeElement;
+    if (!t) return;
+    this.descPreview.set(false);
+    const [a, b] = this.savedSel ?? [t.selectionStart, t.selectionEnd];
+    this.savedSel = null;
+    const r = wrapSelection(t.value, a, b, open, close);
+    this.form.controls.description.setValue(r.value);
+    this.form.controls.description.markAsDirty();
+    t.value = r.value;
+    t.focus();
+    t.setSelectionRange(r.start, r.end);
+  }
+
+  fmt(kind: 'bold' | 'italic' | 'underline'): void {
+    const m = { bold: '**', italic: '*', underline: '__' }[kind];
+    this.wrap(m, m);
+  }
+
+  color(c: string): void {
+    if (!/^#[0-9a-f]{3,6}$/i.test(c)) return;
+    this.wrap(`[color=${c}]`, '[/color]');
+  }
+
+  /** Gắn link cho chữ đang chọn: [chữ](https://...). */
+  addLink(): void {
+    const t = this.descBox()?.nativeElement;
+    if (!t) return;
+    this.saveSel();
+    let url = (prompt('Dán link (https://... hoặc /san-pham/...):', 'https://') ?? '').trim();
+    if (!url || url === 'https://') {
+      this.savedSel = null;
+      return;
+    }
+    if (!/^(https?:\/\/|\/)/i.test(url)) url = 'https://' + url;
+    if (/[\s)"]/.test(url)) {
+      this.savedSel = null;
+      return this.toast.err('Link không được có khoảng trắng, dấu ")" hoặc dấu ngoặc kép.');
+    }
+    this.wrap('[', `](${url})`);
+  }
+
+  /** Bỏ mọi định dạng trong đoạn đang chọn. */
+  clearFmt(): void {
+    const t = this.descBox()?.nativeElement;
+    if (!t) return;
+    const [a, b] = [t.selectionStart, t.selectionEnd];
+    if (a === b) return;
+    const plain = richToText(t.value.slice(a, b)).replace(/\*\*|__|\[\/?color[^\]]*\]/g, '');
+    const v = t.value.slice(0, a) + plain + t.value.slice(b);
+    this.form.controls.description.setValue(v);
+    this.form.controls.description.markAsDirty();
+    t.value = v;
+    t.focus();
+    t.setSelectionRange(a, a + plain.length);
+  }
+
+  /** Phím tắt Ctrl/⌘ + B / I / U. */
+  fmtKey(e: KeyboardEvent): void {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    const kind = k === 'b' ? 'bold' : k === 'i' ? 'italic' : k === 'u' ? 'underline' : null;
+    if (!kind) return;
+    e.preventDefault();
+    this.fmt(kind);
+  }
 
   readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(80)]],
@@ -305,6 +413,7 @@ export class AdminProductForm {
             notice: p.notice ?? '',
           });
           this.images.set([...p.images]);
+          this.imageMeta.set({ ...(p.imageMeta ?? {}) });
           this.seo.set(productSeoOf(p));
           this.noteDraft.set(this.noteSvc.noteOf(p.id)?.text ?? '');
           this.slug.set(p.slug ?? this.service.suggestSlug(p.name, p.id));
@@ -332,6 +441,7 @@ export class AdminProductForm {
           this.salePercent.setValue(null);
           this.form.reset({ category: this.categories()[0] ?? '' });
           this.images.set([]);
+          this.imageMeta.set({});
           this.seo.set({ ...EMPTY_PRODUCT_SEO });
           this.noteDraft.set('');
         }
@@ -438,6 +548,7 @@ export class AdminProductForm {
       slug: slugify(this.slug()) || slugify(v.name),
       tags: [...new Set(v.tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))],
       images: this.images(),
+      imageMeta: this.cleanImageMeta(),
       seo: this.cleanSeo(),
     };
     // Khai báo → "Tự động khai báo khi lưu": điền ô SEO còn trống (từ khoá, tiêu đề, mô tả, schema Product).

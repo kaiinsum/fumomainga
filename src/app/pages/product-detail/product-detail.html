@@ -8,7 +8,10 @@
     <article class="detail">
       <div class="gallery">
         <div class="main-img card-surface">
-          <img [src]="activeImage()" [alt]="p.name" />
+          <img [src]="activeImage()" [alt]="altOf(p, activeImage(), activeIndex())" />
+          @if (linkOf(p, activeImage()); as link) {
+            <a class="img-link" [href]="link" [attr.target]="link.startsWith('/') ? null : '_blank'" rel="noopener" [title]="link">🔗 Xem chi tiết</a>
+          }
           @if (gallery().length > 1) {
             <button class="nav prev" type="button" (click)="step(-1)" aria-label="Ảnh trước">‹</button>
             <button class="nav next" type="button" (click)="step(1)" aria-label="Ảnh sau">›</button>
@@ -19,7 +22,7 @@
             @for (img of gallery(); track $index) {
               <button type="button" [class.on]="$index === activeIndex()" [class.var-thumb]="$index >= p.images.length" (click)="pickThumb($index)"
                 [title]="$index >= p.images.length ? 'Ảnh phân loại' : ''">
-                <img [src]="img" [alt]="p.name + ' ' + ($index + 1)" />
+                <img [src]="img" [alt]="altOf(p, img, $index)" />
               </button>
             }
           </div>
@@ -40,7 +43,7 @@
             }
           </div>
         }
-        <p class="desc">{{ p.description }}</p>
+        <p class="desc" [innerHTML]="p.description | richText"></p>
 
         <dl class="specs">
           <div>

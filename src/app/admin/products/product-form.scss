@@ -59,7 +59,7 @@
 
 .previews {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 10px;
 }
 
@@ -775,3 +775,22 @@
   font-weight: 600;
   margin-left: 8px;
 }
+
+/* Thanh định dạng mô tả sản phẩm */
+.rt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; margin-bottom: 6px; border: 1px solid #dcdcde; border-radius: 8px; background: #f6f7f7; }
+.rt-b { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid #c3c4c7; border-radius: 6px; background: #fff; cursor: pointer; font: inherit; font-size: .95rem; color: #1d2327; }
+.rt-b:hover, .rt-b.on { border-color: #2271b1; color: #2271b1; }
+.rt-sep { width: 1px; height: 22px; background: #c3c4c7; margin: 0 4px; }
+.rt-c { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #c3c4c7; cursor: pointer; padding: 0; }
+.rt-c:hover { box-shadow: 0 0 0 2px #2271b1; }
+.rt-pick { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #c3c4c7; border-radius: 6px; background: #fff; cursor: pointer; overflow: hidden; }
+.rt-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
+.rt-clear { font-size: .8rem; text-decoration: line-through; }
+.rt-prev { margin-left: auto; font-size: .82rem; }
+.rt-preview { min-height: 160px; padding: 10px 12px; border: 1px solid #c3c4c7; border-radius: 6px; background: #fff; white-space: pre-line; line-height: 1.6; }
+
+/* Alt + link cho từng ảnh */
+.pv-item { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.pv-in { width: 100%; box-sizing: border-box; font: inherit; font-size: .72rem; padding: 4px 6px; border: 1px solid #c3c4c7; border-radius: 5px; }
+.pv-in:focus { border-color: #2271b1; outline: none; }
+.link-tag { position: absolute; left: 4px; bottom: 4px; font-size: .7rem; background: rgba(255,255,255,.9); border-radius: 4px; padding: 1px 4px; }

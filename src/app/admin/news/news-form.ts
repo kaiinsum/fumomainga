@@ -63,6 +63,8 @@ export class AdminNewsForm {
   ];
   readonly cover = signal('');
   readonly coverUrl = signal('');
+  readonly coverAlt = signal('');
+  readonly coverLink = signal('');
   readonly mode = signal<'write' | 'preview'>('write');
   /** Soạn thường (Markdown) hoặc viết / dán mã HTML. */
   readonly format = signal<ContentFormat>('markdown');
@@ -81,7 +83,7 @@ export class AdminNewsForm {
     { label: '¶', title: 'Đoạn văn', before: '<p>', after: '</p>', placeholder: 'Nội dung đoạn văn', block: true },
     { label: 'B', title: 'In đậm', before: '<strong>', after: '</strong>', placeholder: 'chữ đậm' },
     { label: 'I', title: 'In nghiêng', before: '<em>', after: '</em>', placeholder: 'chữ nghiêng' },
-    { label: '🔗', title: 'Chèn liên kết', before: '<a href="https://">', after: '</a>', placeholder: 'văn bản liên kết' },
+    { label: '🔗', title: 'Chèn liên kết (bôi đen chữ hoặc thẻ <img> rồi bấm để gắn link)', before: '<a href="https://">', after: '</a>', placeholder: 'văn bản liên kết' },
     { label: '• List', title: 'Danh sách', before: '<ul>\n  <li>', after: '</li>\n</ul>', placeholder: 'mục danh sách', block: true },
     { label: '▦ Bảng', title: 'Bảng 2 cột', before: '<table>\n  <tr><th>Tiêu đề 1</th><th>Tiêu đề 2</th></tr>\n  <tr><td>', after: '</td><td>…</td></tr>\n</table>', placeholder: 'ô 1', block: true },
     { label: '▶ YouTube', title: 'Nhúng video YouTube (thay MÃ_VIDEO)', before: '<iframe width="560" height="315" src="https://www.youtube.com/embed/', after: '" title="YouTube" allowfullscreen></iframe>', placeholder: 'MÃ_VIDEO', block: true },
@@ -92,7 +94,7 @@ export class AdminNewsForm {
     { label: 'H3', title: 'Tiêu đề nhỏ', before: '### ', placeholder: 'Tiêu đề nhỏ', block: true },
     { label: 'B', title: 'In đậm', before: '**', after: '**', placeholder: 'chữ đậm' },
     { label: 'I', title: 'In nghiêng', before: '*', after: '*', placeholder: 'chữ nghiêng' },
-    { label: '🔗', title: 'Chèn liên kết', before: '[', after: '](https://)', placeholder: 'văn bản liên kết' },
+    { label: '🔗', title: 'Chèn liên kết (bôi đen chữ hoặc ảnh ![...](...) rồi bấm để gắn link cho ảnh)', before: '[', after: '](https://)', placeholder: 'văn bản liên kết' },
     { label: '• List', title: 'Danh sách', before: '- ', placeholder: 'mục danh sách', block: true },
     { label: '❝', title: 'Trích dẫn', before: '> ', placeholder: 'trích dẫn', block: true },
   ];
@@ -114,6 +116,8 @@ export class AdminNewsForm {
         this.status = p?.status ?? 'draft';
         this.seo = { ...EMPTY_SEO, ...p?.seo };
         this.cover.set(p?.cover ?? '');
+        this.coverAlt.set(p?.coverAlt ?? '');
+        this.coverLink.set(p?.coverLink ?? '');
         this.submitted.set(false);
         this.mode.set('write');
       });
@@ -185,6 +189,14 @@ export class AdminNewsForm {
     textarea.setSelectionRange(start, start + selected.length);
   }
 
+  /** Link hợp lệ: https://... hoặc đường dẫn trong web (/...). Gõ thiếu https:// thì tự thêm. */
+  cleanLink(v: string): string {
+    const s = v.trim();
+    if (!s) return '';
+    if (/^(https?:\/\/|\/)/i.test(s)) return s;
+    return /^[\w-]+(\.[\w-]+)+/.test(s) ? 'https://' + s : '';
+  }
+
   async insertImage(event: Event, textarea: HTMLTextAreaElement): Promise<void> {
     const el = event.target as HTMLInputElement;
     const file = el.files?.[0];
@@ -193,11 +205,15 @@ export class AdminNewsForm {
     try {
       const url = await fileToResizedDataUrl(file, 900, 0.8);
       const pos = textarea.selectionStart;
-      const alt = file.name.replace(/\.[^.]+$/, '');
+      // Alt = tên file (bỏ đuôi, gạch nối → khoảng trắng); chèn xong sẽ bôi đen để sửa ngay.
+      const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'mô tả ảnh';
       const snippet = this.format() === 'html' ? `\n<img src="${url}" alt="${alt}" />\n` : `\n![${alt}](${url})\n`;
       this.content = this.content.slice(0, pos) + snippet + this.content.slice(pos);
       textarea.value = this.content;
-      this.toast.ok('Đã chèn ảnh vào nội dung');
+      const at = pos + snippet.indexOf(alt);
+      textarea.focus();
+      textarea.setSelectionRange(at, at + alt.length);
+      this.toast.ok('Đã chèn ảnh - gõ mô tả ảnh (alt) vào chỗ đang bôi đen');
     } catch {
       this.toast.err('Không đọc được ảnh.');
     }
@@ -273,6 +289,8 @@ export class AdminNewsForm {
       format: this.format(),
       content: this.content,
       cover: this.cover(),
+      coverAlt: this.coverAlt().trim() || undefined,
+      coverLink: this.cleanLink(this.coverLink()) || undefined,
       status,
       seo: { ...this.seo, slug: this.seo.slug ? slugify(this.seo.slug) : this.uniqueSlug(this.autoSlug()) },
     };

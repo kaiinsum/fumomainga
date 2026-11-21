@@ -11,6 +11,8 @@ import { ProductService } from '../../services/product.service';
 import { ProductVariant, variantsOf } from '../../models/product';
 import { CartService } from '../../services/cart.service';
 import { flyToCart } from '../../shared/fly-to-cart';
+import { RichTextPipe } from '../../shared/rich-text';
+import { imageAltOf, imageLinkOf } from '../../models/product';
 import { ProductCardComponent } from '../../components/product-card/product-card';
 import { PriceTagComponent } from '../../shared/price-tag';
 import { AnimateInDirective } from '../../shared/animate-in.directive';
@@ -26,7 +28,7 @@ function keywords(text: string): Set<string> {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent, IconComponent],
+  imports: [DatePipe, RouterLink, ProductCardComponent, AnimateInDirective, PriceTagComponent, IconComponent, RichTextPipe],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
 })
@@ -81,6 +83,8 @@ export class ProductDetailPage {
     const extra = this.variants().map((v) => v.image).filter((x): x is string => !!x && !p.images.includes(x));
     return [...p.images, ...new Set(extra)];
   });
+  readonly altOf = imageAltOf;
+  readonly linkOf = imageLinkOf;
   readonly activeImage = computed(() => this.gallery()[this.activeIndex()] ?? this.product()?.images[0] ?? '');
 
   /** Chọn biến thể → nếu biến thể có ảnh riêng thì hiện ảnh đó. */

@@ -20,6 +20,8 @@ export interface Product {
   price: number;
   description: string;
   images: string[];
+  /** Mô tả (alt) + link gắn cho từng ảnh, theo đường dẫn ảnh (đổi thứ tự / xoá ảnh không bị lệch). */
+  imageMeta?: Record<string, ImageMeta>;
   tags: string[];
   /** Giá sau giảm (VNĐ). null / không có = không giảm giá. Phải nhỏ hơn price. */
   salePrice?: number | null;
@@ -134,3 +136,19 @@ export const cheapest = (p: Priced): Pick<Product, 'price' | 'salePrice'> =>
 export const hasPriceRange = (p: Priced): boolean => new Set(variantsOf(p).map((v) => finalPrice(v))).size > 1;
 
 export type SortKey = 'newest' | 'price-asc' | 'price-desc' | 'name';
+
+/** Alt (mô tả ảnh cho Google / người khiếm thị) và link khi bấm vào ảnh. */
+export interface ImageMeta {
+  alt?: string;
+  link?: string;
+}
+
+/** Alt của 1 ảnh sản phẩm: admin nhập → dùng; trống → "<tên sản phẩm>" (+ " - ảnh N" từ ảnh thứ 2). */
+export const imageAltOf = (p: Pick<Product, 'name' | 'imageMeta'>, src: string, index = 0): string =>
+  p.imageMeta?.[src]?.alt?.trim() || (index ? `${p.name} - ảnh ${index + 1}` : p.name);
+
+/** Link gắn với ảnh (chỉ http/https hoặc đường dẫn trong web). */
+export const imageLinkOf = (p: Pick<Product, 'imageMeta'>, src: string): string => {
+  const l = p.imageMeta?.[src]?.link?.trim() ?? '';
+  return /^(https?:\/\/|\/)/i.test(l) ? l : '';
+};

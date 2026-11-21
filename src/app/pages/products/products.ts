@@ -1,3 +1,4 @@
+import { richToText } from '../../shared/rich-text';
 import { Component, ElementRef, WritableSignal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -64,7 +65,7 @@ export class ProductsPage {
 
     const list = this.service.shop().filter(
       (p) =>
-        (!term || this.normalize(`${p.name} ${p.description} ${p.tags.join(' ')}`).includes(term)) &&
+        (!term || this.normalize(`${p.name} ${richToText(p.description)} ${p.tags.join(' ')}`).includes(term)) &&
         (!cats.size || cats.has(p.category)) &&
         (!tags.size || p.tags.some((t) => tags.has(t))) &&
         finalPrice(p) <= max &&

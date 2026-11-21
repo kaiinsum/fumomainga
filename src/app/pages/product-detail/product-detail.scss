@@ -390,3 +390,21 @@
   object-fit: cover;
   flex-shrink: 0;
 }
+
+/* Ảnh có gắn link */
+.main-img .img-link { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 12px; border-radius: 999px; font-weight: 800; font-size: .85rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--primary-dark); border: 2px solid var(--primary); text-decoration: none;
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,.35); }
+.main-img .img-link:hover { background: var(--primary); color: var(--on-primary); }
+
+/* Link trong mô tả sản phẩm (nội dung chèn bằng innerHTML) */
+.desc ::ng-deep a {
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: var(--primary);
+  }
+}

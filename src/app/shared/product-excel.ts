@@ -73,7 +73,7 @@ export interface ImportPlan {
   counts: Record<ImportRow['kind'], number>;
 }
 
-const FIELD_LABELS: Record<keyof Omit<ProductInput, 'images' | 'slug' | 'releasedAt' | 'notice' | 'hidden' | 'seo'>, string> = {
+const FIELD_LABELS: Record<keyof Omit<ProductInput, 'images' | 'slug' | 'releasedAt' | 'notice' | 'hidden' | 'seo' | 'imageMeta'>, string> = {
   name: 'Tên',
   category: 'Danh mục',
   price: 'Giá',

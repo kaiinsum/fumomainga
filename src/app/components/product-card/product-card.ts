@@ -21,7 +21,7 @@ type Anim<K extends string> = AnimatableObject & Record<K, AnimatableProperty>;
     @let p = product();
     <a class="card" [class.feat]="p.featured && p.inStock" [class.out]="!p.inStock" [routerLink]="['/san-pham', p.slug || p.id]">
       <div class="thumb">
-        <img [src]="p.images[0]" [alt]="p.name" loading="lazy" />
+        <img [src]="p.images[0]" [alt]="p.imageMeta?.[p.images[0]]?.alt || p.name" loading="lazy" />
         @if (!p.inStock) {
           <span class="badge out">Hết hàng</span>
         } @else if (onSale(p)) {

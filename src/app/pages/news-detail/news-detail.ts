@@ -29,7 +29,13 @@ import { NewsViewsService } from '../../services/news-views.service';
             </div>
             <h1>{{ p.title }}</h1>
           </header>
-          @if (p.cover) { <img class="cover" [src]="p.cover" [alt]="p.title" /> }
+          @if (p.cover) {
+            @if (p.coverLink && (p.coverLink.startsWith('/') || p.coverLink.startsWith('http'))) {
+              <a class="cover-link" [href]="p.coverLink" [attr.target]="p.coverLink.startsWith('/') ? null : '_blank'" rel="noopener"><img class="cover" [src]="p.cover" [alt]="p.coverAlt || p.title" /></a>
+            } @else {
+              <img class="cover" [src]="p.cover" [alt]="p.coverAlt || p.title" />
+            }
+          }
           <div class="prose" [innerHTML]="p.content | articleHtml: p.format"></div>
         </article>
 

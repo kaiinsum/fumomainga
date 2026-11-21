@@ -1,3 +1,4 @@
+import { richToText } from './rich-text';
 import { EMPTY_SEO, NewsPost, NewsSeo } from '../models/news';
 import { Product, ProductSeo, productSeoOf } from '../models/product';
 import { PageSeo, SeoPageDef, pageSeoOf, SiteSeo } from '../models/site-seo';
@@ -50,7 +51,7 @@ export function autoProductSeo(p: Product, o: AutoOptions): ProductSeo {
   const cur = productSeoOf(p);
   const kw = !blank(cur.focusKeyword) && !o.overwrite ? cur.focusKeyword : guessKeyword(p.name);
   const title = clipWords(`${p.name}${p.category && !p.name.toLowerCase().includes(p.category.toLowerCase()) ? ' – ' + p.category : ''}`, SEO_LIMITS.title);
-  const desc = metaFrom(p.description, kw, `Mua ${p.name} tại ${o.shopName}.`);
+  const desc = metaFrom(richToText(p.description), kw, `Mua ${p.name} tại ${o.shopName}.`);
   const pick = <K extends keyof ProductSeo>(k: K, v: ProductSeo[K]): ProductSeo[K] => (o.overwrite || blank(cur[k]) ? v : cur[k]);
   return {
     ...cur,

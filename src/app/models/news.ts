@@ -35,6 +35,10 @@ export interface NewsPost {
   /** Mã danh mục bài viết (Admin → Tin tức → Danh mục bài viết). Trống = chưa phân loại. */
   category?: string;
   cover: string;
+  /** Mô tả ảnh đại diện (alt). Trống = tiêu đề bài. */
+  coverAlt?: string;
+  /** Link khi bấm ảnh đại diện trong bài (https://... hoặc /san-pham/...). */
+  coverLink?: string;
   status: NewsStatus;
   createdAt: number;
   updatedAt: number;
@@ -42,7 +46,7 @@ export interface NewsPost {
   seo?: NewsSeo;
 }
 
-export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'status' | 'seo' | 'format' | 'category'>;
+export type NewsInput = Pick<NewsPost, 'title' | 'excerpt' | 'content' | 'cover' | 'coverAlt' | 'coverLink' | 'status' | 'seo' | 'format' | 'category'>;
 
 /** Danh mục bài viết (admin tạo được). */
 export interface NewsCategory {

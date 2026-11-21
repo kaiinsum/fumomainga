@@ -40,7 +40,7 @@ interface Catalog {
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
-const plain = (s: string) => s.replace(/[#*_>`\[\]()!]/g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (s: string) => s.replace(/\[\/?color[^\]]*\]/gi, '').replace(/[#*_>`\[\]()!]/g, ' ').replace(/\s+/g, ' ').trim();
 const vnd = (n: number) => n.toLocaleString('vi-VN') + ' ₫';
 
 export const GET = handle(async (req) => {

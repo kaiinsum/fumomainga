@@ -1,3 +1,4 @@
+import { richToText } from './rich-text';
 import { NewsSeo } from '../models/news';
 import { ProductSeo } from '../models/product';
 import { ContentFormat, contentAsMarkdown } from './article-html';
@@ -217,7 +218,7 @@ export interface ProductSeoSource {
 
 /** Giá trị thực tế khi trống: tiêu đề SEO → tên sản phẩm, mô tả → đầu mô tả sản phẩm. */
 export function effectiveProductSeo(src: Pick<ProductSeoSource, 'name' | 'description' | 'seo'>): { title: string; description: string } {
-  const description = (src.seo.description || src.description.replace(/\s+/g, ' ')).trim();
+  const description = (src.seo.description || richToText(src.description).replace(/\s+/g, ' ')).trim();
   return {
     title: (src.seo.title || src.name).trim(),
     description: description.length > SEO_LIMITS.description ? description.slice(0, SEO_LIMITS.description - 1) + '…' : description,
@@ -232,7 +233,7 @@ export function analyzeProductSeo(src: ProductSeoSource): SeoReport {
   const { title, description } = effectiveProductSeo(src);
   const slug = src.slug;
   const kw = norm(src.seo.focusKeyword);
-  const text = src.description.trim();
+  const text = richToText(src.description).trim();
   const total = words(text).length;
   const occurrences = countOccurrences(norm(text), kw);
   const density = kw && total ? (occurrences * words(kw).length * 100) / total : 0;

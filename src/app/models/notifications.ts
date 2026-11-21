@@ -1,3 +1,4 @@
+import { richToText } from '../shared/rich-text';
 import { Product, productPath } from './product';
 import { GameSetting, resolveGames } from './minigames';
 
@@ -56,7 +57,7 @@ export function buildNotices(products: Product[], games: GameSetting[] | undefin
       key: `p:${p.id}:${toDay(date)}`,
       kind: 'product',
       title: p.name,
-      content: clip(p.notice?.trim() || p.description),
+      content: clip(p.notice?.trim() || richToText(p.description)),
       date,
       link: productPath(p),
       image: p.images[0],

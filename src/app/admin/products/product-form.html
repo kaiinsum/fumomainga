@@ -65,14 +65,21 @@
         @if (images().length) {
           <div class="previews">
             @for (img of images(); track img + $index; let i = $index) {
+              <div class="pv-item">
               <div class="preview" [class.cover]="i === 0">
-                <img [src]="img" alt="Ảnh {{ i + 1 }}" />
+                <img [src]="img" [alt]="imgMeta(img).alt || 'Ảnh ' + (i + 1)" />
+                @if (imgMeta(img).link) { <span class="link-tag" [title]="imgMeta(img).link">🔗</span> }
                 @if (i === 0) {
                   <span class="cover-tag">Bìa</span>
                 } @else {
                   <button type="button" class="mini star" title="Đặt làm ảnh bìa" (click)="makeCover(i)">★</button>
                 }
                 <button type="button" class="mini del" title="Xoá ảnh" (click)="removeImage(i)">✕</button>
+              </div>
+              <input class="pv-in" [value]="imgMeta(img).alt || ''" (change)="setImgMeta(img, 'alt', $any($event.target).value)"
+                placeholder="Alt: mô tả ảnh" maxlength="125" [attr.aria-label]="'Mô tả (alt) ảnh ' + (i + 1)" title="Mô tả ảnh (alt) cho Google & người khiếm thị. Trống = tên sản phẩm." />
+              <input class="pv-in" type="url" [value]="imgMeta(img).link || ''" (change)="setImgMeta(img, 'link', $any($event.target).value)"
+                placeholder="🔗 Link khi bấm ảnh" maxlength="500" [attr.aria-label]="'Link gắn với ảnh ' + (i + 1)" title="Khách bấm vào ảnh này sẽ mở link (https://... hoặc /san-pham/...)." />
               </div>
             }
           </div>
@@ -158,7 +165,24 @@
     <section class="adm-box">
       <h2><span class="req">Mô tả sản phẩm</span></h2>
       <div class="box-body field">
-        <textarea formControlName="description" rows="8" placeholder="Chất liệu, kích thước, điểm nổi bật..."></textarea>
+        <div class="rt-bar" role="toolbar" aria-label="Định dạng mô tả">
+          <button type="button" class="rt-b" title="In đậm (Ctrl+B)" (mousedown)="$event.preventDefault()" (click)="fmt('bold')"><b>B</b></button>
+          <button type="button" class="rt-b" title="In nghiêng (Ctrl+I)" (mousedown)="$event.preventDefault()" (click)="fmt('italic')"><i>I</i></button>
+          <button type="button" class="rt-b" title="Gạch chân (Ctrl+U)" (mousedown)="$event.preventDefault()" (click)="fmt('underline')"><u>U</u></button>
+          <span class="rt-sep" aria-hidden="true"></span>
+          @for (c of richColors; track c) {
+            <button type="button" class="rt-c" [style.background]="c" [title]="'Tô màu ' + c" [attr.aria-label]="'Tô màu ' + c" (mousedown)="$event.preventDefault()" (click)="color(c)"></button>
+          }
+          <label class="rt-pick" title="Chọn màu khác">🎨<input type="color" value="#e91e63" (mousedown)="saveSel()" (change)="color($any($event.target).value)" /></label>
+          <button type="button" class="rt-b" title="Gắn link cho chữ đang chọn" (mousedown)="$event.preventDefault()" (click)="addLink()">🔗</button>
+          <button type="button" class="rt-b rt-clear" title="Bỏ định dạng đoạn đang chọn" (mousedown)="$event.preventDefault()" (click)="clearFmt()">Tx</button>
+          <button type="button" class="rt-b rt-prev" [class.on]="descPreview()" (click)="descPreview.set(!descPreview())">{{ descPreview() ? '✏️ Soạn' : '👁 Xem trước' }}</button>
+        </div>
+        @if (descPreview()) {
+          <div class="rt-preview" [innerHTML]="form.controls.description.value | richText"></div>
+        }
+        <textarea #descBox formControlName="description" rows="8" placeholder="Chất liệu, kích thước, điểm nổi bật..." [hidden]="descPreview()" (keydown)="fmtKey($event)"></textarea>
+        <small class="hint">Chọn chữ rồi bấm <b>B</b> / <i>I</i> / <u>U</u> hoặc một màu. Trong ô sẽ hiện ký hiệu (**đậm**, *nghiêng*, __gạch chân__, [color=…]…[/color], [chữ](link)); trang sản phẩm hiển thị thành chữ đã định dạng.</small>
         @if (invalid('description')) {
           <span class="field-err">Mô tả tối thiểu 10 ký tự.</span>
         }

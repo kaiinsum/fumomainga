@@ -57,7 +57,7 @@ const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,
       <div class="list">
         @for (n of shown(); track n.id; let i = $index) {
           <a class="item card-surface" [routerLink]="path(n)" [appAnimateIn]="i % 2 ? 'right' : 'left'">
-            @if (n.cover) { <img [src]="n.cover" [alt]="n.title" loading="lazy" /> }
+            @if (n.cover) { <img [src]="n.cover" [alt]="n.coverAlt || n.title" loading="lazy" /> }
             <div class="body">
               <div class="meta">
                 @if (catOf(n); as c) { <span class="chip"><app-icon [icon]="c.icon" /> {{ c.name }}</span> }

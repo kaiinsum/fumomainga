@@ -243,6 +243,14 @@
         @if (cover()) {
           <img class="cover-preview" [src]="cover()" alt="Ảnh đại diện" />
           <button class="link-del" type="button" (click)="cover.set('')">Gỡ ảnh đại diện</button>
+          <div class="field">
+            <label for="cover-alt">Mô tả ảnh (alt)</label>
+            <input id="cover-alt" maxlength="125" [ngModel]="coverAlt()" (ngModelChange)="coverAlt.set($event)" [placeholder]="title || 'Trống = dùng tiêu đề bài'" />
+          </div>
+          <div class="field">
+            <label for="cover-link">🔗 Link khi bấm ảnh</label>
+            <input id="cover-link" type="url" maxlength="500" [ngModel]="coverLink()" (ngModelChange)="coverLink.set($event)" placeholder="https://... hoặc /san-pham/..." />
+          </div>
         }
         <label class="btn ghost small">
           {{ uploading() ? 'Đang xử lý...' : cover() ? 'Đổi ảnh' : 'Tải ảnh lên' }}
