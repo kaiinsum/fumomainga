@@ -298,3 +298,17 @@ as $$
   limit p_limit;
 $$;
 revoke all on function public.analytics_sources(timestamptz, integer) from public, anon, authenticated;
+
+-- ============ Dung lượng chi tiết (Admin → Tổng quan → Lưu trữ & tên miền) ============
+-- Từng bảng (kèm chỉ mục) + từng khoá trong app_kv, để biết cái gì đang chiếm bao nhiêu MB.
+create or replace function public.storage_breakdown()
+returns table (kind text, name text, bytes bigint, row_count bigint)
+language sql stable
+as $$
+  select 'table'::text, c.relname::text, pg_total_relation_size(c.oid), greatest(c.reltuples, 0)::bigint
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'r'
+  union all
+  select 'kv'::text, k.key, pg_column_size(k.value)::bigint, 1::bigint from public.app_kv k;
+$$;
+revoke all on function public.storage_breakdown() from public, anon, authenticated;

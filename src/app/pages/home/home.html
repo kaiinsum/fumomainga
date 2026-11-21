@@ -76,7 +76,7 @@
   <div class="container">
     <h2 class="section-title" appAnimateIn>Danh mục <span>sản phẩm</span></h2>
     <p class="section-sub" appAnimateIn [animDelay]="100">Chọn một danh mục để xem nhanh các sản phẩm liên quan.</p>
-    <div class="cats">
+    <div class="cats" [style.--cols]="catCols()">
       @for (c of categories(); track c.name; let i = $index) {
         <a
           class="cat card-surface"

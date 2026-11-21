@@ -291,7 +291,7 @@ type Tab = 'overview' | 'pages' | 'products' | 'news' | 'general';
                   <app-icon-picker label="Favicon" [ngModel]="d().favicon" (ngModelChange)="set('favicon', $event)" />
                   <span class="fav-prev"><span class="tab"><app-icon [icon]="d().favicon || '🧸'" /> {{ shopName }}</span></span>
                 </div>
-                <small class="hint">Tải ảnh PNG vuông (tự cắt vuông, 128×128) hoặc chọn emoji. Trống = favicon mặc định của web.
+                <small class="hint">Tải ảnh PNG vuông (tự cắt vuông, 144×144 — chuẩn Google: bội số của 48px) hoặc chọn emoji. Trống = favicon mặc định của web.
                   Google cần vài ngày để cập nhật favicon trên kết quả tìm kiếm.</small>
               </div>
               <div class="field">

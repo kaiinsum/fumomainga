@@ -7,7 +7,7 @@ import { getStore, handle } from '../_lib/orders';
 export const GET = handle(async () => {
   let views: Record<string, number> = {};
   try {
-    const all = await getStore().analytics.games(null);
+    const all = (await getStore().analytics?.games(null)) ?? [];
     views = Object.fromEntries(all.filter((g) => g.game.startsWith('news:')).map((g) => [g.game.slice(5), g.plays]));
   } catch {
     // Chưa có bảng thống kê (chưa chạy schema.sql) → trả về rỗng, trang vẫn hiển thị bình thường.

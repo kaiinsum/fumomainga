@@ -20,8 +20,23 @@
       "destination": "/api?__path=sitemap"
     },
     {
+      "source": "/site-icon",
+      "destination": "/api?__path=site-icon"
+    },
+    {
       "source": "/robots.txt",
       "destination": "/api?__path=sitemap&kind=robots"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|Google-InspectionTool|GoogleOther|Storebot-Google|bingbot|BingPreview|coccocbot|DuckDuckBot|YandexBot|Applebot|Baiduspider).*"
+        }
+      ],
+      "destination": "/api?__path=og&mode=search&p=/$1"
     },
     {
       "source": "/((?!api(?:/|$)).*)",

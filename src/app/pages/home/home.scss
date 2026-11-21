@@ -92,10 +92,19 @@ h1 {
   &.b4 { width: 34px; height: 34px; background: var(--primary); bottom: 10%; right: 30%; }
 }
 
+/* PC: mọi danh mục chia đều 1 hàng; nhiều quá (> 6) thì xuống dòng, mỗi hàng cùng số thẻ, hàng cuối căn giữa. */
 .cats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  --cols: 4;
+  --gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap);
+
+  > .cat {
+    flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+    min-width: 0;
+  }
 }
 
 .cat {
@@ -627,9 +636,12 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .grid,
-  .cats {
+  .grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cats {
+    --cols: 2 !important;
   }
 }
 
@@ -680,7 +692,7 @@ h1 {
 
   /* Danh mục: thẻ thấp & gọn hơn */
   .cats {
-    gap: 10px;
+    --gap: 10px;
   }
 
   .cat {

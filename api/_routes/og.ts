@@ -3,6 +3,11 @@
  * (Messenger / Facebook / Zalo / Discord / Telegram...). Bot không chạy JavaScript nên không thấy
  * ảnh / tiêu đề mà Angular gắn sau; vercel.json chuyển riêng các bot (theo user-agent) tới đây.
  * Người thật không bao giờ vào đây (vercel.json chỉ chuyển user-agent của bot).
+ *
+ * ?mode=search — dành cho bot TÌM KIẾM (Googlebot, Bing, Cốc Cốc...): trả về ĐÚNG trang web khách nhận (index.html),
+ * chỉ điền sẵn <head> (tiêu đề, mô tả, canonical, ảnh thumbnail, robots max-image-preview, JSON-LD có ảnh)
+ * để Google thấy ảnh ngay từ HTML gốc, không phải chờ chạy JavaScript. Nội dung trang giữ nguyên → không phải "cloaking".
+ * Angular khởi động sẽ xoá các thẻ [data-ssr] này rồi gắn lại thẻ của chính nó.
  */
 import { getStore, handle } from '../_lib/orders';
 
@@ -120,7 +125,12 @@ export const GET = handle(async (req) => {
   }
 
   const qs = params.toString();
+  const catQs = params.get('danhMuc') && (pathname === '/san-pham' || pathname === '/tin-tuc') ? '?danhMuc=' + encodeURIComponent(params.get('danhMuc')!) : '';
   const pageUrl = origin + pathname + (qs ? '?' + qs : '');
+
+  if (url.searchParams.get('mode') === 'search') {
+    return searchPage(origin, { title, desc, image, type, canonical: origin + (pathname || '/') + catQs, shop });
+  }
   const html = `<!doctype html>
 <html lang="vi"><head>
 <meta charset="utf-8">
@@ -150,3 +160,63 @@ export const GET = handle(async (req) => {
     },
   });
 });
+
+const NO_INDEX = /^\/(admin|gio-hang|tra-cuu-don-hang)(\/|$)/;
+
+/** index.html gốc (đúng bản khách nhận), đọc 1 lần mỗi máy chủ. */
+let shell: { at: number; html: string } | null = null;
+async function loadShell(origin: string): Promise<string> {
+  if (shell && Date.now() - shell.at < 10 * 60_000) return shell.html;
+  const res = await fetch(origin + '/index.html', { headers: { 'user-agent': 'fumo-shell' } });
+  if (!res.ok) throw new Error('index.html ' + res.status);
+  const html = await res.text();
+  shell = { at: Date.now(), html };
+  return html;
+}
+
+function searchPage(origin: string, m: { title: string; desc: string; image: string; type: string; canonical: string; shop: string }): Promise<Response> | Response {
+  const headers = {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'public, max-age=0',
+    'vercel-cdn-cache-control': 'max-age=300, stale-while-revalidate=600',
+  };
+  return loadShell(origin)
+    .then((html) => {
+      const path = new URL(m.canonical).pathname;
+      // Bỏ thẻ dựng sẵn mặc định của index.html (sẽ thay bằng thẻ của đúng trang này).
+      html = html.replace(/<(meta|link)[^>]*\sdata-ssr[^>]*>\s*/gi, '');
+      const meta = (attr: string, key: string, val: string) => {
+        const re = new RegExp(`<meta\\s+${attr}="${key}"[^>]*>`, 'i');
+        const tag = `<meta ${attr}="${key}" content="${esc(val)}">`;
+        html = re.test(html) ? html.replace(re, () => tag) : html.replace('</head>', () => tag + '\n</head>');
+      };
+      html = html.replace(/<title>[\s\S]*?<\/title>/i, () => `<title>${esc(m.title)}</title>`);
+      meta('name', 'description', m.desc);
+      meta('property', 'og:type', m.type === 'product' ? 'product' : m.type);
+      meta('property', 'og:title', m.title);
+      meta('property', 'og:description', m.desc);
+      meta('property', 'og:url', m.canonical);
+      meta('property', 'og:image', m.image);
+      meta('name', 'twitter:image', m.image);
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type': m.type === 'article' ? 'Article' : 'WebPage',
+        ...(m.type === 'article' ? { headline: m.title } : { name: m.title }),
+        url: m.canonical,
+        description: m.desc,
+        image: [m.image],
+        thumbnailUrl: m.image,
+        ...(m.type === 'article' ? {} : { primaryImageOfPage: { '@type': 'ImageObject', url: m.image } }),
+        inLanguage: 'vi-VN',
+      };
+      const extra = [
+        `<link rel="canonical" href="${esc(m.canonical)}" data-ssr>`,
+        `<meta name="robots" content="${NO_INDEX.test(path) ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1'}" data-ssr>`,
+        `<meta name="thumbnail" content="${esc(m.image)}" data-ssr>`,
+        `<link rel="image_src" href="${esc(m.image)}" data-ssr>`,
+        `<script type="application/ld+json" data-ssr>${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
+      ].join('\n');
+      return new Response(html.replace('</head>', () => extra + '\n</head>'), { status: 200, headers });
+    })
+    .catch(() => fetch(origin + '/index.html').then((r) => new Response(r.body, { status: 200, headers })));
+}

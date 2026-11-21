@@ -101,6 +101,14 @@ interface Store {
   uploadImage?(path: string, bytes: Uint8Array, contentType: string): Promise<string>;
   /** Lời nhắn liên hệ (Supabase có bảng riêng; kho khác lưu dạng danh sách JSON). */
   contacts?: ContactStore;
+  /** Dung lượng chi tiết: từng bảng / khoá dữ liệu + kho ảnh (chỉ có ở Supabase). */
+  usage?(): Promise<UsageInfo>;
+}
+
+export interface UsageInfo {
+  /** null = chưa có hàm storage_breakdown (chạy lại supabase/schema.sql). */
+  db: { total: number; tables: { name: string; bytes: number; rows: number }[]; kv: { key: string; bytes: number }[] } | null;
+  media: { bytes: number; count: number; folders: { name: string; bytes: number; count: number }[] } | null;
 }
 
 export interface Contact {

@@ -52,6 +52,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
   );
   readonly featured = computed(() => this.service.featured().slice(0, 4));
   private readonly categorySvc = inject(CategoryService);
+  /** Số cột danh mục trên PC: tối đa 6/hàng, chia đều số thẻ giữa các hàng (vd. 8 → 4 + 4, 10 → 5 + 5). */
+  readonly catCols = computed(() => {
+    const n = this.categories().length || 1;
+    return n <= 6 ? n : Math.ceil(n / Math.ceil(n / 6));
+  });
   readonly categories = computed(() => {
     const shop = this.service.shop();
     return this.categorySvc.categories().map((c) => ({

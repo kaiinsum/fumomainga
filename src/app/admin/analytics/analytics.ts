@@ -277,17 +277,32 @@ export function device(ua: string): string {
         @if (d.sources; as so) {
           @let tot = srcTotal(so);
           @if (tot) {
-            <div class="src-kinds">
-              <div class="kbar" role="img" aria-label="Tỉ lệ nguồn truy cập">
-                @for (k of kindList; track k.id) {
-                  @if (so.kinds[k.id]) { <i [style.width.%]="(so.kinds[k.id] / tot) * 100" [style.background]="k.color" [title]="k.label + ': ' + so.kinds[k.id]"></i> }
-                }
-              </div>
-              <ul class="klegend">
-                @for (k of kindList; track k.id) {
-                  <li><span class="sw" [style.background]="k.color"></span>{{ k.icon }} {{ k.label }} <b>{{ pct(so.kinds[k.id], tot) }}%</b> <small>({{ fmt(so.kinds[k.id]) }})</small></li>
-                }
-              </ul>
+            <div class="pies">
+              @for (pc of srcPies(so, tot); track pc.title) {
+                <figure class="pie-card">
+                  <figcaption>{{ pc.title }}</figcaption>
+                  <div class="pie-row">
+                    <svg viewBox="-1.05 -1.05 2.1 2.1" class="pie" role="img" [attr.aria-label]="pc.title">
+                      @for (sl of pc.slices; track sl.label) {
+                        @if (sl.full) {
+                          <circle r="1" [attr.fill]="sl.color" [class.dim]="pieHover() && pieHover() !== pc.title + sl.label"
+                            (mouseenter)="pieHover.set(pc.title + sl.label)" (mouseleave)="pieHover.set('')"><title>{{ sl.label }}: {{ fmt(sl.value) }} ({{ sl.pct }}%)</title></circle>
+                        } @else {
+                          <path [attr.d]="sl.d" [attr.fill]="sl.color" [class.dim]="pieHover() && pieHover() !== pc.title + sl.label"
+                            (mouseenter)="pieHover.set(pc.title + sl.label)" (mouseleave)="pieHover.set('')"><title>{{ sl.label }}: {{ fmt(sl.value) }} ({{ sl.pct }}%)</title></path>
+                        }
+                      }
+                    </svg>
+                    <ul class="klegend">
+                      @for (sl of pc.slices; track sl.label) {
+                        <li [class.dim]="pieHover() && pieHover() !== pc.title + sl.label" (mouseenter)="pieHover.set(pc.title + sl.label)" (mouseleave)="pieHover.set('')">
+                          <span class="sw" [style.background]="sl.color"></span><span class="lb">{{ sl.label }}</span> <b>{{ sl.pct }}%</b> <small>({{ fmt(sl.value) }})</small>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </figure>
+              }
             </div>
             <div class="adm-table-wrap">
               <table class="adm-table src-table">
@@ -352,29 +367,6 @@ export function device(ua: string): string {
           </div>
         </details>
       </section>
-
-      <!-- Dung lượng lưu trữ -->
-      @if (d.storage; as st) {
-        <section class="adm-box store" id="store-box">
-          <h2>💾 Dung lượng lưu trữ</h2>
-          <div class="store-body">
-            <div class="store-bar" [class]="'store-bar ' + st.level" role="meter" aria-label="Dung lượng cơ sở dữ liệu"
-              [attr.aria-valuenow]="st.pct" aria-valuemin="0" aria-valuemax="100">
-              <i [style.width.%]="st.pct > 100 ? 100 : st.pct"></i>
-            </div>
-            <p class="store-line">
-              Cơ sở dữ liệu: <b>{{ mb(st.dbBytes) }}</b> / {{ mb(st.limitBytes) }} (<b>{{ st.pct }}%</b>)
-              · Dữ liệu truy cập: <b>{{ fmt(st.rows) }}</b> lượt ({{ mb(st.viewsBytes) }})
-              @if (st.oldest) { · cũ nhất từ {{ dayLabel(st.oldest) }} }
-            </p>
-            <p class="hint">Gói miễn phí Supabase cho 500MB. Hệ thống tự cảnh báo khi dùng trên 70% (chuông 🔔 ở thanh trên cùng).</p>
-            <div class="purge">
-              <button class="btn primary small" type="button" (click)="openCleanup()">🧹 Dọn dữ liệu không dùng</button>
-              <span class="hint">Xem trước những gì sẽ bị xoá, chọn rồi mới xác nhận.</span>
-            </div>
-          </div>
-        </section>
-      }
 
       <!-- IP gần nhất -->
       <section class="adm-box">
@@ -524,10 +516,17 @@ export function device(ua: string): string {
     .bar i { display: block; height: 100%; background: #2271b1; border-radius: 4px; }
     .none { padding: 16px; margin: 0; color: #646970; }
     .src-box { padding-bottom: 6px; }
-    .src-kinds { padding: 12px 16px 4px; display: grid; gap: 8px; }
-    .kbar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #f0f0f1; }
-    .kbar i { display: block; height: 100%; }
-    .klegend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .85rem; }
+    .pies { padding: 12px 16px 4px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .pie-card { margin: 0; border: 1px solid #dcdcde; border-radius: 10px; padding: 10px 12px; }
+    .pie-card figcaption { font-weight: 700; font-size: .85rem; margin-bottom: 8px; color: #3c434a; }
+    .pie-row { display: flex; align-items: center; gap: 16px; }
+    .pie { width: 140px; height: 140px; flex: none; transform: rotate(-90deg); }
+    .pie path, .pie circle { stroke: #fff; stroke-width: .02; cursor: pointer; transition: opacity .15s; }
+    .pie .dim, .klegend .dim { opacity: .35; }
+    .klegend { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: .84rem; min-width: 0; flex: 1; }
+    .klegend li { display: flex; align-items: center; gap: 6px; cursor: default; transition: opacity .15s; }
+    .klegend .lb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+    @media (max-width: 420px) { .pie-row { flex-direction: column; align-items: stretch; } .pie { align-self: center; } }
     .klegend small { color: #646970; }
     .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
     .src-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -857,6 +856,39 @@ export class AdminAnalytics {
   kindOf(id: SourceKind) {
     return this.kindList.find((k) => k.id === id) ?? this.kindList[4];
   }
+  readonly pieHover = signal('');
+  /** Màu cho từng nguồn cụ thể (biểu đồ "Nguồn hàng đầu"). */
+  private readonly srcColors = ['#2271b1', '#d63638', '#00a32a', '#dba617', '#8c5fd6', '#e26f1b', '#0aa5a5', '#c2185b'];
+
+  /** 2 biểu đồ tròn: theo loại nguồn, và 7 nguồn nhiều nhất (+ Khác). */
+  srcPies(so: Sources, tot: number): { title: string; slices: { label: string; value: number; pct: number; color: string; d: string; full: boolean }[] }[] {
+    const build = (items: { label: string; value: number; color: string }[]) => {
+      const sum = items.reduce((a, b) => a + b.value, 0) || 1;
+      let a0 = 0;
+      return items
+        .filter((x) => x.value > 0)
+        .map((x) => {
+          const frac = x.value / sum;
+          const a1 = a0 + frac * Math.PI * 2;
+          const [x0, y0, x1, y1] = [Math.cos(a0), Math.sin(a0), Math.cos(a1), Math.sin(a1)];
+          const d = `M0 0 L${x0.toFixed(4)} ${y0.toFixed(4)} A1 1 0 ${frac > 0.5 ? 1 : 0} 1 ${x1.toFixed(4)} ${y1.toFixed(4)} Z`;
+          a0 = a1;
+          return { ...x, pct: Math.round(frac * 1000) / 10, d, full: frac >= 0.9999 };
+        });
+    };
+    const kinds = build(this.kindList.map((k) => ({ label: `${k.icon} ${k.label}`, value: so.kinds[k.id] || 0, color: k.color })));
+    const top = so.list.slice(0, 7);
+    const rest = tot - top.reduce((a, r) => a + r.entries, 0);
+    const sources = build([
+      ...top.map((r, i) => ({ label: `${this.kindOf(r.kind).icon} ${r.name}`, value: r.entries, color: this.srcColors[i] })),
+      ...(rest > 0 ? [{ label: 'Khác', value: rest, color: '#a7aaad' }] : []),
+    ]);
+    return [
+      { title: 'Theo loại nguồn', slices: kinds },
+      { title: 'Nguồn hàng đầu', slices: sources },
+    ];
+  }
+
   srcTotal(so: Sources): number {
     return Object.values(so.kinds).reduce((a, b) => a + b, 0);
   }

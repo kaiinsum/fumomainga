@@ -3,7 +3,7 @@
  * Chỉ chạy trên máy chủ với SERVICE ROLE KEY (bỏ qua RLS); trình duyệt không bao giờ thấy khoá này.
  */
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import type { Contact, ContactStore, Order, OrderItem, OrderStatus } from './orders';
+import type { Contact, ContactStore, Order, OrderItem, OrderStatus, UsageInfo } from './orders';
 import type { AnalyticsStore, CleanupCounts, CleanupOptions, Maintenance, PageView } from './analytics';
 
 /** Bucket công khai chứa ảnh sản phẩm / tin tức. */
@@ -413,6 +413,50 @@ export function supabaseStore(url: string, serviceKey: string) {
 
     async delKey(key: string): Promise<void> {
       check(await db.from('app_kv').delete().eq('key', key), 'xoá dữ liệu');
+    },
+
+    async usage() {
+      // Cơ sở dữ liệu: từng bảng + từng khoá app_kv (hàm storage_breakdown trong schema.sql).
+      let dbInfo: UsageInfo['db'] = null;
+      const br = await db.rpc('storage_breakdown');
+      if (!br.error) {
+        const rows = (br.data ?? []) as { kind: string; name: string; bytes: number; row_count: number }[];
+        const total = await db.rpc('analytics_storage');
+        const t = ((total.data ?? []) as { db_bytes: number }[])[0];
+        dbInfo = {
+          total: num(t?.db_bytes),
+          tables: rows.filter((r) => r.kind === 'table').map((r) => ({ name: r.name, bytes: num(r.bytes), rows: num(r.row_count) })),
+          kv: rows.filter((r) => r.kind === 'kv').map((r) => ({ key: r.name, bytes: num(r.bytes) })),
+        };
+      }
+      // Kho ảnh: duyệt từng thư mục (1 cấp) trong bucket "media".
+      let media: UsageInfo['media'] = null;
+      const root = await db.storage.from(MEDIA_BUCKET).list('', { limit: 1000 });
+      if (!root.error) {
+        const folders: { name: string; bytes: number; count: number }[] = [];
+        const sizeOf = (f: { metadata: unknown }) => Number((f.metadata as { size?: number } | null)?.size) || 0;
+        const loose = { name: '(gốc)', bytes: 0, count: 0 };
+        for (const item of root.data ?? []) {
+          if (item.id) {
+            loose.bytes += sizeOf(item);
+            loose.count++;
+            continue;
+          }
+          const f = { name: item.name, bytes: 0, count: 0 };
+          for (let offset = 0; offset < 50_000; offset += 1000) {
+            const { data, error } = await db.storage.from(MEDIA_BUCKET).list(item.name, { limit: 1000, offset });
+            if (error) break;
+            for (const x of data ?? []) if (x.id) (f.bytes += sizeOf(x)), f.count++;
+            if (!data || data.length < 1000) break;
+          }
+          folders.push(f);
+        }
+        if (loose.count) folders.push(loose);
+        media = { bytes: folders.reduce((s, f) => s + f.bytes, 0), count: folders.reduce((s, f) => s + f.count, 0), folders };
+      } else if (/not.?found|does not exist/i.test(root.error.message)) {
+        media = { bytes: 0, count: 0, folders: [] };
+      }
+      return { db: dbInfo, media };
     },
 
     /** Tải ảnh lên Supabase Storage (bucket công khai "media", tự tạo nếu chưa có) → trả về link công khai. */

@@ -38,6 +38,8 @@ export class PageSeoService {
   start(): void {
     if (this.started) return;
     this.started = true;
+    // Thẻ dựng sẵn cho bot tìm kiếm (index.html / máy chủ) → bỏ, dịch vụ SEO tự gắn lại theo trang.
+    this.doc.head.querySelectorAll('[data-ssr]').forEach((el) => el.remove());
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
       const u = (e as NavigationEnd).urlAfterRedirects.split('#')[0];
       this.path.set(u.split('?')[0] || '/');
@@ -100,7 +102,7 @@ export class PageSeoService {
     if (description) this.meta.updateTag({ name: 'description', content: description });
     // Bỏ thẻ trùng (thẻ mặc định trong index.html) rồi thêm thẻ của trang.
     const replaced = ['name="robots"', 'property="og:type"', 'property="og:title"', 'property="og:description"', 'property="og:url"', 'property="og:image"',
-      'name="twitter:title"', 'name="twitter:description"', 'name="twitter:image"', 'name="keywords"'];
+      'name="twitter:title"', 'name="twitter:description"', 'name="twitter:image"', 'name="keywords"', 'name="thumbnail"'];
     for (const sel of replaced) this.meta.removeTag(sel);
     const robots = [page.noindex ? 'noindex' : 'index', page.nofollow ? 'nofollow' : 'follow'];
     if (!page.noindex) robots.push('max-image-preview:large', 'max-snippet:-1');
@@ -115,6 +117,7 @@ export class PageSeoService {
     ];
     if (description) tags.push({ property: 'og:description', content: description }, { name: 'twitter:description', content: description });
     if (page.focusKeyword.trim()) tags.push({ name: 'keywords', content: page.focusKeyword.trim() });
+    tags.push({ name: 'thumbnail', content: image });
     for (const t of tags) {
       const el = this.meta.addTag(t, true);
       el?.setAttribute(ATTR, '');
@@ -128,7 +131,7 @@ export class PageSeoService {
     const ld = this.doc.createElement('script');
     ld.type = 'application/ld+json';
     ld.setAttribute(ATTR, '');
-    ld.textContent = JSON.stringify(buildPageSchema({ path, label: def.label, title, description, url, origin, seo, settings: this.settings() })).replace(/</g, '\\u003c');
+    ld.textContent = JSON.stringify(buildPageSchema({ path, label: def.label, title, description, url, origin, seo, settings: this.settings(), image })).replace(/</g, '\\u003c');
     this.doc.head.appendChild(ld);
   }
 }
@@ -144,11 +147,13 @@ export interface PageSchemaInput {
   url: string;
   origin: string;
   seo: SiteSeo;
+  /** Ảnh đại diện trang (thumbnail trên Google). */
+  image?: string;
   settings: { shopName: string; contactPhone?: string; contactEmail?: string; contactAddress?: string; facebookUrl?: string; tiktokUrl?: string; shopeeUrl?: string };
 }
 
 /** JSON-LD cho trang tĩnh: WebPage (+ Breadcrumb). Trang chủ: thêm Tổ chức (Organization / Store...) và WebSite (ô tìm kiếm). */
-export function buildPageSchema({ path, label, title, description, url, origin, seo, settings: s }: PageSchemaInput): object {
+export function buildPageSchema({ path, label, title, description, url, origin, seo, settings: s, image }: PageSchemaInput): object {
   const page = pageSeoOf(seo, path);
   const orgId = `${origin}/#organization`;
   const graph: object[] = [
@@ -158,6 +163,7 @@ export function buildPageSchema({ path, label, title, description, url, origin, 
       url,
       name: title,
       ...(description ? { description } : {}),
+      ...(image ? { primaryImageOfPage: { '@type': 'ImageObject', url: image }, thumbnailUrl: image, image } : {}),
       inLanguage: 'vi-VN',
       isPartOf: { '@id': `${origin}/#website` },
       publisher: { '@id': orgId },

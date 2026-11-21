@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostListener, effect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { OrderApiService } from '../services/order-api.service';
 import { EmojiPickerComponent } from './emoji-picker';
@@ -30,7 +30,7 @@ export class IconComponent {
 }
 
 /** Cắt giữa thành hình vuông rồi thu về size×size (PNG giữ nền trong suốt; nặng quá thì đổi WebP). */
-async function squareIcon(file: File, size = 128): Promise<string> {
+async function squareIcon(file: File, size = 144): Promise<string> {
   const bmp = await createImageBitmap(file);
   const side = Math.min(bmp.width, bmp.height);
   const c = document.createElement('canvas');
@@ -52,11 +52,11 @@ async function squareIcon(file: File, size = 128): Promise<string> {
   imports: [IconComponent, EmojiPickerComponent],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => IconPickerComponent), multi: true }],
   template: `
-    <button type="button" class="cur" (click)="open.set(!open())" [attr.aria-expanded]="open()" [title]="label() + ' — bấm để đổi'" [disabled]="disabled()">
+    <button #cur type="button" class="cur" (click)="toggle()" [attr.aria-expanded]="open()" [title]="label() + ' — bấm để đổi'" [disabled]="disabled()">
       @if (value()) { <app-icon [icon]="value()" /> } @else { <span class="ph">＋</span> }
     </button>
     @if (open()) {
-      <div class="pop" role="dialog" [attr.aria-label]="label()">
+      <div #pop class="pop" popover="manual" role="dialog" [attr.aria-label]="label()" [style.top.px]="pos().top" [style.left.px]="pos().left" [class.emoji-up]="pos().emojiUp">
         <div class="row">
           <input class="emo" [value]="isImg() ? '' : value()" (input)="set($any($event.target).value)" maxlength="8" placeholder="Emoji" aria-label="Gõ emoji" />
           <app-emoji-picker label="" (pick)="set($event)" />
@@ -68,7 +68,7 @@ async function squareIcon(file: File, size = 128): Promise<string> {
         <input class="link" [value]="isImg() && !value().startsWith('data:') ? value() : ''" (change)="setLink($any($event.target).value)"
           placeholder="hoặc dán link ảnh https://…" aria-label="Link ảnh icon" />
         @if (err()) { <small class="err">{{ err() }}</small> }
-        <small class="hint">Ảnh tự cắt vuông, thu về 128×128. Nên dùng PNG nền trong suốt.</small>
+        <small class="hint">Ảnh tự cắt vuông, thu về 144×144. Nên dùng PNG nền trong suốt.</small>
         @if (isImg()) { <button type="button" class="clear" (click)="set('')">Bỏ ảnh</button> }
       </div>
     }
@@ -79,8 +79,11 @@ async function squareIcon(file: File, size = 128): Promise<string> {
       display: grid; place-items: center; padding: 0; }
     .cur:hover { border-color: #2271b1; }
     .ph { color: #8c8f94; font-size: 1rem; }
-    .pop { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; width: 250px; padding: 10px; border-radius: 10px; background: #fff;
+    /* Lớp trên cùng (popover) + toạ độ cố định theo nút → không bị khung bảng / thẻ có overflow che mất. */
+    .pop { position: fixed; z-index: 1000; inset: auto; margin: 0; overflow: visible; width: 250px; box-sizing: border-box; padding: 10px; border-radius: 10px; background: #fff;
       border: 1px solid #c3c4c7; box-shadow: 0 10px 28px rgba(0,0,0,.18); display: grid; gap: 8px; }
+    /* Gần đáy màn hình → bảng emoji mở lên trên. */
+    .emoji-up ::ng-deep app-emoji-picker .pop { top: auto; bottom: calc(100% + 6px); }
     .row { display: flex; gap: 6px; align-items: center; }
     .emo { width: 70px; font-size: 1.1rem; text-align: center; padding: 4px; border: 1px solid #c3c4c7; border-radius: 6px; }
     .up { display: block; text-align: center; padding: 7px; border-radius: 8px; border: 1px dashed #2271b1; color: #2271b1; font-weight: 700; font-size: .85rem; cursor: pointer; }
@@ -96,6 +99,58 @@ export class IconPickerComponent implements ControlValueAccessor {
   readonly label = input('Biểu tượng');
   readonly value = signal('');
   readonly open = signal(false);
+  readonly pos = signal({ top: 0, left: 0, emojiUp: false });
+  private readonly cur = viewChild<ElementRef<HTMLButtonElement>>('cur');
+  private readonly pop = viewChild<ElementRef<HTMLDivElement>>('pop');
+  private readonly reposition = () => this.place();
+
+  constructor() {
+    // Hiện bảng ở lớp trên cùng của trang rồi đặt vị trí theo nút.
+    effect(() => {
+      const el = this.pop()?.nativeElement;
+      if (!el) return;
+      const p = el as HTMLDivElement & { showPopover?: () => void };
+      try {
+        if (p.showPopover && !el.matches(':popover-open')) p.showPopover();
+      } catch {
+        /* trình duyệt cũ: vẫn dùng position: fixed */
+      }
+      this.place();
+    });
+    inject(DestroyRef).onDestroy(() => this.unlisten());
+  }
+
+  toggle(): void {
+    if (this.open()) return this.close();
+    this.open.set(true);
+    this.place();
+    addEventListener('scroll', this.reposition, true);
+    addEventListener('resize', this.reposition);
+  }
+
+  close(): void {
+    this.open.set(false);
+    this.unlisten();
+  }
+
+  private unlisten(): void {
+    removeEventListener('scroll', this.reposition, true);
+    removeEventListener('resize', this.reposition);
+  }
+
+  /** Dưới nút; thiếu chỗ thì lật lên trên; không tràn mép màn hình. */
+  private place(): void {
+    const b = this.cur()?.nativeElement.getBoundingClientRect();
+    if (!b) return;
+    const h = this.pop()?.nativeElement.offsetHeight || 280;
+    const w = 250;
+    let top = b.bottom + 6;
+    if (top + h > innerHeight - 8 && b.top - 6 - h >= 8) top = b.top - 6 - h;
+    top = Math.max(8, Math.min(top, innerHeight - h - 8));
+    const left = Math.max(8, Math.min(b.left, innerWidth - w - 8));
+    // Bảng emoji cao ~300px, mở ngay dưới hàng emoji (~50px dưới đỉnh bảng).
+    this.pos.set({ top, left, emojiUp: top + 50 + 300 > innerHeight - 8 && top > innerHeight - top });
+  }
   readonly busy = signal(false);
   readonly err = signal('');
   readonly disabled = signal(false);
@@ -108,7 +163,7 @@ export class IconPickerComponent implements ControlValueAccessor {
 
   @HostListener('document:pointerdown', ['$event'])
   outside(e: Event): void {
-    if (this.open() && !this.host.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.contains(e.target as Node)) this.close();
   }
 
   set(v: string): void {
@@ -142,7 +197,7 @@ export class IconPickerComponent implements ControlValueAccessor {
         if (dataUrl.length > 80_000) throw new Error('Không tải được ảnh lên máy chủ — hãy dán link ảnh thay thế.');
       }
       this.set(url);
-      this.open.set(false);
+      this.close();
     } catch (er) {
       this.err.set(er instanceof Error ? er.message : 'Không đọc được ảnh.');
     } finally {

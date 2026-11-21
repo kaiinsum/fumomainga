@@ -20,12 +20,15 @@
   <meta property="og:title" content="Fumo Mai Nga">
   <meta property="og:description" content="Thú bông Fumo, móc khóa, figure và phụ kiện dễ thương.">
   <meta property="og:image" content="https://www.fumomainga.io.vn/og/og-default.jpg">
+  <!-- Cho Google hiện ảnh lớn / thumbnail ngay từ HTML gốc (Angular xoá [data-ssr] rồi gắn thẻ riêng từng trang). -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" data-ssr>
+  <meta name="thumbnail" content="https://www.fumomainga.io.vn/og/og-default.jpg" data-ssr>
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Favicon theo Admin → Khai báo SEO (máy chủ trả đúng ảnh đã đặt, để cả Google cũng thấy); chưa đặt → favicon.svg mặc định. -->
+  <link rel="icon" href="/site-icon">
+  <link rel="apple-touch-icon" href="/site-icon?apple=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font mặc định (có bộ ký tự tiếng Việt); đổi được trong Admin → Cài đặt → Chung -->

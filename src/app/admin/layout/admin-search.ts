@@ -20,6 +20,7 @@ const INDEX: Entry[] = [
   { icon: '📊', label: 'Bảng tin', where: 'Tổng quan', path: '/admin', keys: 'dashboard tong quan' },
   { icon: '🗺', label: 'Bản đồ nhiệt đơn hàng', where: 'Bảng tin', path: '/admin', keys: 'heatmap khu vuc dat hang ip vi tri' },
   { icon: '📈', label: 'Thống kê truy cập', where: 'Tổng quan', path: '/admin/thong-ke', keys: 'luot xem online nguoi truy cap ip bieu do' },
+  { icon: '💾', label: 'Lưu trữ & tên miền', where: 'Tổng quan', path: '/admin/luu-tru', keys: 'dung luong luu tru storage mb anh database hosting vercel supabase ten mien domain het han gia han' },
   { icon: '🧹', label: 'Dọn dữ liệu cũ / bộ nhớ', where: 'Thống kê', path: '/admin/thong-ke', query: { don: '1' }, keys: 'xoa du lieu dung luong storage day bo nho' },
   { icon: '🧚', label: 'Người hướng dẫn (Cirno / Reimu)', where: 'Marketing & tương tác', path: '/admin/nguoi-huong-dan', keys: 'nguoi huong dan cirno reimu loi thoai moi choi minigame mascot nhan vat' },
   { icon: '🏷', label: 'Phân loại minigame', where: 'Minigame', path: '/admin/minigame', keys: 'phan loai giai tri tri tue chien thuat the loai' },

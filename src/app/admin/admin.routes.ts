@@ -45,6 +45,11 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () => import('./analytics/analytics').then((m) => m.AdminAnalytics),
       },
       {
+        path: 'luu-tru',
+        title: 'Lưu trữ & tên miền',
+        loadComponent: () => import('./system/system').then((m) => m.AdminSystem),
+      },
+      {
         path: 'san-pham',
         title: 'Quản lý sản phẩm',
         loadComponent: () => import('./products/products-list').then((m) => m.AdminProductsList),

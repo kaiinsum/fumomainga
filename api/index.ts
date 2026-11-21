@@ -28,6 +28,8 @@ import * as security from './_routes/security';
 import * as leaderboard from './_routes/leaderboard';
 import * as costs from './_routes/costs';
 import * as notes from './_routes/notes';
+import * as system from './_routes/system';
+import * as favicon from './_routes/favicon';
 import * as og from './_routes/og';
 import * as newsViews from './_routes/news-views';
 import * as sitemap from './_routes/sitemap';
@@ -46,6 +48,8 @@ const ROUTES: [RegExp, Module][] = [
   [/^admin\/security$/, security],
   [/^admin\/costs$/, costs],
   [/^admin\/notes$/, notes],
+  [/^admin\/system$/, system],
+  [/^site-icon$/, favicon],
   [/^leaderboard$/, leaderboard],
   [/^og$/, og],
   [/^news-views$/, newsViews],
