@@ -63,10 +63,18 @@ import { IconComponent } from '../../shared/icon';
       @if (season.active(); as se) {
         <p class="season"><button type="button" (click)="season.open()"><app-icon [icon]="se.icon" /> Xem lại lời chúc {{ se.name }}</button></p>
       }
-      <p class="copy">© 2026 Fumo Mai Nga - Designed by San Nii</p>
+      <p class="copy">© 2026 Fumo Mai Nga - Designed by
+        @if (designer(); as url) {
+          <a class="designer" [href]="url" target="_blank" rel="noopener noreferrer">San Nii</a>
+        } @else {
+          San Nii
+        }
+      </p>
     </footer>
   `,
   styles: `
+    .designer { color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+    .designer:hover { color: var(--primary); }
     .footer { background: var(--footer-bg); color: #fff; padding: 48px 0 20px; margin-top: 40px; }
     .grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.4fr; gap: 32px; }
     .social { display: flex; gap: 10px; margin-top: 14px; }
@@ -119,4 +127,9 @@ export class FooterComponent {
   }
   readonly year = new Date().getFullYear();
   readonly season = inject(SeasonService);
+  /** Link "Designed by San Nii" (Cài đặt → Chung) — chỉ nhận link https:// / http://. */
+  designer(): string {
+    const u = (this.settings().designerUrl ?? '').trim();
+    return /^https?:\/\/\S+$/i.test(u) ? u : '';
+  }
 }

@@ -142,6 +142,8 @@ export interface SiteSettings {
   backgroundColor: string;
   fontFamily: string;
   footerText: string;
+  /** Link gắn vào chữ "Designed by San Nii" ở chân trang (mở tab mới). Trống = chữ thường. */
+  designerUrl?: string;
   // Trang chủ
   heroBadge: string;
   /** Bọc từ bằng *dấu sao* để tô màu nổi bật. */

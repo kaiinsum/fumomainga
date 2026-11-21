@@ -12,7 +12,7 @@ import { GuideService, guideStage } from './guide.service';
     @if (st === 'intro') {
       <div class="veil" (click)="toCorner()" aria-hidden="true"></div>
     }
-    @if (st === 'hidden' && guide.cfg().enabled && guide.cfg().summonEnabled && !inGame()) {
+    @if (summonShown()) {
       <button class="summon" [class.dark]="guide.dark()" type="button" (click)="guide.summon()" [title]="'Gọi ' + guide.name()" [attr.aria-label]="'Gọi người hướng dẫn ' + guide.name()">
         <img [src]="guide.image()" alt="" draggable="false" /><i aria-hidden="true">✦</i>
       </button>
@@ -89,7 +89,7 @@ import { GuideService, guideStage } from './guide.service';
     .acts.col { flex-direction: column; align-items: stretch; }
     .acts.col .b { text-align: left; }
     /* Nút triệu hồi bên trái */
-    .summon { position: fixed; left: 14px; bottom: 18px; z-index: 985; width: 54px; height: 54px; padding: 0; border-radius: 50%; cursor: pointer;
+    .summon { position: fixed; left: 14px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 985; width: 54px; height: 54px; padding: 0; border-radius: 50%; cursor: pointer;
       border: 2px solid var(--primary); background: var(--surface); overflow: visible; box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--primary) 70%, transparent);
       animation: summon-in .5s cubic-bezier(.2, 1.4, .4, 1) both; }
     .summon img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; border-radius: 50%; display: block; pointer-events: none; }
@@ -123,8 +123,8 @@ import { GuideService, guideStage } from './guide.service';
     @keyframes pop { from { opacity: 0; transform: scale(.6) translateY(14px); } to { opacity: 1; transform: none; } }
     @keyframes bob { 50% { translate: 0 -6px; } }
     @media (max-width: 600px) {
-      .summon { left: 10px; bottom: 14px; width: 46px; height: 46px; }
-      .guide { left: 6px; bottom: 6px; }
+      .summon { left: 10px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 46px; height: 46px; }
+      .guide { left: 6px; bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
       .fig { height: 150px; }
       .guide.hub .fig { height: 110px; }
       .bubble { margin: 0 0 70px -14px; min-width: 0; max-width: calc(100vw - 130px); padding: 11px 12px; }
@@ -148,6 +148,8 @@ export class GuideComponent {
 
   /** Đang ở màn chơi game → không hiện nút triệu hồi (tránh che nút điều khiển). */
   readonly inGame = computed(() => /^\/mini-game\/./.test(this.guide.route()));
+  /** Nút triệu hồi đang hiện? (thông báo góc trái né ra) */
+  readonly summonShown = computed(() => this.guide.step() === 'hidden' && this.guide.cfg().enabled && this.guide.cfg().summonEnabled && !this.inGame());
 
   readonly text = computed(() => {
     const c = this.guide.cfg();
@@ -179,6 +181,7 @@ export class GuideComponent {
 
   constructor() {
     this.guide.start();
+    effect(() => document.documentElement.classList.toggle('has-summon', this.summonShown()));
     // Vừa hiện → bay từ chỗ nhân vật trên ảnh nền ra góc màn hình.
     effect(() => {
       const visible = this.guide.step() !== 'hidden';

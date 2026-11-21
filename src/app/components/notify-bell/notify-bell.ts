@@ -118,6 +118,10 @@ function readSeen(): string[] {
     @media (max-width: 600px) {
       :host { position: static; }
       .bell { width: 38px; height: 38px; border-radius: 11px; }
+    }
+    @media (max-width: 420px) {
+      .bell { width: 34px; height: 34px; border-radius: 10px; }
+      .bell svg { width: 18px; height: 18px; }
       .panel { position: fixed; top: calc(var(--header-h) + 4px); left: 10px; right: 10px; width: auto; }
     }
     @media (prefers-reduced-motion: reduce) { .bell.ring svg, .panel { animation: none; } }

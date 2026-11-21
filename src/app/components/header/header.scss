@@ -290,3 +290,43 @@
     animation: none;
   }
 }
+
+/* Điện thoại hẹp (≤ 420px): thu nhỏ các nút để tên shop không bị cắt */
+@media (max-width: 420px) {
+  .container.bar {
+    width: calc(100% - 20px);
+  }
+
+  .bar,
+  .tools {
+    gap: 4px;
+  }
+
+  .theme-btn,
+  .burger {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .theme-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .logo {
+    font-size: clamp(0.74rem, 3.9vw, 0.9rem);
+    gap: 4px;
+  }
+
+  .logo-icon {
+    font-size: 1rem;
+  }
+}
+
+/* Rất hẹp (≤ 340px): ẩn tên shop, giữ biểu tượng */
+@media (max-width: 340px) {
+  .logo > span:not(.logo-icon) {
+    display: none;
+  }
+}

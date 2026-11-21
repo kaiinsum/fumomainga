@@ -50,7 +50,19 @@ export function activeAnnouncements(list: Announcement[] | undefined, now = Date
     .x { border: 0; background: var(--surface-2); color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; flex: none; }
     .x:hover { color: var(--text); }
     @keyframes slide { from { opacity: 0; transform: translateY(20px) scale(.96); } }
-    @media (max-width: 600px) { .toast { left: 10px; right: 70px; bottom: 10px; width: auto; } }
+    p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transition: left .3s ease, bottom .3s ease; }
+    /* Có nút triệu hồi người hướng dẫn ở góc trái → dịch thông báo sang phải, không đè lên nút. */
+    :host-context(html.has-summon) .toast { left: 84px; width: min(360px, calc(100vw - 100px)); }
+    @media (max-width: 600px) {
+      .toast { left: 10px; right: 68px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; gap: 10px; padding: 10px 10px 10px 12px; border-radius: 14px; }
+      /* Điện thoại: nằm phía trên nút triệu hồi (nút ở góc trái dưới, bong bóng liên hệ ở góc phải). */
+      :host-context(html.has-summon) .toast { left: 10px; width: auto; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+      .ico { font-size: 1.4rem; }
+      b { font-size: .88rem; }
+      p { font-size: .8rem; -webkit-line-clamp: 3; }
+      .x { width: 26px; height: 26px; }
+    }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
   `,
 })

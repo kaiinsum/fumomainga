@@ -125,7 +125,7 @@ const HISTORY_KEY = 'fumo.chat';
     </div>
   `,
   styles: `
-    :host { position: fixed; right: 18px; bottom: 18px; z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    :host { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
     .stack { display: flex; flex-direction: column; gap: 10px; align-items: center; }
     .bubble { position: relative; width: 52px; height: 52px; border-radius: 50%; border: none; display: grid; place-items: center;
       cursor: pointer; color: #fff; box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .2s; font-size: 1.1rem; font-weight: 800; }
@@ -135,7 +135,7 @@ const HISTORY_KEY = 'fumo.chat';
     .stack.grouped .bubble:not(.more) { animation: rise .22s ease-out both; }
     @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.8); } }
     @media (max-width: 600px) {
-      :host { right: 12px; bottom: 12px; }
+      :host { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
       .bubble { width: 46px; height: 46px; } .bubble svg { width: 23px; height: 23px; }
       .ai { width: 50px; height: 50px; } .more { width: 44px; height: 44px; }
     }

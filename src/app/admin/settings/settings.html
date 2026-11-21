@@ -31,6 +31,10 @@
             <label for="footer">Mô tả ở chân trang</label>
             <textarea id="footer" rows="2" [(ngModel)]="draft.footerText"></textarea>
           </div>
+          <div class="field full">
+            <label for="designer">Link "Designed by San Nii" (chân trang)</label>
+            <input id="designer" type="url" [(ngModel)]="draft.designerUrl" placeholder="https://… — bấm vào chữ San Nii sẽ mở link này ở tab mới" />
+          </div>
         </div>
       </section>
 
